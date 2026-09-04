@@ -1,0 +1,79 @@
+21. What is the purpose of the Power–Interest Matrix?
+A. Evaluate project costs
+B. Prioritize construction activities
+C. Categorize stakeholders to determine communication and engagement priority ✓
+D. Evaluate subcontractor payments
+
+22. A stakeholder with High Power and High Interest should be categorized as:
+A. Monitor
+B. Keep Informed
+C. Keep Satisfied
+D. Manage Closely ✓
+
+23. A stakeholder with High Power and Low Interest should be categorized as:
+A. Manage Closely
+B. Keep Satisfied ✓
+C. Keep Informed
+D. Monitor
+
+24. A stakeholder with Low Power and High Interest should be categorized as:
+A. Monitor
+B. Keep Satisfied
+C. Keep Informed ✓
+D. Manage Closely
+
+25. True or False:
+The Stakeholder Register should be reviewed and updated regularly to include new stakeholders or remove inactive stakeholders.
+
+Answer: True ✓
+
+26. Which information should the Communication and Engagement Plan define for each stakeholder?
+A. Salary and employee number
+B. Only meeting dates
+C. Communication method, frequency, responsible person, and type of information to be shared ✓
+D. Only stakeholder contact information
+
+27. Who is responsible for leading the preparation, implementation, and maintenance of the Stakeholder Management Plan and Stakeholder Register?
+A. Interface Manager
+B. Project Manager
+C. Stakeholder Manager ✓
+D. Planning Engineer
+
+28. If a stakeholder conflict cannot be resolved at Project Level, what is the next escalation level stated in the procedure?
+A. Legal Level
+B. Sector Level ✓
+C. Procurement Level
+D. HSE Level
+
+29. True or False:
+A stakeholder commitment that exceeds the project team’s delegated authority can be confirmed first and approved later.
+
+Answer: False ✓
+
+30. How frequently should Stakeholder KPIs be evaluated according to the procedure?
+A. Weekly
+B. Monthly ✓
+C. Quarterly
+D. Annually
+
+
+34. The Power–Interest Matrix should be reviewed periodically or whenever major project or stakeholder changes occur.
+Answer: True 
+
+35. Stakeholder communication should use the same frequency and method for every stakeholder regardless of influence or interest.
+Answer: False
+
+36. All stakeholder communications, feedback, and meeting outcomes should be formally recorded.
+Answer: True
+
+37. An overdue stakeholder item should be escalated to the Project Manager and PMC.
+Answer: True
+
+38. Stakeholder commitments beyond delegated authority may be accepted without escalation if the stakeholder has high influence.
+Answer: False
+
+39. Stakeholder awareness and collaboration sessions should include records of the agenda, attendees, and outcomes.
+Answer: True
+
+40. Stakeholder KPI results should only be reviewed at the end of the project.
+Answer: False — they are evaluated monthly during Stakeholder Review Meetings.

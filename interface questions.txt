@@ -1,0 +1,126 @@
+Part A — Interface Management — 20 Questions
+
+1. What is an Interface Point (IP)?
+A. A financial approval between departments
+B. A location, activity, or information flow where two or more parties, systems, or scopes meet and require coordination ✓
+C. A document issued only by the Client
+D. A construction delay report
+
+2. What is the main purpose of the Interface Register?
+A. Record employee attendance
+B. Record only contractual claims
+C. Record, track, and monitor interface points ✓
+D. Monitor procurement costs
+
+3. Who is primarily responsible for developing and maintaining the Interface Register?
+A. Planning Engineer
+B. Interface Manager ✓
+C. HSE Engineer
+D. Procurement Department
+
+4. Interface points are categorized as:
+A. Design and Construction
+B. Critical and Non-Critical
+C. Internal and External ✓
+D. Open and Closed only
+
+5. When should general interface points be identified?
+A. Only during construction
+B. After a conflict occurs
+C. During project initiation and design coordination stages ✓
+D. Only during handover
+
+6. How frequently are regular Interface Coordination Meetings conducted according to the procedure?
+A. Daily
+B. Weekly or bi-weekly ✓
+C. Quarterly
+D. Annually
+
+7. How far in advance should an Internal Interface Coordination Meeting call normally be issued?
+A. 24 hours
+B. At least 48 hours ✓
+C. 72 hours
+D. One week
+
+8. How far in advance should an External Interface Coordination Meeting invitation normally be issued?
+A. 24 hours
+B. 48 hours
+C. At least 72 hours ✓
+D. Two weeks
+
+9. True or False:
+An interface point can be closed before all involved parties verify and sign off on it.
+
+Answer: False ✓
+
+10. Where should interface closure evidence be uploaded according to the procedure?
+A. Personal email
+B. SharePoint only
+C. Aconex ✓
+D. Procurement system
+
+11. Who coordinates authority representatives’ attendance/access and ensures authorization letters are valid for External Interface Meetings?
+A. QA/QC Manager
+B. Planning Engineer
+C. Government Relations Officer (GRO) ✓
+D. Procurement Manager
+
+12. Which of the following is an External Interface Point?
+A. Coordination between Civil and Structural teams
+B. Coordination between Planning and Construction
+C. Coordination with an authority for permits and NOCs ✓
+D. Internal document revision control
+
+13. Who should approve major interface decisions that impact cost, schedule, or scope?
+A. Surveyor
+B. Document Controller
+C. Interface Engineer alone
+D. Client / Employer ✓
+
+14. What is the primary purpose of the Interface Matrix?
+A. Record NCRs
+B. Record employee responsibilities only
+C. Define who interfaces with whom, on what scope, and where coordination boundaries exist ✓
+D. Record contractual payments
+
+15. What is the primary purpose of the Interface Points Register?
+A. Define company organization
+B. Monitor individual coordination points and their progress ✓
+C. Record only escalated claims
+D. Replace meeting minutes
+
+16. What is the primary purpose of the Interface Issue Log?
+A. Record all employee activities
+B. Track material delivery
+C. Record and manage interface conflicts/issues that have escalated from coordination points ✓
+D. Replace the Interface Matrix
+
+17. True or False:
+Escalation should replace normal coordination whenever an interface issue is identified.
+
+Answer: False ✓
+
+18. True or False:
+Safety-related interface issues may be escalated immediately regardless of the normal hierarchy.
+
+Answer: True ✓
+
+19. Within what period should the Interface Manager issue the Minutes of Meeting (MoM) after an Interface Meeting?
+A. 24 hours
+B. 48 hours ✓
+C. 5 working days
+D. 7 working days
+
+20. How long should Interface Management records be retained?
+A. Six months
+B. One year only
+C. Five years
+D. As per project contract terms or project duration + 1 year ✓
+
+31. All interface points should have a defined owner and target resolution date.
+Answer: True 
+32. An unresolved interface point may remain open beyond its target date without formal escalation.
+Answer: False 
+33. The Interface Matrix should be updated whenever new scopes or packages are added.
+Answer: True
+
