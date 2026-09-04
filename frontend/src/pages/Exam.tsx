@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "./Exam.css";
 interface Question {
   id: number;
   question: string;
@@ -457,7 +458,7 @@ const partB: Question[] = [
 const questions = [...partA, ...partB];
 
 function Exam() {
-    const EXAM_DURATION = 30 * 60; // 30 minutes in seconds
+    const EXAM_DURATION = 30 * 60;
   
     const [currentQuestion, setCurrentQuestion] = useState(0);
   
@@ -471,11 +472,20 @@ function Exam() {
   
     const question = questions[currentQuestion];
   
+    const answeredCount = Object.keys(selectedAnswers).length;
+  
+    const progress =
+      ((currentQuestion + 1) / questions.length) * 100;
+  
     function selectAnswer(answerIndex: number) {
       setSelectedAnswers({
         ...selectedAnswers,
         [question.id]: answerIndex,
       });
+    }
+  
+    function goToQuestion(index: number) {
+      setCurrentQuestion(index);
     }
   
     function nextQuestion() {
@@ -494,7 +504,10 @@ function Exam() {
       let score = 0;
   
       questions.forEach((question) => {
-        if (selectedAnswers[question.id] === question.correctAnswer) {
+        if (
+          selectedAnswers[question.id] ===
+          question.correctAnswer
+        ) {
           score++;
         }
       });
@@ -507,16 +520,42 @@ function Exam() {
         return;
       }
   
-      setSubmitted(true);
-  
       const score = calculateScore();
+  
+      setSubmitted(true);
   
       alert(
         `Exam submitted!\n\nScore: ${score}/${questions.length}`
       );
     }
   
-    // Countdown timer
+    function confirmSubmit() {
+      const unanswered =
+        questions.length - answeredCount;
+  
+      if (unanswered > 0) {
+        const confirmSubmission = window.confirm(
+          `You have ${unanswered} unanswered question${
+            unanswered === 1 ? "" : "s"
+          }.\n\nAre you sure you want to submit the exam?`
+        );
+  
+        if (confirmSubmission) {
+          submitExam();
+        }
+  
+        return;
+      }
+  
+      const confirmSubmission = window.confirm(
+        "You have answered all questions.\n\nAre you sure you want to submit the exam?"
+      );
+  
+      if (confirmSubmission) {
+        submitExam();
+      }
+    }
+  
     useEffect(() => {
       if (submitted) {
         return;
@@ -543,6 +582,8 @@ function Exam() {
       ).padStart(2, "0")}`;
     }
   
+    const isLowTime = timeLeft <= 5 * 60;
+  
     const isLastQuestion =
       currentQuestion === questions.length - 1;
   
@@ -552,61 +593,202 @@ function Exam() {
         : "Part B — Stakeholder Management";
   
     return (
-      <div>
-        <h1>Examination</h1>
-  
-        <h2>{currentPart}</h2>
-  
-        <p>
-          Question {currentQuestion + 1} of {questions.length}
-        </p>
-  
-        <h2>
-          Time Remaining: {formatTime(timeLeft)}
-        </h2>
-  
-        <hr />
-  
-        <h3>{question.question}</h3>
-  
-        {question.options.map((option, index) => (
-          <div key={index}>
-            <label>
-              <input
-                type="radio"
-                name={`question-${question.id}`}
-                checked={
-                  selectedAnswers[question.id] === index
-                }
-                onChange={() => selectAnswer(index)}
-              />
-  
-              {" "}
-              {option}
-            </label>
+      <div className="exam-page">
+        {/* Header */}
+        <header className="exam-header">
+          <div>
+            <h1>Examination</h1>
+            <p>Workplace Assessment System</p>
           </div>
-        ))}
   
-        <br />
+          <div
+            className={`timer ${
+              isLowTime ? "timer-warning" : ""
+            }`}
+          >
+            <span>Time Remaining</span>
+            <strong>{formatTime(timeLeft)}</strong>
+          </div>
+        </header>
   
-        <button
-          onClick={previousQuestion}
-          disabled={currentQuestion === 0}
-        >
-          Previous
-        </button>
+        {/* Progress */}
+        <div className="progress-section">
+          <div className="progress-info">
+            <span>
+              Question {currentQuestion + 1} of{" "}
+              {questions.length}
+            </span>
   
-        {" "}
+            <span>
+              {answeredCount}/{questions.length} answered
+            </span>
+          </div>
   
-        {!isLastQuestion ? (
-          <button onClick={nextQuestion}>
-            Next
-          </button>
-        ) : (
-          <button onClick={submitExam}>
-            Submit Exam
-          </button>
-        )}
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+  
+        <div className="exam-layout">
+          {/* Question Navigator */}
+          <aside className="question-sidebar">
+            <h3>Questions</h3>
+  
+            <div className="legend">
+              <div>
+                <span className="legend-box current" />
+                Current
+              </div>
+  
+              <div>
+                <span className="legend-box answered" />
+                Answered
+              </div>
+  
+              <div>
+                <span className="legend-box unanswered" />
+                Unanswered
+              </div>
+            </div>
+  
+            <h4>Part A</h4>
+  
+            <div className="question-grid">
+              {partA.map((item, index) => (
+                <button
+                  key={item.id}
+                  className={`
+                    question-number
+                    ${
+                      currentQuestion === index
+                        ? "current"
+                        : ""
+                    }
+                    ${
+                      selectedAnswers[item.id] !== undefined
+                        ? "answered"
+                        : ""
+                    }
+                  `}
+                  onClick={() => goToQuestion(index)}
+                >
+                  {item.id}
+                </button>
+              ))}
+            </div>
+  
+            <h4>Part B</h4>
+  
+            <div className="question-grid">
+              {partB.map((item) => {
+                const index = questions.findIndex(
+                  (q) => q.id === item.id
+                );
+  
+                return (
+                  <button
+                    key={item.id}
+                    className={`
+                      question-number
+                      ${
+                        currentQuestion === index
+                          ? "current"
+                          : ""
+                      }
+                      ${
+                        selectedAnswers[item.id] !== undefined
+                          ? "answered"
+                          : ""
+                      }
+                    `}
+                    onClick={() => goToQuestion(index)}
+                  >
+                    {item.id}
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+  
+          {/* Main Question */}
+          <main className="question-area">
+            <div className="section-badge">
+              {currentPart}
+            </div>
+  
+            <div className="question-card">
+              <div className="question-top">
+                <span>Question {question.id}</span>
+  
+                {selectedAnswers[question.id] !==
+                  undefined && (
+                  <span className="answered-label">
+                    ✓ Answered
+                  </span>
+                )}
+              </div>
+  
+              <h2>{question.question}</h2>
+  
+              <div className="answers">
+                {question.options.map((option, index) => {
+                  const selected =
+                    selectedAnswers[question.id] === index;
+  
+                  return (
+                    <label
+                      key={index}
+                      className={`answer-option ${
+                        selected ? "selected" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`question-${question.id}`}
+                        checked={selected}
+                        onChange={() =>
+                          selectAnswer(index)
+                        }
+                      />
+  
+                      <span>{option}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+  
+            {/* Navigation */}
+            <div className="navigation">
+              <button
+                className="nav-button secondary"
+                onClick={previousQuestion}
+                disabled={currentQuestion === 0}
+              >
+                ← Previous
+              </button>
+  
+              {!isLastQuestion ? (
+                <button
+                  className="nav-button primary"
+                  onClick={nextQuestion}
+                >
+                  Next →
+                </button>
+              ) : (
+                <button
+                  className="nav-button submit"
+                  onClick={confirmSubmit}
+                >
+                  Submit Exam
+                </button>
+              )}
+            </div>
+          </main>
+        </div>
       </div>
     );
   }
