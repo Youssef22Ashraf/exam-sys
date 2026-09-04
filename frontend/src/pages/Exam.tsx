@@ -1,5 +1,4 @@
-import { useState } from "react";
-
+import { useEffect, useState } from "react";
 interface Question {
   id: number;
   question: string;
@@ -458,109 +457,158 @@ const partB: Question[] = [
 const questions = [...partA, ...partB];
 
 function Exam() {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-
-  const [selectedAnswers, setSelectedAnswers] = useState<
-    Record<number, number>
-  >({});
-
-  const question = questions[currentQuestion];
-
-  function selectAnswer(answerIndex: number) {
-    setSelectedAnswers({
-      ...selectedAnswers,
-      [question.id]: answerIndex,
-    });
-  }
-
-  function nextQuestion() {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1);
+    const EXAM_DURATION = 30 * 60; // 30 minutes in seconds
+  
+    const [currentQuestion, setCurrentQuestion] = useState(0);
+  
+    const [selectedAnswers, setSelectedAnswers] = useState<
+      Record<number, number>
+    >({});
+  
+    const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
+  
+    const [submitted, setSubmitted] = useState(false);
+  
+    const question = questions[currentQuestion];
+  
+    function selectAnswer(answerIndex: number) {
+      setSelectedAnswers({
+        ...selectedAnswers,
+        [question.id]: answerIndex,
+      });
     }
-  }
-
-  function previousQuestion() {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
-    }
-  }
-
-  function submitExam() {
-    let score = 0;
-
-    questions.forEach((question) => {
-      if (selectedAnswers[question.id] === question.correctAnswer) {
-        score++;
+  
+    function nextQuestion() {
+      if (currentQuestion < questions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1);
       }
-    });
-
-    alert(
-      `Exam submitted!\n\nScore: ${score}/${questions.length}`
+    }
+  
+    function previousQuestion() {
+      if (currentQuestion > 0) {
+        setCurrentQuestion(currentQuestion - 1);
+      }
+    }
+  
+    function calculateScore() {
+      let score = 0;
+  
+      questions.forEach((question) => {
+        if (selectedAnswers[question.id] === question.correctAnswer) {
+          score++;
+        }
+      });
+  
+      return score;
+    }
+  
+    function submitExam() {
+      if (submitted) {
+        return;
+      }
+  
+      setSubmitted(true);
+  
+      const score = calculateScore();
+  
+      alert(
+        `Exam submitted!\n\nScore: ${score}/${questions.length}`
+      );
+    }
+  
+    // Countdown timer
+    useEffect(() => {
+      if (submitted) {
+        return;
+      }
+  
+      if (timeLeft <= 0) {
+        submitExam();
+        return;
+      }
+  
+      const timer = setInterval(() => {
+        setTimeLeft((previousTime) => previousTime - 1);
+      }, 1000);
+  
+      return () => clearInterval(timer);
+    }, [timeLeft, submitted]);
+  
+    function formatTime(seconds: number) {
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+  
+      return `${String(minutes).padStart(2, "0")}:${String(
+        remainingSeconds
+      ).padStart(2, "0")}`;
+    }
+  
+    const isLastQuestion =
+      currentQuestion === questions.length - 1;
+  
+    const currentPart =
+      currentQuestion < partA.length
+        ? "Part A — Interface Management"
+        : "Part B — Stakeholder Management";
+  
+    return (
+      <div>
+        <h1>Examination</h1>
+  
+        <h2>{currentPart}</h2>
+  
+        <p>
+          Question {currentQuestion + 1} of {questions.length}
+        </p>
+  
+        <h2>
+          Time Remaining: {formatTime(timeLeft)}
+        </h2>
+  
+        <hr />
+  
+        <h3>{question.question}</h3>
+  
+        {question.options.map((option, index) => (
+          <div key={index}>
+            <label>
+              <input
+                type="radio"
+                name={`question-${question.id}`}
+                checked={
+                  selectedAnswers[question.id] === index
+                }
+                onChange={() => selectAnswer(index)}
+              />
+  
+              {" "}
+              {option}
+            </label>
+          </div>
+        ))}
+  
+        <br />
+  
+        <button
+          onClick={previousQuestion}
+          disabled={currentQuestion === 0}
+        >
+          Previous
+        </button>
+  
+        {" "}
+  
+        {!isLastQuestion ? (
+          <button onClick={nextQuestion}>
+            Next
+          </button>
+        ) : (
+          <button onClick={submitExam}>
+            Submit Exam
+          </button>
+        )}
+      </div>
     );
   }
-
-  const isLastQuestion =
-    currentQuestion === questions.length - 1;
-
-  const currentPart =
-    currentQuestion < partA.length
-      ? "Part A — Interface Management"
-      : "Part B — Stakeholder Management";
-
-  return (
-    <div>
-      <h1>Examination</h1>
-
-      <h2>{currentPart}</h2>
-
-      <p>
-        Question {currentQuestion + 1} of {questions.length}
-      </p>
-
-      <hr />
-
-      <h3>{question.question}</h3>
-
-      {question.options.map((option, index) => (
-        <div key={index}>
-          <label>
-            <input
-              type="radio"
-              name={`question-${question.id}`}
-              checked={
-                selectedAnswers[question.id] === index
-              }
-              onChange={() => selectAnswer(index)}
-            />
-
-            {" "}
-            {option}
-          </label>
-        </div>
-      ))}
-
-      <br />
-
-      <button
-        onClick={previousQuestion}
-        disabled={currentQuestion === 0}
-      >
-        Previous
-      </button>
-
-      {" "}
-
-      {!isLastQuestion ? (
-        <button onClick={nextQuestion}>
-          Next
-        </button>
-      ) : (
-        <button onClick={submitExam}>
-          Submit Exam
-        </button>
-      )}
-    </div>
-  );
-}
-
-export default Exam;
+  
+  export default Exam;
