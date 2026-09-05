@@ -1,0 +1,52 @@
+services:
+  # Express.js + Prisma ORM + Socket.IO Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: exam-system-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - DATABASE_URL=file:./dev.db
+      - JWT_SECRET=super_secret_exam_jwt_key_production_2026_x89
+      - CORS_ORIGIN=http://localhost:5173
+      - NODE_ENV=production
+      # Optional SMTP configuration for live email alerts
+      # - SMTP_HOST=smtp.gmail.com
+      # - SMTP_PORT=587
+      # - SMTP_USER=your-email@gmail.com
+      # - SMTP_PASS=your-app-password
+      # - ADMIN_ALERT_EMAIL=admin@harbico.com
+    volumes:
+      - backend-database:/app/prisma
+      - backend-uploads:/app/uploads
+    networks:
+      - exam-network
+
+  # React + Vite + Nginx Frontend SPA
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: exam-system-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - exam-network
+
+volumes:
+  backend-database:
+    name: exam-system-db-data
+  backend-uploads:
+    name: exam-system-uploads-data
+
+networks:
+  exam-network:
+    name: exam-system-network
+    driver: bridge

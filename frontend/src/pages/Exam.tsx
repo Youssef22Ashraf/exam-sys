@@ -192,6 +192,11 @@ function Exam({ userData, onFinishExam }: ExamProps) {
           result.hasVideoRecording = true;
           // Upload to backend if online
           api.uploadVideo(videoBlob, result.id).catch(() => {});
+          // Upload to backend so remote admin can stream/watch it
+          const uploadRes = await api.uploadVideo(videoBlob, result.id);
+          if (uploadRes && uploadRes.filename) {
+            result.videoFilename = uploadRes.filename;
+          }
         }
       } catch (err) {
         console.warn("Could not save video recording:", err);
@@ -213,6 +218,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       proctoringStatus: result.proctoringStatus,
       candidatePhoto: result.candidatePhoto,
       hasVideoRecording: result.hasVideoRecording,
+      videoFilename: result.videoFilename,
     }).catch((err) => {
       console.warn("Backend offline, result saved locally:", err);
     });

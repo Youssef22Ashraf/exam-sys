@@ -9,6 +9,7 @@ import {
 } from "../services/storage";
 import { VideoStorage } from "../services/videoStorage";
 import { socketService } from "../services/socket";
+import { api } from "../services/api";
 import "./AdminDashboard.css";
 
 interface AdminDashboardProps {
@@ -52,6 +53,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [loadedVideoUrl, setLoadedVideoUrl] = useState<string | null>(null);
 
   // Load video recording from IndexedDB when an attempt is opened
+  // Load video recording from backend streaming endpoint or IndexedDB fallback
   useEffect(() => {
     let currentObjectUrl: string | null = null;
     if (selectedResult) {
@@ -63,6 +65,20 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           setLoadedVideoUrl(null);
         }
       });
+      if (selectedResult.videoFilename) {
+        setLoadedVideoUrl(
+          `http://localhost:5000/api/proctor/video/${selectedResult.videoFilename}`
+        );
+      } else {
+        VideoStorage.getVideo(selectedResult.id).then((blob) => {
+          if (blob && blob.size > 0) {
+            currentObjectUrl = URL.createObjectURL(blob);
+            setLoadedVideoUrl(currentObjectUrl);
+          } else {
+            setLoadedVideoUrl(null);
+          }
+        });
+      }
     } else {
       setLoadedVideoUrl(null);
     }
@@ -94,6 +110,11 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   // Settings form state
   const [tempSettings, setTempSettings] = useState<ExamSettings>(settings);
   const [settingsSavedMsg, setSettingsSavedMsg] = useState(false);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [testEmailMsg, setTestEmailMsg] = useState<{
+    text: string;
+    success: boolean;
+  } | null>(null);
   const [liveSocketToast, setLiveSocketToast] = useState<{
     message: string;
     type: "info" | "warning" | "success";
@@ -323,9 +344,37 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   function handleSaveSettings() {
     ExamStorage.saveSettings(tempSettings);
+    api.saveSettings(tempSettings).catch(() => {});
     setSettings(tempSettings);
     setSettingsSavedMsg(true);
     setTimeout(() => setSettingsSavedMsg(false), 3000);
+  }
+
+  async function handleSendTestEmail() {
+    setTestingEmail(true);
+    setTestEmailMsg(null);
+    try {
+      const email = tempSettings.notifyEmail?.trim();
+      const res = await api.sendTestEmail(email);
+      if (res.success) {
+        setTestEmailMsg({
+          text: res.message || "✓ Test email sent successfully!",
+          success: true,
+        });
+      } else {
+        setTestEmailMsg({
+          text: res.error || "Failed to dispatch test email.",
+          success: false,
+        });
+      }
+    } catch {
+      setTestEmailMsg({
+        text: "Failed to connect to backend server.",
+        success: false,
+      });
+    } finally {
+      setTestingEmail(false);
+    }
   }
 
   return (
@@ -779,6 +828,33 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 ? `⚠️ ${r.tabSwitches || 0} Warn`
                                 : "✓ Monitored"}
                             </span>
+                            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                              <span
+                                className={`badge ${
+                                  r.proctoringStatus === "Warnings"
+                                    ? "badge-failed"
+                                    : "badge-passed"
+                                }`}
+                              >
+                                {r.proctoringStatus === "Warnings"
+                                  ? `⚠️ ${r.tabSwitches || 0} Warn`
+                                  : "✓ Monitored"}
+                              </span>
+                              {r.hasVideoRecording || r.videoFilename ? (
+                                <span
+                                  style={{
+                                    fontSize: "11px",
+                                    color: "#2563eb",
+                                    fontWeight: 650,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "3px",
+                                  }}
+                                >
+                                  🎥 Video
+                                </span>
+                              ) : null}
+                            </div>
                           </td>
                           <td>
                             {r.partAScore} / {r.partATotal}
@@ -796,7 +872,23 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 onClick={() => setSelectedResult(r)}
                               >
                                 Review Answers
+                                Review
                               </button>
+                              {r.hasVideoRecording || r.videoFilename ? (
+                                <button
+                                  className="btn-sm"
+                                  style={{
+                                    borderColor: "#93c5fd",
+                                    color: "#2563eb",
+                                    background: "#eff6ff",
+                                    fontWeight: 600,
+                                  }}
+                                  onClick={() => setSelectedResult(r)}
+                                  title="Watch proctoring webcam recording"
+                                >
+                                  🎥 Video
+                                </button>
+                              ) : null}
                               <button
                                 className="btn-sm danger"
                                 onClick={() => handleDeleteResult(r.id)}
@@ -1053,6 +1145,37 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     })
                   }
                 />
+                <div style={{ display: "flex", gap: "8px", alignItems: "stretch" }}>
+                  <input
+                    className="form-input"
+                    style={{ flex: 1 }}
+                    type="email"
+                    placeholder="admin@harbico.com"
+                    value={tempSettings.notifyEmail || ""}
+                    onChange={(e) =>
+                      setTempSettings({
+                        ...tempSettings,
+                        notifyEmail: e.target.value,
+                      })
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    style={{
+                      whiteSpace: "nowrap",
+                      padding: "8px 14px",
+                      fontSize: "12px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                    onClick={handleSendTestEmail}
+                    disabled={testingEmail}
+                  >
+                    {testingEmail ? "Sending..." : "📧 Test Email"}
+                  </button>
+                </div>
                 <span
                   style={{
                     fontSize: "11px",
@@ -1063,6 +1186,25 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 >
                   Receives email alerts immediately upon exam completion.
                 </span>
+
+                {testEmailMsg && (
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      lineHeight: "1.4",
+                      background: testEmailMsg.success ? "#f0fdf4" : "#fef2f2",
+                      color: testEmailMsg.success ? "#15803d" : "#b91c1c",
+                      border: `1px solid ${
+                        testEmailMsg.success ? "#bbf7d0" : "#fecaca"
+                      }`,
+                    }}
+                  >
+                    {testEmailMsg.text}
+                  </div>
+                )}
               </div>
 
               <button

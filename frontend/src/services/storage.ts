@@ -40,6 +40,7 @@ export interface ExamResult {
   proctoringStatus?: "Verified" | "Warnings" | "Camera Disabled";
   candidatePhoto?: string;
   hasVideoRecording?: boolean;
+  videoFilename?: string;
 }
 
 export interface ExamSettings {

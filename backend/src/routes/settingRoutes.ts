@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
 import { authenticateAdmin } from "../middleware/auth";
+import { sendTestEmailAlert } from "../services/emailService";
 
 const router = Router();
 
@@ -91,6 +92,21 @@ router.put("/", authenticateAdmin, async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Update settings error:", error);
     return res.status(500).json({ error: "Failed to update settings." });
+  }
+});
+
+// POST /api/settings/test-email - Trigger a test email alert
+router.post("/test-email", async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    const result = await sendTestEmailAlert(email);
+    return res.json(result);
+  } catch (error: any) {
+    console.error("Test email trigger error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || "Failed to trigger test email.",
+    });
   }
 });
 

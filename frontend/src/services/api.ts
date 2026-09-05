@@ -416,5 +416,27 @@ export const api = {
     notifyStorageChange("settings");
     return saved;
   },
+
+  async sendTestEmail(email?: string): Promise<{
+    success: boolean;
+    message: string;
+    simulated?: boolean;
+    error?: string;
+  }> {
+    try {
+      const res = await fetch(`${API_BASE}/settings/test-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      return await res.json();
+    } catch (err: any) {
+      return {
+        success: false,
+        error: "Backend server is unavailable to test email delivery.",
+        message: "Backend offline.",
+      };
+    }
+  },
 };
 
