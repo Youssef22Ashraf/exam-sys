@@ -1,11 +1,17 @@
-import { io, Socket } from "socket.io-client";
+﻿import { io, Socket } from "socket.io-client";
 
 let socket: Socket | null = null;
+const broadcastChannel =
+  typeof window !== "undefined" && "BroadcastChannel" in window
+    ? new BroadcastChannel("exam_proctor_channel")
+    : null;
 
-export function getSocket(): Socket {
+export function getSocket(): Socket | null {
+  if (typeof window === "undefined") return null;
+
   if (!socket) {
     const SOCKET_URL =
-      typeof window !== "undefined" && window.location.hostname !== "localhost"
+      window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
         ? window.location.origin
         : "http://localhost:5000";
 
@@ -22,7 +28,6 @@ export function getSocket(): Socket {
     });
 
     socket.on("connect_error", (err) => {
-      // Quietly retry in background, local BroadcastChannel continues to work
       console.debug("Socket connection fallback to local channel:", err.message);
     });
   }
@@ -31,14 +36,30 @@ export function getSocket(): Socket {
 }
 
 export const socketService = {
+  emit(type: string, data: any) {
+    try {
+      const s = getSocket();
+      if (s && s.connected) {
+        s.emit(type, data);
+      }
+    } catch {
+      // ignore
+    }
+    try {
+      if (broadcastChannel) {
+        broadcastChannel.postMessage({ type, data });
+      }
+    } catch {
+      // ignore
+    }
+  },
+
   emitCandidateStarted(data: {
     candidateName: string;
     candidateEmail: string;
     companyId: string;
   }) {
-    try {
-      getSocket().emit("candidate:started", data);
-    } catch {}
+    this.emit("candidate:started", data);
   },
 
   emitCandidateWarning(data: {
@@ -48,9 +69,7 @@ export const socketService = {
     warningType: string;
     totalWarnings: number;
   }) {
-    try {
-      getSocket().emit("candidate:warning", data);
-    } catch {}
+    this.emit("candidate:warning", data);
   },
 
   emitExamSubmitted(data: {
@@ -62,33 +81,87 @@ export const socketService = {
     percentage: number;
     isPassed: boolean;
   }) {
-    try {
-      getSocket().emit("candidate:submitted", data);
-    } catch {}
+    this.emit("candidate:submitted", data);
   },
 
   onAdminExamSubmitted(callback: (data: any) => void) {
     const s = getSocket();
-    s.on("admin:exam_submitted", callback);
+    const handleEvent = (data: any) => callback(data);
+
+    if (s) {
+      s.on("admin:exam_submitted", handleEvent);
+    }
+
+    const bcHandler = (e: MessageEvent) => {
+      if (e.data?.type === "admin:exam_submitted" || e.data?.type === "candidate:submitted") {
+        callback(e.data.data);
+      }
+    };
+    if (broadcastChannel) {
+      broadcastChannel.addEventListener("message", bcHandler);
+    }
+
     return () => {
-      s.off("admin:exam_submitted", callback);
+      if (s) {
+        s.off("admin:exam_submitted", handleEvent);
+      }
+      if (broadcastChannel) {
+        broadcastChannel.removeEventListener("message", bcHandler);
+      }
     };
   },
 
   onAdminCandidateWarning(callback: (data: any) => void) {
     const s = getSocket();
-    s.on("admin:candidate_warning", callback);
+    const handleEvent = (data: any) => callback(data);
+
+    if (s) {
+      s.on("admin:candidate_warning", handleEvent);
+    }
+
+    const bcHandler = (e: MessageEvent) => {
+      if (e.data?.type === "admin:candidate_warning" || e.data?.type === "candidate:warning") {
+        callback(e.data.data);
+      }
+    };
+    if (broadcastChannel) {
+      broadcastChannel.addEventListener("message", bcHandler);
+    }
+
     return () => {
-      s.off("admin:candidate_warning", callback);
+      if (s) {
+        s.off("admin:candidate_warning", handleEvent);
+      }
+      if (broadcastChannel) {
+        broadcastChannel.removeEventListener("message", bcHandler);
+      }
     };
   },
 
   onAdminCandidateStarted(callback: (data: any) => void) {
     const s = getSocket();
-    s.on("admin:candidate_started", callback);
+    const handleEvent = (data: any) => callback(data);
+
+    if (s) {
+      s.on("admin:candidate_started", handleEvent);
+    }
+
+    const bcHandler = (e: MessageEvent) => {
+      if (e.data?.type === "admin:candidate_started" || e.data?.type === "candidate:started") {
+        callback(e.data.data);
+      }
+    };
+    if (broadcastChannel) {
+      broadcastChannel.addEventListener("message", bcHandler);
+    }
+
     return () => {
-      s.off("admin:candidate_started", callback);
+      if (s) {
+        s.off("admin:candidate_started", handleEvent);
+      }
+      if (broadcastChannel) {
+        broadcastChannel.removeEventListener("message", bcHandler);
+      }
     };
   },
 };
-

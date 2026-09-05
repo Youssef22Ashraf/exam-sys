@@ -678,9 +678,10 @@ export const ExamStorage = {
     }
   },
 
-  saveSettings(settings: ExamSettings): void {
+  saveSettings(settings: ExamSettings): ExamSettings {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
     notifyStorageChange("SETTINGS");
+    return settings;
   },
 
   // Questions
@@ -703,6 +704,16 @@ export const ExamStorage = {
   saveQuestions(questions: Question[]): void {
     localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(questions));
     notifyStorageChange("QUESTIONS");
+  },
+
+  saveQuestion(q: Question): Question {
+    const list = this.getQuestions();
+    if (list.some((item) => item.id === q.id)) {
+      this.updateQuestion(q);
+    } else {
+      this.addQuestion(q);
+    }
+    return q;
   },
 
   resetQuestions(): Question[] {
@@ -786,6 +797,10 @@ export const ExamStorage = {
     this.saveCandidates(list);
   },
 
+  saveCandidate(userData: { name: string; email: string; companyId: string } | Candidate): Candidate {
+    return this.registerOrUpdateCandidate(userData);
+  },
+
   // Exam Results
   getResults(): ExamResult[] {
     try {
@@ -804,6 +819,10 @@ export const ExamStorage = {
   saveResults(results: ExamResult[]): void {
     localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
     notifyStorageChange("RESULTS");
+  },
+
+  saveResult(result: ExamResult): void {
+    this.recordExamResult(result);
   },
 
   recordExamResult(result: ExamResult): void {

@@ -1,8 +1,8 @@
 import {
-  Question,
-  Candidate,
-  ExamResult,
-  ExamSettings,
+  type Question,
+  type Candidate,
+  type ExamResult,
+  type ExamSettings,
   storage,
   notifyStorageChange,
 } from "./storage";
