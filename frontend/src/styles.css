@@ -1,0 +1,281 @@
+* {
+    box-sizing: border-box;
+  }
+  
+  :root {
+    font-family:
+      Inter,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  
+    color: #172033;
+    background: #f4f6fa;
+  
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+  
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background: #f4f6fa;
+  }
+  
+  button,
+  input {
+    font: inherit;
+  }
+  
+  button {
+    cursor: pointer;
+  }
+  
+  button:disabled {
+    cursor: not-allowed;
+  }
+  
+  /* =========================
+     GLOBAL APP
+  ========================= */
+  
+  .app {
+    min-height: 100vh;
+    background: #f4f6fa;
+  }
+  
+  /* =========================
+     HEADER
+  ========================= */
+  
+  .app-header {
+    height: 76px;
+    background: #ffffff;
+    border-bottom: 1px solid #e7eaf0;
+  
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  
+    padding: 0 42px;
+  
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .brand-icon {
+    width: 38px;
+    height: 38px;
+  
+    border-radius: 9px;
+  
+    background: #2563eb;
+    color: white;
+  
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    font-weight: 800;
+  }
+  
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .brand-title {
+    font-size: 17px;
+    font-weight: 750;
+    color: #172033;
+  }
+  
+  .brand-subtitle {
+    font-size: 11px;
+    color: #7b8494;
+    margin-top: 2px;
+  }
+  
+  /* =========================
+     PAGE CONTAINER
+  ========================= */
+  
+  .page-container {
+    width: min(1180px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 55px 0;
+  }
+  
+  /* =========================
+     BUTTONS
+  ========================= */
+  
+  .primary-button {
+    border: none;
+    background: #2563eb;
+    color: white;
+  
+    padding: 13px 22px;
+  
+    border-radius: 8px;
+  
+    font-weight: 650;
+  
+    transition:
+      background 0.2s,
+      transform 0.15s;
+  }
+  
+  .primary-button:hover {
+    background: #1d4ed8;
+  }
+  
+  .primary-button:active {
+    transform: translateY(1px);
+  }
+  
+  .secondary-button {
+    background: white;
+    color: #334155;
+  
+    border: 1px solid #d7dce5;
+  
+    padding: 13px 22px;
+  
+    border-radius: 8px;
+  
+    font-weight: 650;
+  
+    transition: 0.2s;
+  }
+  
+  .secondary-button:hover {
+    border-color: #2563eb;
+    color: #2563eb;
+  }
+  
+  /* =========================
+     CARDS
+  ========================= */
+  
+  .card {
+    background: white;
+  
+    border: 1px solid #e8ebf0;
+  
+    border-radius: 14px;
+  
+    box-shadow:
+      0 3px 12px rgba(15, 23, 42, 0.045);
+  }
+  
+  /* =========================
+     PAGE TITLES
+  ========================= */
+  
+  .page-title {
+    margin: 0;
+    font-size: 30px;
+    font-weight: 750;
+    letter-spacing: -0.5px;
+  }
+  
+  .page-description {
+    margin: 9px 0 0;
+  
+    color: #6b7280;
+  
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  
+  /* =========================
+     FORM
+  ========================= */
+  
+  .form-card {
+    width: min(600px, 100%);
+    margin: 30px auto 0;
+    padding: 32px;
+  }
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-label {
+    display: block;
+  
+    margin-bottom: 7px;
+  
+    font-size: 14px;
+    font-weight: 650;
+  
+    color: #374151;
+  }
+  
+  .form-input {
+    width: 100%;
+  
+    padding: 13px 14px;
+  
+    border: 1px solid #d8dde6;
+  
+    border-radius: 8px;
+  
+    outline: none;
+  
+    background: white;
+  
+    transition: border 0.2s, box-shadow 0.2s;
+  }
+  
+  .form-input:focus {
+    border-color: #2563eb;
+  
+    box-shadow:
+      0 0 0 3px rgba(37, 99, 235, 0.10);
+  }
+  
+  /* =========================
+     FOOTER
+  ========================= */
+  
+  .app-footer {
+    text-align: center;
+  
+    padding: 25px;
+  
+    color: #8a93a3;
+  
+    font-size: 12px;
+  }
+  
+  /* =========================
+     RESPONSIVE
+  ========================= */
+  
+  @media (max-width: 700px) {
+    .app-header {
+      padding: 0 18px;
+    }
+  
+    .page-container {
+      width: min(100% - 24px, 1180px);
+      padding: 35px 0;
+    }
+  
+    .page-title {
+      font-size: 25px;
+    }
+  }
