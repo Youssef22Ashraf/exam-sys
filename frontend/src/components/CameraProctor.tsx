@@ -6,6 +6,7 @@ interface CameraProctorProps {
   candidateId?: string;
   onWarningChange?: (warningsCount: number) => void;
   onRegisterSnapshotGetter?: (getSnapshotFn: () => string | null) => void;
+  onRegisterStopRecording?: (stopFn: () => Promise<Blob | null>) => void;
 }
 
 export function CameraProctor({
@@ -13,16 +14,20 @@ export function CameraProctor({
   candidateId,
   onWarningChange,
   onRegisterSnapshotGetter,
+  onRegisterStopRecording,
 }: CameraProctorProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isSimulated, setIsSimulated] = useState(false);
   const [warningsCount, setWarningsCount] = useState(0);
   const [activeAlert, setActiveAlert] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
 
-  // Initialize camera
+  // Initialize camera & background recording
   const startCamera = useCallback(async () => {
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
@@ -41,6 +46,34 @@ export function CameraProctor({
         }
         setHasPermission(true);
         setIsSimulated(false);
+
+        // Start background media recording
+        try {
+          recordedChunksRef.current = [];
+          let mimeType = "video/webm;codecs=vp8";
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = "video/webm";
+          }
+          if (!MediaRecorder.isTypeSupported(mimeType)) {
+            mimeType = ""; // use browser default
+          }
+
+          const recorder = mimeType
+            ? new MediaRecorder(stream, { mimeType })
+            : new MediaRecorder(stream);
+
+          recorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+              recordedChunksRef.current.push(event.data);
+            }
+          };
+
+          recorder.start(1000); // 1-second chunks
+          mediaRecorderRef.current = recorder;
+          setIsRecording(true);
+        } catch (recorderErr) {
+          console.warn("MediaRecorder not supported or failed to start:", recorderErr);
+        }
       } else {
         setHasPermission(false);
       }
@@ -54,12 +87,57 @@ export function CameraProctor({
     startCamera();
 
     return () => {
+      // Clean up recorder
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {}
+      }
       // Clean up media tracks
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
   }, [startCamera]);
+
+  // Stop recording handler
+  const stopRecording = useCallback((): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      if (
+        !mediaRecorderRef.current ||
+        mediaRecorderRef.current.state === "inactive"
+      ) {
+        if (recordedChunksRef.current.length > 0) {
+          resolve(new Blob(recordedChunksRef.current, { type: "video/webm" }));
+        } else {
+          resolve(null);
+        }
+        return;
+      }
+
+      mediaRecorderRef.current.onstop = () => {
+        setIsRecording(false);
+        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        resolve(blob);
+      };
+
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {
+        resolve(null);
+      }
+    });
+  }, []);
+
+  // Register stop recording getter
+  useEffect(() => {
+    if (onRegisterStopRecording) {
+      onRegisterStopRecording(stopRecording);
+    }
+  }, [onRegisterStopRecording, stopRecording]);
 
   // Anti-cheat: tab switch & focus loss detection
   useEffect(() => {
@@ -200,6 +278,8 @@ export function CameraProctor({
             {hasPermission
               ? isSimulated
                 ? "Simulated"
+                : isRecording
+                ? "Recording"
                 : "Active"
               : "Camera Off"}
           </span>
@@ -217,7 +297,7 @@ export function CameraProctor({
               />
               <div className="face-target-guide" />
               <div className="proctor-overlay-meta">
-                <span>● REC</span>
+                <span>● {isRecording ? "REC (Video)" : "LIVE"}</span>
                 <span>{candidateId ? `ID: ${candidateId}` : "SECURE"}</span>
               </div>
             </>
@@ -278,7 +358,7 @@ export function CameraProctor({
         </div>
 
         <div className="proctor-footer">
-          <span>Integrity Guard: ON</span>
+          <span>{isRecording ? "🎥 Video Recorded" : "Integrity Guard: ON"}</span>
           <span
             className={`warning-counter ${
               warningsCount > 0 ? "has-warnings" : ""
@@ -295,4 +375,3 @@ export function CameraProctor({
 }
 
 export default CameraProctor;
-

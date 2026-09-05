@@ -1,11 +1,13 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   ExamStorage,
+  onStorageSync,
   type Candidate,
   type ExamResult,
   type Question,
   type ExamSettings,
 } from "../services/storage";
+import { VideoStorage } from "../services/videoStorage";
 import "./AdminDashboard.css";
 
 interface AdminDashboardProps {
@@ -46,6 +48,31 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(
     null
   );
+  const [loadedVideoUrl, setLoadedVideoUrl] = useState<string | null>(null);
+
+  // Load video recording from IndexedDB when an attempt is opened
+  useEffect(() => {
+    let currentObjectUrl: string | null = null;
+    if (selectedResult) {
+      VideoStorage.getVideo(selectedResult.id).then((blob) => {
+        if (blob && blob.size > 0) {
+          currentObjectUrl = URL.createObjectURL(blob);
+          setLoadedVideoUrl(currentObjectUrl);
+        } else {
+          setLoadedVideoUrl(null);
+        }
+      });
+    } else {
+      setLoadedVideoUrl(null);
+    }
+
+    return () => {
+      if (currentObjectUrl) {
+        URL.revokeObjectURL(currentObjectUrl);
+      }
+    };
+  }, [selectedResult]);
+
   const [questionModalMode, setQuestionModalMode] = useState<"add" | "edit">(
     "add"
   );
@@ -73,6 +100,22 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setQuestions(ExamStorage.getQuestions());
     setSettings(ExamStorage.getSettings());
   }
+
+  // Real-time live synchronization across tabs and windows
+  useEffect(() => {
+    const unsubscribe = onStorageSync(() => {
+      reloadData();
+    });
+
+    const interval = setInterval(() => {
+      reloadData();
+    }, 2000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, []);
 
   // Statistics calculation
   const totalCandidatesCount = candidates.length;
@@ -230,6 +273,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   function handleDeleteResult(id: string) {
     if (window.confirm("Are you sure you want to delete this exam result?")) {
       ExamStorage.deleteResult(id);
+      VideoStorage.deleteVideo(id);
       reloadData();
     }
   }
@@ -266,7 +310,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <p>Overview of candidates, examination results, and assessment controls.</p>
           </div>
 
-          <span className="admin-status">● System Online</span>
+          <span className="admin-status">● Live Sync Active</span>
         </div>
 
         {/* Navigation Tabs */}
@@ -1071,8 +1115,87 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 </div>
               </div>
 
-              {/* Candidate photo snapshot if recorded */}
-              {selectedResult.candidatePhoto && (
+              {/* Proctor Video Recording if available */}
+              {loadedVideoUrl ? (
+                <div
+                  style={{
+                    marginBottom: "22px",
+                    padding: "16px",
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "12px",
+                      flexWrap: "wrap",
+                      gap: "8px",
+                    }}
+                  >
+                    <div>
+                      <strong
+                        style={{
+                          fontSize: "14px",
+                          color: "#1e293b",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                        }}
+                      >
+                        🎥 Recorded Proctoring Video
+                      </strong>
+                      <span style={{ fontSize: "12px", color: "#64748b" }}>
+                        Complete camera feed captured during candidate examination
+                      </span>
+                    </div>
+
+                    <a
+                      href={loadedVideoUrl}
+                      download={`proctor_recording_${selectedResult.candidateName.replace(
+                        /\s+/g,
+                        "_"
+                      )}_${selectedResult.id}.webm`}
+                      className="btn-sm"
+                      style={{
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        color: "#2563eb",
+                        borderColor: "#93c5fd",
+                      }}
+                    >
+                      ⬇ Download Video (.webm)
+                    </a>
+                  </div>
+
+                  <div
+                    style={{
+                      background: "#0f172a",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      maxHeight: "320px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <video
+                      src={loadedVideoUrl}
+                      controls
+                      style={{
+                        width: "100%",
+                        maxHeight: "320px",
+                        objectFit: "contain",
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : selectedResult.candidatePhoto ? (
                 <div
                   style={{
                     marginBottom: "20px",
@@ -1108,7 +1231,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     </span>
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Questions list */}
               <h3 style={{ fontSize: "15px", marginBottom: "12px" }}>

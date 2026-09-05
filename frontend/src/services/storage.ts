@@ -39,6 +39,7 @@ export interface ExamResult {
   tabSwitches?: number;
   proctoringStatus?: "Verified" | "Warnings" | "Camera Disabled";
   candidatePhoto?: string;
+  hasVideoRecording?: boolean;
 }
 
 export interface ExamSettings {
@@ -617,6 +618,53 @@ const STORAGE_KEYS = {
   RESULTS: "exam_system_results",
 };
 
+const syncChannel =
+  typeof window !== "undefined" && "BroadcastChannel" in window
+    ? new BroadcastChannel("exam_system_sync_channel")
+    : null;
+
+export function notifyStorageChange(action: string): void {
+  if (syncChannel) {
+    try {
+      syncChannel.postMessage({ action, timestamp: Date.now() });
+    } catch {}
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("exam_storage_change", { detail: { action } })
+    );
+  }
+}
+
+export function onStorageSync(callback: () => void): () => void {
+  const handleMessage = () => callback();
+  if (syncChannel) {
+    syncChannel.addEventListener("message", handleMessage);
+  }
+
+  const handleCustomEvent = () => callback();
+  const handleStorageEvent = (e: StorageEvent) => {
+    if (e.key && e.key.startsWith("exam_system_")) {
+      callback();
+    }
+  };
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("exam_storage_change", handleCustomEvent);
+    window.addEventListener("storage", handleStorageEvent);
+  }
+
+  return () => {
+    if (syncChannel) {
+      syncChannel.removeEventListener("message", handleMessage);
+    }
+    if (typeof window !== "undefined") {
+      window.removeEventListener("exam_storage_change", handleCustomEvent);
+      window.removeEventListener("storage", handleStorageEvent);
+    }
+  };
+}
+
 export const ExamStorage = {
   // Settings
   getSettings(): ExamSettings {
@@ -630,6 +678,7 @@ export const ExamStorage = {
 
   saveSettings(settings: ExamSettings): void {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    notifyStorageChange("SETTINGS");
   },
 
   // Questions
@@ -651,6 +700,7 @@ export const ExamStorage = {
 
   saveQuestions(questions: Question[]): void {
     localStorage.setItem(STORAGE_KEYS.QUESTIONS, JSON.stringify(questions));
+    notifyStorageChange("QUESTIONS");
   },
 
   resetQuestions(): Question[] {
@@ -694,6 +744,7 @@ export const ExamStorage = {
 
   saveCandidates(candidates: Candidate[]): void {
     localStorage.setItem(STORAGE_KEYS.CANDIDATES, JSON.stringify(candidates));
+    notifyStorageChange("CANDIDATES");
   },
 
   registerOrUpdateCandidate(userData: { name: string; email: string; companyId: string }): Candidate {
@@ -750,6 +801,7 @@ export const ExamStorage = {
 
   saveResults(results: ExamResult[]): void {
     localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
+    notifyStorageChange("RESULTS");
   },
 
   recordExamResult(result: ExamResult): void {

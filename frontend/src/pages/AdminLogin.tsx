@@ -14,21 +14,11 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
     if (e) e.preventDefault();
     setErrorMsg("");
 
-    /*
-      PROTOTYPE LOGIN
-      Default credentials: admin / admin123
-    */
     if (username === "admin" && password === "admin123") {
       onLogin();
     } else {
-      setErrorMsg("Invalid credentials. Use admin / admin123 for prototype access.");
+      setErrorMsg("Invalid username or password. Please try again.");
     }
-  }
-
-  function handleAutofill() {
-    setUsername("admin");
-    setPassword("admin123");
-    setErrorMsg("");
   }
 
   return (
@@ -39,31 +29,6 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
       </div>
 
       <div className="card form-card">
-        {/* Quick Autofill Helper */}
-        <div
-          onClick={handleAutofill}
-          style={{
-            marginBottom: "20px",
-            padding: "12px 16px",
-            background: "#eff6ff",
-            border: "1px dashed #93c5fd",
-            borderRadius: "8px",
-            fontSize: "13px",
-            color: "#1d4ed8",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            transition: "background 0.2s",
-          }}
-          title="Click to fill prototype credentials"
-        >
-          <span>🔑 <strong>Prototype Login:</strong> admin / admin123</span>
-          <span style={{ fontSize: "12px", textDecoration: "underline", fontWeight: 650 }}>
-            Click to Autofill
-          </span>
-        </div>
-
         {errorMsg && (
           <div
             style={{

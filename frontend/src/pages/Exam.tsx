@@ -4,6 +4,7 @@ import {
   type ExamResult,
   type Question,
 } from "../services/storage";
+import { VideoStorage } from "../services/videoStorage";
 import { CameraProctor } from "../components/CameraProctor";
 import "./Exam.css";
 
@@ -41,6 +42,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
   const [tabSwitches, setTabSwitches] = useState(0);
 
   const getSnapshotRef = useRef<(() => string | null) | null>(null);
+  const stopRecordingRef = useRef<(() => Promise<Blob | null>) | null>(null);
 
   const question = questions[currentQuestion] || questions[0];
   const answeredCount = Object.keys(selectedAnswers).length;
@@ -115,18 +117,32 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       tabSwitches,
       proctoringStatus,
       candidatePhoto: photo || undefined,
+      hasVideoRecording: false,
     };
 
     return result;
   }
 
-  function submitExam() {
+  async function submitExam() {
     if (submitted) {
       return;
     }
 
     setSubmitted(true);
     const result = calculateResults();
+
+    // Finalize and store video recording
+    if (stopRecordingRef.current) {
+      try {
+        const videoBlob = await stopRecordingRef.current();
+        if (videoBlob && videoBlob.size > 0) {
+          await VideoStorage.saveVideo(result.id, videoBlob);
+          result.hasVideoRecording = true;
+        }
+      } catch (err) {
+        console.warn("Could not save video recording:", err);
+      }
+    }
 
     // Persist to storage
     ExamStorage.recordExamResult(result);
@@ -248,13 +264,16 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       <div className="exam-layout">
         {/* Question Navigator & Proctoring */}
         <aside className="question-sidebar">
-          {/* Live Camera Proctoring Card */}
+          {/* Live Camera Proctoring & Background Video Recording Card */}
           <CameraProctor
             candidateName={userData?.name}
             candidateId={userData?.companyId}
             onWarningChange={(count) => setTabSwitches(count)}
             onRegisterSnapshotGetter={(getter) => {
               getSnapshotRef.current = getter;
+            }}
+            onRegisterStopRecording={(stopper) => {
+              stopRecordingRef.current = stopper;
             }}
           />
 
