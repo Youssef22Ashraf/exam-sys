@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Production builds
+dist/
+build/
+*/dist/
+*/build/
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.local
+
+# Database
+*.db
+*.db-journal
+dev.db
+dev.db-journal
+
+# Uploads & Media (keep folder structures via .gitkeep)
+backend/uploads/videos/*
+!backend/uploads/videos/.gitkeep
+backend/uploads/snapshots/*
+!backend/uploads/snapshots/.gitkeep
+
+# System & Editor
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

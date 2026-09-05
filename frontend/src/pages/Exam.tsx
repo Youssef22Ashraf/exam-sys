@@ -6,6 +6,7 @@ import {
 } from "../services/storage";
 import { VideoStorage } from "../services/videoStorage";
 import { CameraProctor } from "../components/CameraProctor";
+import { api } from "../services/api";
 import "./Exam.css";
 
 interface ExamProps {
@@ -40,6 +41,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
   const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
   const [submitted, setSubmitted] = useState(false);
   const [tabSwitches, setTabSwitches] = useState(0);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
 
   const getSnapshotRef = useRef<(() => string | null) | null>(null);
   const stopRecordingRef = useRef<(() => Promise<Blob | null>) | null>(null);
@@ -138,14 +140,32 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         if (videoBlob && videoBlob.size > 0) {
           await VideoStorage.saveVideo(result.id, videoBlob);
           result.hasVideoRecording = true;
+          // Upload to backend if online
+          api.uploadVideo(videoBlob, result.id).catch(() => {});
         }
       } catch (err) {
         console.warn("Could not save video recording:", err);
       }
     }
 
-    // Persist to storage
+    // Persist to local storage
     ExamStorage.recordExamResult(result);
+
+    // Sync submission with backend (triggers email notification to admin)
+    api.submitExam({
+      candidateId: result.candidateId,
+      candidateName: result.candidateName,
+      candidateEmail: result.candidateEmail,
+      companyId: result.companyId,
+      answers: result.answers,
+      timeSpentSeconds: result.timeSpentSeconds,
+      tabSwitches: result.tabSwitches,
+      proctoringStatus: result.proctoringStatus,
+      candidatePhoto: result.candidatePhoto,
+      hasVideoRecording: result.hasVideoRecording,
+    }).catch((err) => {
+      console.warn("Backend offline, result saved locally:", err);
+    });
 
     if (onFinishExam) {
       onFinishExam(result);
@@ -159,29 +179,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
   }
 
   function confirmSubmit() {
-    const unanswered = questions.length - answeredCount;
-
-    if (unanswered > 0) {
-      const confirmSubmission = window.confirm(
-        `You have ${unanswered} unanswered question${
-          unanswered === 1 ? "" : "s"
-        }.\n\nAre you sure you want to submit the exam?`
-      );
-
-      if (confirmSubmission) {
-        submitExam();
-      }
-
-      return;
-    }
-
-    const confirmSubmission = window.confirm(
-      "You have answered all questions.\n\nAre you sure you want to submit the exam?"
-    );
-
-    if (confirmSubmission) {
-      submitExam();
-    }
+    setShowSubmitModal(true);
   }
 
   useEffect(() => {
@@ -404,6 +402,110 @@ function Exam({ userData, onFinishExam }: ExamProps) {
           </div>
         </main>
       </div>
+
+      {/* =========================================
+          THEMED SUBMISSION CONFIRMATION MODAL
+      ========================================= */}
+      {showSubmitModal && (
+        <div
+          className="exam-modal-backdrop"
+          onClick={() => setShowSubmitModal(false)}
+        >
+          <div
+            className="exam-submit-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="exam-submit-modal-header">
+              <div
+                className={`exam-submit-modal-icon-badge ${
+                  questions.length - answeredCount > 0 ? "warning" : "success"
+                }`}
+              >
+                {questions.length - answeredCount > 0 ? "⚠️" : "✓"}
+              </div>
+              <div>
+                <h3>
+                  {questions.length - answeredCount > 0
+                    ? "Incomplete Assessment"
+                    : "Ready to Submit Exam"}
+                </h3>
+                <p className="exam-submit-modal-subtitle">
+                  {questions.length - answeredCount > 0
+                    ? "You still have unanswered questions in your assessment."
+                    : "You have answered all questions. Ready to finalize?"}
+                </p>
+              </div>
+            </div>
+
+            <div className="exam-submit-modal-stats">
+              <div className="submit-stat-card answered">
+                <span className="stat-label">Answered</span>
+                <span className="stat-value">{answeredCount}</span>
+                <span className="stat-sub">of {questions.length} questions</span>
+              </div>
+              <div
+                className={`submit-stat-card ${
+                  questions.length - answeredCount > 0
+                    ? "unanswered warning"
+                    : "completed"
+                }`}
+              >
+                <span className="stat-label">Unanswered</span>
+                <span className="stat-value">
+                  {questions.length - answeredCount}
+                </span>
+                <span className="stat-sub">
+                  {questions.length - answeredCount > 0
+                    ? "Will be marked 0 pts"
+                    : "All questions complete"}
+                </span>
+              </div>
+            </div>
+
+            {questions.length - answeredCount > 0 ? (
+              <div className="submit-notice-box warning">
+                <span className="notice-icon">⚠️</span>
+                <span>
+                  You have <strong>{questions.length - answeredCount}</strong>{" "}
+                  unanswered question
+                  {questions.length - answeredCount === 1 ? "" : "s"}. Any
+                  unanswered questions will be scored as 0. Once submitted, your
+                  answers cannot be changed.
+                </span>
+              </div>
+            ) : (
+              <div className="submit-notice-box success">
+                <span className="notice-icon">✓</span>
+                <span>
+                  All <strong>{questions.length}</strong> questions answered!
+                  Your exam will be graded immediately and your official results
+                  sheet will be generated.
+                </span>
+              </div>
+            )}
+
+            <div className="exam-submit-modal-actions">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setShowSubmitModal(false)}
+              >
+                ← Keep Answering
+              </button>
+              <button
+                type="button"
+                className="btn-modal-submit"
+                onClick={() => {
+                  setShowSubmitModal(false);
+                  submitExam();
+                }}
+              >
+                Submit Exam Now ✓
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

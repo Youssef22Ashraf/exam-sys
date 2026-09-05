@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+dev.db
+dev.db-journal
+uploads/videos/*
+!uploads/videos/.gitkeep
+uploads/snapshots/*
+!uploads/snapshots/.gitkeep
+

@@ -48,6 +48,7 @@ export interface ExamSettings {
   passingPercentage: number;
   sectorBadge: string;
   allowReviewAnswers: boolean;
+  notifyEmail?: string;
 }
 
 const DEFAULT_SETTINGS: ExamSettings = {
@@ -56,6 +57,7 @@ const DEFAULT_SETTINGS: ExamSettings = {
   passingPercentage: 70,
   sectorBadge: "Engineering & Construction Sector",
   allowReviewAnswers: true,
+  notifyEmail: "admin@harbico.com",
 };
 
 export const INITIAL_QUESTIONS: Question[] = [
@@ -890,4 +892,6 @@ export const ExamStorage = {
     URL.revokeObjectURL(url);
   },
 };
+
+export const storage = ExamStorage;
 

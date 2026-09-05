@@ -985,6 +985,32 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 />
               </div>
 
+              <div className="form-group">
+                <label className="form-label">Admin Alert Email</label>
+                <input
+                  className="form-input"
+                  type="email"
+                  placeholder="admin@harbico.com"
+                  value={tempSettings.notifyEmail || ""}
+                  onChange={(e) =>
+                    setTempSettings({
+                      ...tempSettings,
+                      notifyEmail: e.target.value,
+                    })
+                  }
+                />
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "#64748b",
+                    marginTop: "4px",
+                    display: "block",
+                  }}
+                >
+                  Receives email alerts immediately upon exam completion.
+                </span>
+              </div>
+
               <button
                 className="primary-button"
                 style={{ width: "100%", marginTop: "10px" }}

@@ -1,0 +1,88 @@
+// Prisma Schema for Workplace Assessment System
+// Supports SQLite for local zero-config development, and PostgreSQL in production
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Candidate {
+  id             String        @id @default(uuid())
+  name           String
+  email          String        @unique
+  companyId      String
+  registeredAt   DateTime      @default(now())
+  status         String        @default("Registered") // Registered | In Progress | Completed
+  totalAttempts  Int           @default(0)
+  highestScore   Int?
+  latestScore    Int?
+  attempts       ExamAttempt[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Question {
+  id            Int      @id
+  section       String   // "A" or "B"
+  sectionTitle  String
+  question      String
+  options       String   // JSON stringified array of string options
+  correctAnswer Int      // 0-indexed index of correct option
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model ExamAttempt {
+  id                String    @id @default(uuid())
+  candidateId       String
+  candidate         Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidateName     String
+  candidateEmail    String
+  companyId         String
+  submittedAt       DateTime  @default(now())
+  score             Int
+  totalQuestions    Int
+  percentage        Float
+  isPassed          Boolean
+  timeSpentSeconds  Int
+  partAScore        Int
+  partATotal        Int
+  partBScore        Int
+  partBTotal        Int
+  answers           String    // JSON stringified object of questionId -> selectedOptionIndex
+  tabSwitches       Int       @default(0)
+  proctoringStatus  String    @default("Verified") // "Verified" | "Warnings" | "Camera Disabled"
+  candidatePhoto    String?   // Filename or base64 snapshot
+  hasVideoRecording Boolean   @default(false)
+  videoFilename     String?   // Recorded .webm filename in uploads/videos/
+
+  createdAt         DateTime  @default(now())
+}
+
+model ExamSetting {
+  id                 String   @id @default("default-settings")
+  examTitle          String   @default("Workplace Assessment System")
+  durationMinutes    Int      @default(30)
+  passingPercentage  Int      @default(70)
+  sectorBadge        String   @default("Engineering & Construction Sector")
+  allowReviewAnswers Boolean  @default(true)
+  notifyEmail        String?
+
+  updatedAt          DateTime @updatedAt
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
