@@ -7,6 +7,7 @@ import {
 import { VideoStorage } from "../services/videoStorage";
 import { CameraProctor } from "../components/CameraProctor";
 import { api } from "../services/api";
+import { socketService } from "../services/socket";
 import "./Exam.css";
 
 interface ExamProps {
@@ -33,15 +34,64 @@ function Exam({ userData, onFinishExam }: ExamProps) {
   );
 
   const EXAM_DURATION = (settings.durationMinutes || 30) * 60;
+  const SESSION_STORAGE_KEY = `exam_session_${userData?.email || "candidate"}`;
 
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<
-    Record<number, number>
-  >({});
-  const [timeLeft, setTimeLeft] = useState(EXAM_DURATION);
+  // Session persistence lazy initializers
+  const [currentQuestion, setCurrentQuestion] = useState<number>(() => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.currentQuestion === "number") return parsed.currentQuestion;
+      }
+    } catch {}
+    return 0;
+  });
+
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>(() => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.selectedAnswers) return parsed.selectedAnswers;
+      }
+    } catch {}
+    return {};
+  });
+
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.timeLeft === "number" && parsed.timeLeft > 0) return parsed.timeLeft;
+      }
+    } catch {}
+    return EXAM_DURATION;
+  });
+
+  const [tabSwitches, setTabSwitches] = useState<number>(() => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.tabSwitches === "number") return parsed.tabSwitches;
+      }
+    } catch {}
+    return 0;
+  });
+
   const [submitted, setSubmitted] = useState(false);
-  const [tabSwitches, setTabSwitches] = useState(0);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [securityToast, setSecurityToast] = useState<string | null>(null);
+  const [sessionResumed, setSessionResumed] = useState<boolean>(() => {
+    try {
+      const saved = sessionStorage.getItem(SESSION_STORAGE_KEY);
+      return Boolean(saved);
+    } catch {
+      return false;
+    }
+  });
 
   const getSnapshotRef = useRef<(() => string | null) | null>(null);
   const stopRecordingRef = useRef<(() => Promise<Blob | null>) | null>(null);
@@ -167,6 +217,17 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       console.warn("Backend offline, result saved locally:", err);
     });
 
+    // Broadcast real-time exam submission to remote admin dashboards via WebSocket
+    socketService.emitExamSubmitted({
+      candidateName: result.candidateName,
+      candidateEmail: result.candidateEmail,
+      companyId: result.companyId,
+      score: result.score,
+      totalQuestions: result.totalQuestions,
+      percentage: result.percentage,
+      isPassed: result.isPassed,
+    });
+
     if (onFinishExam) {
       onFinishExam(result);
     } else {
@@ -177,6 +238,17 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       );
     }
   }
+
+  // Announce candidate start via WebSocket on mount
+  useEffect(() => {
+    if (userData) {
+      socketService.emitCandidateStarted({
+        candidateName: userData.name,
+        candidateEmail: userData.email,
+        companyId: userData.companyId,
+      });
+    }
+  }, []);
 
   function confirmSubmit() {
     setShowSubmitModal(true);
@@ -198,6 +270,94 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
     return () => clearInterval(timer);
   }, [timeLeft, submitted]);
+
+  // Continuously persist active session to sessionStorage
+  useEffect(() => {
+    if (submitted) {
+      try {
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      } catch {}
+      return;
+    }
+
+    try {
+      sessionStorage.setItem(
+        SESSION_STORAGE_KEY,
+        JSON.stringify({
+          currentQuestion,
+          selectedAnswers,
+          timeLeft,
+          tabSwitches,
+          lastSavedAt: new Date().toISOString(),
+        })
+      );
+    } catch {}
+  }, [
+    currentQuestion,
+    selectedAnswers,
+    timeLeft,
+    tabSwitches,
+    submitted,
+    SESSION_STORAGE_KEY,
+  ]);
+
+  // Warn examinee before closing or refreshing active exam tab
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!submitted) {
+        e.preventDefault();
+        e.returnValue = "You have an ongoing exam. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [submitted]);
+
+  // Anti-Cheat: Block right-click context menu, Copy shortcuts, and DevTools
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      setSecurityToast("⚠️ Right-click context menu is restricted during this assessment.");
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey && (e.key === "c" || e.key === "C" || e.key === "u" || e.key === "U")) ||
+        (e.ctrlKey && e.shiftKey && (e.key === "i" || e.key === "I" || e.key === "j" || e.key === "J")) ||
+        e.key === "F12"
+      ) {
+        e.preventDefault();
+        setSecurityToast("⚠️ Copying, source viewing, and developer tools are prohibited.");
+      }
+    };
+
+    const handleCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      setSecurityToast("⚠️ Copying question text is prohibited.");
+    };
+
+    window.addEventListener("contextmenu", handleContextMenu);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("copy", handleCopy);
+
+    return () => {
+      window.removeEventListener("contextmenu", handleContextMenu);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("copy", handleCopy);
+    };
+  }, []);
+
+  // Auto-dismiss security toast
+  useEffect(() => {
+    if (securityToast) {
+      const timer = setTimeout(() => setSecurityToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [securityToast]);
 
   function formatTime(seconds: number) {
     const minutes = Math.floor(seconds / 60);
@@ -225,6 +385,29 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
   return (
     <div className="exam-page">
+      {/* Session Resumed Banner */}
+      {sessionResumed && (
+        <div className="exam-session-resumed-banner">
+          <span>
+            ✓ Active exam session restored. Your answers and remaining time are preserved.
+          </span>
+          <button
+            type="button"
+            className="dismiss-banner-btn"
+            onClick={() => setSessionResumed(false)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Security Anti-Cheat Toast */}
+      {securityToast && (
+        <div className="exam-security-toast">
+          <span>{securityToast}</span>
+        </div>
+      )}
+
       {/* Header */}
       <header className="exam-header">
         <div>

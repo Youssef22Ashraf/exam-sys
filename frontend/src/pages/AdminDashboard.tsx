@@ -8,6 +8,7 @@ import {
   type ExamSettings,
 } from "../services/storage";
 import { VideoStorage } from "../services/videoStorage";
+import { socketService } from "../services/socket";
 import "./AdminDashboard.css";
 
 interface AdminDashboardProps {
@@ -93,6 +94,10 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   // Settings form state
   const [tempSettings, setTempSettings] = useState<ExamSettings>(settings);
   const [settingsSavedMsg, setSettingsSavedMsg] = useState(false);
+  const [liveSocketToast, setLiveSocketToast] = useState<{
+    message: string;
+    type: "info" | "warning" | "success";
+  } | null>(null);
 
   function reloadData() {
     setCandidates(ExamStorage.getCandidates());
@@ -102,9 +107,36 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   }
 
   // Real-time live synchronization across tabs and windows
+  // Real-time live synchronization across tabs, windows, and remote computers via WebSocket
   useEffect(() => {
+    // 1. Local BroadcastChannel & Storage events
     const unsubscribe = onStorageSync(() => {
       reloadData();
+    });
+
+    // 2. Remote WebSocket live proctoring events
+    const unSubSubmit = socketService.onAdminExamSubmitted((data) => {
+      reloadData();
+      setLiveSocketToast({
+        message: `🎉 Candidate ${data.candidateName} (${data.companyId}) submitted exam: ${data.score}/${data.totalQuestions} (${data.percentage.toFixed(1)}%) - ${data.isPassed ? "PASSED" : "FAILED"}`,
+        type: "success",
+      });
+    });
+
+    const unSubWarn = socketService.onAdminCandidateWarning((data) => {
+      reloadData();
+      setLiveSocketToast({
+        message: `⚠️ Proctor Alert: ${data.candidateName} (${data.companyId}) - ${data.warningType} (Total Warnings: ${data.totalWarnings})`,
+        type: "warning",
+      });
+    });
+
+    const unSubStart = socketService.onAdminCandidateStarted((data) => {
+      reloadData();
+      setLiveSocketToast({
+        message: `📝 Candidate ${data.candidateName} (${data.companyId}) just started the assessment.`,
+        type: "info",
+      });
     });
 
     const interval = setInterval(() => {
@@ -113,9 +145,20 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
     return () => {
       unsubscribe();
+      unSubSubmit();
+      unSubWarn();
+      unSubStart();
       clearInterval(interval);
     };
   }, []);
+
+  // Auto-dismiss live socket toast
+  useEffect(() => {
+    if (liveSocketToast) {
+      const timer = setTimeout(() => setLiveSocketToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [liveSocketToast]);
 
   // Statistics calculation
   const totalCandidatesCount = candidates.length;
@@ -301,6 +344,17 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           Logout
         </button>
       </header>
+
+      {/* Live Remote Proctoring Alert Toast via WebSockets */}
+      {liveSocketToast && (
+        <div
+          className={`admin-live-toast ${liveSocketToast.type}`}
+          onClick={() => setLiveSocketToast(null)}
+        >
+          <span>{liveSocketToast.message}</span>
+          <button className="dismiss-toast-btn" type="button">✕</button>
+        </div>
+      )}
 
       <main className="admin-container">
         {/* Title Bar */}

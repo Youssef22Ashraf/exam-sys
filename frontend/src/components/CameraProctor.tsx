@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { socketService } from "../services/socket";
 import "./CameraProctor.css";
 
 interface CameraProctorProps {
@@ -147,6 +148,13 @@ export function CameraProctor({
         if (onWarningChange) {
           onWarningChange(newCount);
         }
+        socketService.emitCandidateWarning({
+          candidateName: candidateName || "Candidate",
+          candidateEmail: candidateId || "N/A",
+          companyId: candidateId || "N/A",
+          warningType: reason,
+          totalWarnings: newCount,
+        });
         return newCount;
       });
 

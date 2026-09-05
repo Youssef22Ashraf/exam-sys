@@ -1,4 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
+import http from "http";
+import { Server as SocketIOServer } from "socket.io";
 import cors from "cors";
 import path from "path";
 import dotenv from "dotenv";
@@ -14,8 +16,56 @@ import proctorRoutes from "./routes/proctorRoutes";
 import settingRoutes from "./routes/settingRoutes";
 
 const app = express();
+const httpServer = http.createServer(app);
+
 const PORT = process.env.PORT || 5000;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
+
+// Configure Socket.IO
+export const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: [CORS_ORIGIN, "http://localhost:5173", "http://127.0.0.1:5173"],
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  console.log("🔌 [Socket.io] Client connected:", socket.id);
+
+  // When candidate switches tab or triggers warning
+  socket.on("candidate:warning", (payload) => {
+    console.log("⚠️ [Proctor Warning]:", payload);
+    io.emit("admin:candidate_warning", {
+      ...payload,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // When candidate starts exam
+  socket.on("candidate:started", (payload) => {
+    console.log("📝 [Candidate Started]:", payload);
+    io.emit("admin:candidate_started", {
+      ...payload,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // When candidate finishes exam
+  socket.on("candidate:submitted", (payload) => {
+    console.log("🎉 [Exam Submitted]:", payload);
+    io.emit("admin:exam_submitted", {
+      ...payload,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  socket.on("disconnect", () => {
+    // client disconnected
+  });
+});
 
 // Middleware
 app.use(
@@ -49,6 +99,7 @@ app.get("/api/health", (_req: Request, res: Response) => {
     service: "Workplace Assessment System API",
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
+    websockets: "active",
   });
 });
 
@@ -61,11 +112,11 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // Start Server
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 Exam System Backend Server listening on port ${PORT}`);
   console.log(`📡 API Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`🔌 WebSocket Server: ws://localhost:${PORT}`);
   console.log(`🔒 Static Uploads: http://localhost:${PORT}/uploads`);
 });
 
 export default app;
-
