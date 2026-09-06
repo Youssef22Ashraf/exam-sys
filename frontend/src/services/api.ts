@@ -113,8 +113,14 @@ export const api = {
           notifyStorageChange("candidates");
           return data.candidate;
         }
+      } else if (res.status === 403) {
+        const errData = await res.json();
+        const err: any = new Error(errData.message || "48-hour re-attempt cooldown is active.");
+        err.cooldown = errData;
+        throw err;
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.cooldown) throw err;
       console.warn("Backend unavailable, registering candidate locally.");
     }
     const local = storage.saveCandidate({
@@ -126,6 +132,50 @@ export const api = {
     });
     notifyStorageChange("candidates");
     return local;
+  },
+
+  async checkCandidateCooldown(
+    email: string,
+    companyId: string
+  ): Promise<{
+    eligible: boolean;
+    error?: string;
+    message?: string;
+    lastAttemptAt?: string;
+    nextAttemptAvailableAt?: string;
+    remainingHours?: number;
+    attemptNumber?: number;
+  }> {
+    try {
+      const query = new URLSearchParams();
+      if (email) query.append("email", email);
+      if (companyId) query.append("companyId", companyId);
+
+      const res = await fetch(`${API_BASE}/candidates/check-cooldown?${query.toString()}`);
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Offline fallback
+    }
+    return storage.checkCandidateCooldown(email, companyId);
+  },
+
+  async clearCandidateCooldown(
+    candidateId: string
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/candidates/${candidateId}/clear-cooldown`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn("Could not clear candidate cooldown on backend:", err);
+    }
+    return { success: true, message: "Candidate cooldown cleared." };
   },
 
   async deleteCandidate(id: string): Promise<void> {

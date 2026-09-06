@@ -12,6 +12,7 @@ export interface ExamCompletionEmailData {
   timeSpentSeconds: number;
   proctoringStatus: string;
   tabSwitches: number;
+  attemptNumber?: number;
 }
 
 export function parseRecipients(raw: string | undefined): string {
@@ -67,7 +68,9 @@ export async function sendExamCompletionAlert(data: ExamCompletionEmailData) {
 
   const statusEmoji = data.isPassed ? "PASSED" : "FAILED";
   const statusColor = data.isPassed ? "#16a34a" : "#dc2626";
-  const subject = `[Assessment Alert] ${data.candidateName} - ${statusEmoji} (${data.percentage.toFixed(1)}%)`;
+  const isReattempt = Boolean(data.attemptNumber && data.attemptNumber > 1);
+  const reattemptPrefix = isReattempt ? `[RE-ATTEMPT #${data.attemptNumber}] ` : "";
+  const subject = `${reattemptPrefix}[Assessment Alert] ${data.candidateName} - ${statusEmoji} (${data.percentage.toFixed(1)}%)`;
 
   const minutes = Math.floor(data.timeSpentSeconds / 60);
   const seconds = data.timeSpentSeconds % 60;
@@ -75,11 +78,12 @@ export async function sendExamCompletionAlert(data: ExamCompletionEmailData) {
 
   const textBody = `
 =========================================
-EXAM SUBMISSION NOTIFICATION
+EXAM SUBMISSION NOTIFICATION ${isReattempt ? `(RE-ATTEMPT #${data.attemptNumber})` : ""}
 =========================================
 Candidate:       ${data.candidateName}
 Email:           ${data.candidateEmail}
 Company ID:      ${data.companyId}
+Attempt:         Attempt #${data.attemptNumber || 1} ${isReattempt ? "[RE-ATTEMPT]" : ""}
 Result:          ${data.isPassed ? "PASSED" : "FAILED"}
 Score:           ${data.score} / ${data.totalQuestions} (${data.percentage.toFixed(1)}%)
 Time Spent:      ${formattedTime}
@@ -115,11 +119,20 @@ Submitted:       ${new Date().toISOString()}
         <div class="badge">${data.isPassed ? "PASSED" : "FAILED"} - ${data.percentage.toFixed(1)}%</div>
       </div>
       <div class="content">
+        ${
+          isReattempt
+            ? `<div style="background-color: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px;">
+                <strong style="display: block; font-size: 14px; margin-bottom: 4px;">⚠️ RE-ATTEMPT NOTICE (Attempt #${data.attemptNumber})</strong>
+                Notice for Admin: This examinee has submitted previous assessment attempts. Historical records can be compared in the Admin Portal.
+              </div>`
+            : ""
+        }
         <p style="margin-top: 0;">An examinee has just submitted their assessment:</p>
         <table class="table">
           <tr><td>Candidate Name</td><td><strong>${data.candidateName}</strong></td></tr>
           <tr><td>Email Address</td><td>${data.candidateEmail}</td></tr>
           <tr><td>Company ID</td><td>${data.companyId}</td></tr>
+          <tr><td>Attempt Number</td><td><strong>Attempt #${data.attemptNumber || 1}${isReattempt ? " (Re-attempt)" : ""}</strong></td></tr>
           <tr><td>Final Score</td><td><strong>${data.score} / ${data.totalQuestions} (${data.percentage.toFixed(1)}%)</strong></td></tr>
           <tr><td>Time Spent</td><td>${formattedTime}</td></tr>
           <tr><td>Proctoring Status</td><td>${data.proctoringStatus} (${data.tabSwitches} warning${data.tabSwitches === 1 ? "" : "s"})</td></tr>

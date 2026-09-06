@@ -17,6 +17,7 @@ export interface Candidate {
   totalAttempts: number;
   highestScore?: number;
   latestScore?: number;
+  lastAttemptAt?: string;
 }
 
 export interface ExamResult {
@@ -42,6 +43,7 @@ export interface ExamResult {
   hasVideoRecording?: boolean;
   videoFilename?: string;
   passingPercentage?: number;
+  attemptNumber?: number;
 }
 
 export interface ExamSettings {
@@ -829,6 +831,17 @@ export const ExamStorage = {
 
   recordExamResult(result: ExamResult): void {
     const results = this.getResults();
+
+    // Determine attempt number if not already assigned
+    if (!result.attemptNumber) {
+      const priorCount = results.filter(
+        (r) =>
+          r.candidateEmail.toLowerCase() === result.candidateEmail.toLowerCase() ||
+          r.companyId.toLowerCase() === result.companyId.toLowerCase()
+      ).length;
+      result.attemptNumber = priorCount + 1;
+    }
+
     results.unshift(result);
     this.saveResults(results);
 
@@ -848,6 +861,49 @@ export const ExamStorage = {
       cand.highestScore = Math.max(cand.highestScore || 0, result.score);
       this.saveCandidates(candidates);
     }
+  },
+
+  checkCandidateCooldown(email: string, companyId: string): {
+    eligible: boolean;
+    lastAttemptAt?: string;
+    nextAttemptAvailableAt?: string;
+    remainingHours?: number;
+    attemptNumber?: number;
+  } {
+    const cleanEmail = (email || "").trim().toLowerCase();
+    const cleanCompId = (companyId || "").trim().toLowerCase();
+    const results = this.getResults();
+
+    const matchingAttempts = results
+      .filter(
+        (r) =>
+          (cleanEmail && r.candidateEmail.toLowerCase() === cleanEmail) ||
+          (cleanCompId && r.companyId.toLowerCase() === cleanCompId)
+      )
+      .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+
+    if (matchingAttempts.length > 0) {
+      const latest = matchingAttempts[0];
+      const lastTime = new Date(latest.submittedAt).getTime();
+      const now = Date.now();
+      const cooldownMs = 48 * 60 * 60 * 1000;
+      const elapsed = now - lastTime;
+
+      if (elapsed < cooldownMs) {
+        const remainingMs = cooldownMs - elapsed;
+        const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
+        const availableAt = new Date(lastTime + cooldownMs);
+        return {
+          eligible: false,
+          lastAttemptAt: latest.submittedAt,
+          nextAttemptAvailableAt: availableAt.toISOString(),
+          remainingHours,
+          attemptNumber: matchingAttempts.length + 1,
+        };
+      }
+    }
+
+    return { eligible: true };
   },
 
   deleteResult(id: string): void {

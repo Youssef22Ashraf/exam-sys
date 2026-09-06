@@ -69,9 +69,12 @@ router.post("/submit", async (req: Request, res: Response) => {
 
     // 3. Upsert candidate if not already present
     const trimmedEmail = candidateEmail.trim().toLowerCase();
+    const submissionTime = new Date();
     let candidate = await prisma.candidate.findUnique({
       where: { email: trimmedEmail },
     });
+
+    let attemptNumber = 1;
 
     if (!candidate) {
       candidate = await prisma.candidate.create({
@@ -83,19 +86,24 @@ router.post("/submit", async (req: Request, res: Response) => {
           totalAttempts: 1,
           highestScore: score,
           latestScore: score,
+          lastAttemptAt: submissionTime,
         },
       });
+      attemptNumber = 1;
     } else {
       const highest = Math.max(candidate.highestScore ?? 0, score);
+      const newAttemptsCount = (candidate.totalAttempts || 0) + 1;
       candidate = await prisma.candidate.update({
         where: { id: candidate.id },
         data: {
           status: "Completed",
-          totalAttempts: { increment: 1 },
+          totalAttempts: newAttemptsCount,
           latestScore: score,
           highestScore: highest,
+          lastAttemptAt: submissionTime,
         },
       });
+      attemptNumber = newAttemptsCount;
     }
 
     // 4. Save Attempt Record
@@ -105,7 +113,7 @@ router.post("/submit", async (req: Request, res: Response) => {
         candidateName: candidate.name,
         candidateEmail: candidate.email,
         companyId: candidate.companyId,
-        submittedAt: new Date(),
+        submittedAt: submissionTime,
         score,
         totalQuestions,
         percentage,
@@ -121,6 +129,7 @@ router.post("/submit", async (req: Request, res: Response) => {
         candidatePhoto: candidatePhoto || null,
         hasVideoRecording: Boolean(hasVideoRecording),
         videoFilename: videoFilename || null,
+        attemptNumber,
       },
     });
 
@@ -136,6 +145,7 @@ router.post("/submit", async (req: Request, res: Response) => {
       timeSpentSeconds: Number(timeSpentSeconds),
       proctoringStatus,
       tabSwitches: Number(tabSwitches),
+      attemptNumber,
     }).catch((err) => console.error("Email notification failed:", err));
 
     return res.status(201).json({
@@ -162,6 +172,7 @@ router.post("/submit", async (req: Request, res: Response) => {
         candidatePhoto: attempt.candidatePhoto,
         hasVideoRecording: attempt.hasVideoRecording,
         videoFilename: attempt.videoFilename,
+        attemptNumber: attempt.attemptNumber || attemptNumber,
       },
     });
   } catch (error) {
@@ -217,6 +228,7 @@ router.get("/results", async (req: Request, res: Response) => {
       candidatePhoto: a.candidatePhoto,
       hasVideoRecording: a.hasVideoRecording,
       videoFilename: a.videoFilename,
+      attemptNumber: a.attemptNumber || 1,
     }));
 
     return res.json(formatted);
@@ -260,6 +272,7 @@ router.get("/results/:id", async (req: Request, res: Response) => {
       candidatePhoto: a.candidatePhoto,
       hasVideoRecording: a.hasVideoRecording,
       videoFilename: a.videoFilename,
+      attemptNumber: a.attemptNumber || 1,
     });
   } catch (error) {
     console.error("Fetch attempt error:", error);

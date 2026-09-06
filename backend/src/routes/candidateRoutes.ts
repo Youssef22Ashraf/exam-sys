@@ -4,6 +4,54 @@ import { authenticateAdmin } from "../middleware/auth";
 
 const router = Router();
 
+// GET /api/candidates/check-cooldown - Check if candidate is within 48-hour cooldown
+router.get("/check-cooldown", async (req: Request, res: Response) => {
+  try {
+    const email = req.query.email ? String(req.query.email).trim().toLowerCase() : "";
+    const companyId = req.query.companyId ? String(req.query.companyId).trim() : "";
+
+    if (!email && !companyId) {
+      return res.status(400).json({ error: "Email or Company ID is required." });
+    }
+
+    const whereConditions: any[] = [];
+    if (email) whereConditions.push({ candidateEmail: email });
+    if (companyId) whereConditions.push({ companyId: companyId });
+
+    const lastAttempt = await prisma.examAttempt.findFirst({
+      where: { OR: whereConditions },
+      orderBy: { submittedAt: "desc" },
+    });
+
+    if (lastAttempt) {
+      const now = new Date();
+      const elapsedMs = now.getTime() - new Date(lastAttempt.submittedAt).getTime();
+      const cooldownMs = 48 * 60 * 60 * 1000; // 48 hours
+
+      if (elapsedMs < cooldownMs) {
+        const remainingMs = cooldownMs - elapsedMs;
+        const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
+        const availableAt = new Date(new Date(lastAttempt.submittedAt).getTime() + cooldownMs);
+
+        return res.json({
+          eligible: false,
+          error: "COOLDOWN_ACTIVE",
+          message: `You completed an assessment on ${new Date(lastAttempt.submittedAt).toLocaleString()}. You are eligible to re-attempt after 48 hours.`,
+          lastAttemptAt: lastAttempt.submittedAt.toISOString(),
+          nextAttemptAvailableAt: availableAt.toISOString(),
+          remainingHours,
+          attemptNumber: (lastAttempt.attemptNumber || 1) + 1,
+        });
+      }
+    }
+
+    return res.json({ eligible: true });
+  } catch (error) {
+    console.error("Check cooldown error:", error);
+    return res.status(500).json({ error: "Failed to check candidate eligibility." });
+  }
+});
+
 // POST /api/candidates/register - Public (examinee registration)
 router.post("/register", async (req: Request, res: Response) => {
   try {
@@ -19,7 +67,39 @@ router.post("/register", async (req: Request, res: Response) => {
     const trimmedName = name.trim();
     const trimmedCompanyId = companyId.trim();
 
-    // Upsert candidate so existing candidates can take another exam
+    // 1. Enforce 48-Hour Re-attempt Lockout
+    const lastAttempt = await prisma.examAttempt.findFirst({
+      where: {
+        OR: [
+          { candidateEmail: trimmedEmail },
+          { companyId: trimmedCompanyId },
+        ],
+      },
+      orderBy: { submittedAt: "desc" },
+    });
+
+    if (lastAttempt) {
+      const now = new Date();
+      const elapsedMs = now.getTime() - new Date(lastAttempt.submittedAt).getTime();
+      const cooldownMs = 48 * 60 * 60 * 1000;
+
+      if (elapsedMs < cooldownMs) {
+        const remainingMs = cooldownMs - elapsedMs;
+        const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
+        const availableAt = new Date(new Date(lastAttempt.submittedAt).getTime() + cooldownMs);
+
+        return res.status(403).json({
+          error: "COOLDOWN_ACTIVE",
+          message: `You completed an assessment on ${new Date(lastAttempt.submittedAt).toLocaleString()}. Re-attempts are permitted 48 hours after your previous submission.`,
+          lastAttemptAt: lastAttempt.submittedAt.toISOString(),
+          nextAttemptAvailableAt: availableAt.toISOString(),
+          remainingHours,
+          attemptNumber: (lastAttempt.attemptNumber || 1) + 1,
+        });
+      }
+    }
+
+    // 2. Upsert candidate so existing candidates can take another exam
     let candidate = await prisma.candidate.findUnique({
       where: { email: trimmedEmail },
     });
@@ -152,6 +232,46 @@ router.delete("/:id", authenticateAdmin, async (req: Request, res: Response) => 
   } catch (error) {
     console.error("Delete candidate error:", error);
     return res.status(500).json({ error: "Failed to delete candidate." });
+  }
+});
+
+// POST /api/candidates/:id/clear-cooldown - Admin manual override to clear 48-hour lockout
+router.post("/:id/clear-cooldown", authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const candidate = await prisma.candidate.findUnique({
+      where: { id },
+    });
+
+    if (!candidate) {
+      return res.status(404).json({ error: "Candidate not found." });
+    }
+
+    // Shift last attempts back by 49 hours so cooldown is immediately lifted
+    const pastDate = new Date(Date.now() - 49 * 60 * 60 * 1000);
+    await prisma.candidate.update({
+      where: { id },
+      data: { lastAttemptAt: pastDate },
+    });
+
+    await prisma.examAttempt.updateMany({
+      where: {
+        OR: [
+          { candidateId: candidate.id },
+          { candidateEmail: candidate.email },
+          { companyId: candidate.companyId },
+        ],
+      },
+      data: { submittedAt: pastDate },
+    });
+
+    return res.json({
+      success: true,
+      message: "Candidate cooldown successfully cleared. Early re-attempt is now permitted.",
+    });
+  } catch (error) {
+    console.error("Clear cooldown error:", error);
+    return res.status(500).json({ error: "Failed to reset candidate cooldown." });
   }
 });
 

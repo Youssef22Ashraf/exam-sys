@@ -50,3 +50,4 @@ EXPOSE 5000
 
 # Push schema if needed and launch backend server serving both API and frontend
 CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
+

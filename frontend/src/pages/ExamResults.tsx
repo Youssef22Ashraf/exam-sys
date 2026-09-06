@@ -140,6 +140,18 @@ function ExamResults({
                 <span>{new Date(result.submittedAt).toLocaleString()}</span>
               </div>
               <div className="meta-row">
+                <label>Attempt Number</label>
+                <span>
+                  {result.attemptNumber && result.attemptNumber > 1 ? (
+                    <strong style={{ color: "#d97706" }}>
+                      🔁 Attempt #{result.attemptNumber} (Re-attempt)
+                    </strong>
+                  ) : (
+                    <span>Attempt #1</span>
+                  )}
+                </span>
+              </div>
+              <div className="meta-row">
                 <label>Assessment ID</label>
                 <span style={{ fontSize: "12px", fontFamily: "monospace" }}>
                   {result.id}
@@ -274,6 +286,39 @@ function ExamResults({
               assessment. Please consult your supervisor.
             </div>
           )}
+        </div>
+
+        {/* 48-Hour Re-attempt Policy Notice */}
+        <div
+          style={{
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: "10px",
+            padding: "16px 20px",
+            marginTop: "20px",
+            color: "#1e40af",
+            fontSize: "13px",
+            lineHeight: "1.5",
+            display: "flex",
+            gap: "14px",
+            alignItems: "flex-start",
+          }}
+        >
+          <span style={{ fontSize: "22px" }}>⏱️</span>
+          <div>
+            <strong style={{ display: "block", fontSize: "14px", marginBottom: "4px", color: "#1e3a8a" }}>
+              48-Hour Re-attempt Policy Notice
+            </strong>
+            <span>
+              Per workplace examination regulations, each candidate must observe a <strong>mandatory 48-hour cooldown</strong> between exam attempts.
+              Your next eligible examination attempt date is:{" "}
+              <strong style={{ color: "#1d4ed8" }}>
+                {new Date(
+                  new Date(result.submittedAt).getTime() + 48 * 60 * 60 * 1000
+                ).toLocaleString()}
+              </strong>.
+            </span>
+          </div>
         </div>
 
         {/* Candidate Action */}

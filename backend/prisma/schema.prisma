@@ -20,6 +20,7 @@ model Candidate {
   totalAttempts  Int           @default(0)
   highestScore   Int?
   latestScore    Int?
+  lastAttemptAt  DateTime?
   attempts       ExamAttempt[]
 
   createdAt      DateTime      @default(now())
@@ -61,6 +62,7 @@ model ExamAttempt {
   candidatePhoto    String?   // Filename or base64 snapshot
   hasVideoRecording Boolean   @default(false)
   videoFilename     String?   // Recorded .webm filename in uploads/videos/
+  attemptNumber     Int       @default(1)
 
   createdAt         DateTime  @default(now())
 }

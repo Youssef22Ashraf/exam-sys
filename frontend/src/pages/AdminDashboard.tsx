@@ -353,6 +353,32 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     }
   }
 
+  async function handleClearCandidateCooldown(candidateId: string) {
+    if (
+      !window.confirm(
+        "Allow this candidate to re-attempt the assessment immediately without waiting 48 hours?"
+      )
+    ) {
+      return;
+    }
+    try {
+      await api.clearCandidateCooldown(candidateId);
+      const updatedCandidates = candidates.map((c) =>
+        c.id === candidateId ? { ...c, lastAttemptAt: undefined } : c
+      );
+      ExamStorage.saveCandidates(updatedCandidates);
+      setCandidates(updatedCandidates);
+      if (selectedCandidate && selectedCandidate.id === candidateId) {
+        setSelectedCandidate({ ...selectedCandidate, lastAttemptAt: undefined });
+      }
+      alert("Cooldown cleared! The candidate can now attempt the exam immediately.");
+      reloadData();
+    } catch (err) {
+      console.error("Failed to clear cooldown:", err);
+      alert("Error clearing cooldown.");
+    }
+  }
+
   // Handlers for Results
   function handleDeleteResult(id: string) {
     if (window.confirm("Are you sure you want to delete this exam result?")) {
@@ -701,9 +727,24 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           >
                             {c.status}
                           </span>
-                        </td>
-                        <td>{c.totalAttempts}</td>
                         <td>
+                          {c.totalAttempts > 1 ? (
+                            <span
+                              className="badge"
+                              style={{
+                                background: "#fef3c7",
+                                color: "#92400e",
+                                border: "1px solid #f59e0b",
+                                fontWeight: 700,
+                                fontSize: "11px",
+                              }}
+                            >
+                              🔁 {c.totalAttempts} Attempts
+                            </span>
+                          ) : (
+                            <span>{c.totalAttempts}</span>
+                          )}
+                        </td>
                           {c.highestScore !== undefined ? (
                             <strong>{c.highestScore} / {questions.length}</strong>
                           ) : (
@@ -804,7 +845,37 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       return (
                         <tr key={r.id}>
                           <td>
-                            <strong>{r.candidateName}</strong>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                              <strong>{r.candidateName}</strong>
+                              {r.attemptNumber && r.attemptNumber > 1 ? (
+                                <span
+                                  className="badge"
+                                  style={{
+                                    background: "#fef3c7",
+                                    color: "#92400e",
+                                    border: "1px solid #f59e0b",
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    padding: "2px 6px",
+                                  }}
+                                  title={`Repeat Attempt #${r.attemptNumber} by candidate`}
+                                >
+                                  🔁 Attempt #{r.attemptNumber}
+                                </span>
+                              ) : (
+                                <span
+                                  className="badge"
+                                  style={{
+                                    background: "#f1f5f9",
+                                    color: "#64748b",
+                                    fontSize: "10px",
+                                    padding: "2px 6px",
+                                  }}
+                                >
+                                  Attempt #1
+                                </span>
+                              )}
+                            </div>
                             <div style={{ fontSize: "11px", color: "#64748b" }}>
                               {r.candidateEmail}
                             </div>
@@ -837,17 +908,6 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             </span>
                           </td>
                           <td>
-                            <span
-                              className={`badge ${
-                                r.proctoringStatus === "Warnings"
-                                  ? "badge-failed"
-                                  : "badge-passed"
-                              }`}
-                            >
-                              {r.proctoringStatus === "Warnings"
-                                ? `⚠️ ${r.tabSwitches || 0} Warn`
-                                : "✓ Monitored"}
-                            </span>
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                               <span
                                 className={`badge ${
@@ -886,13 +946,37 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             {mins}m {secs < 10 ? "0" : ""}{secs}s
                           </td>
                           <td>
-                            <div style={{ display: "flex", gap: "6px" }}>
+                            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                               <button
                                 className="btn-sm"
                                 onClick={() => setSelectedResult(r)}
                               >
-                                Review Answers
                                 Review
+                              </button>
+                              <button
+                                className="btn-sm"
+                                style={{ background: "#f8fafc", color: "#334155", borderColor: "#cbd5e1" }}
+                                onClick={() => {
+                                  const cand = candidates.find(
+                                    (c) =>
+                                      c.email.toLowerCase() === r.candidateEmail.toLowerCase() ||
+                                      c.companyId.toLowerCase() === r.companyId.toLowerCase()
+                                  );
+                                  setSelectedCandidate(
+                                    cand || {
+                                      id: r.candidateId,
+                                      name: r.candidateName,
+                                      email: r.candidateEmail,
+                                      companyId: r.companyId,
+                                      registeredAt: r.submittedAt,
+                                      status: "Completed",
+                                      totalAttempts: r.attemptNumber || 1,
+                                    }
+                                  );
+                                }}
+                                title="View all attempts made by this candidate"
+                              >
+                                All Attempts
                               </button>
                               {r.hasVideoRecording || r.videoFilename ? (
                                 <button
@@ -1601,102 +1685,214 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             </div>
 
             <div className="modal-body">
-              <div
-                style={{
-                  background: "#f8fafc",
-                  padding: "16px",
-                  borderRadius: "10px",
-                  marginBottom: "20px",
-                  fontSize: "13px",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
-                  gap: "10px",
-                }}
-              >
-                <div>
-                  <strong>Email:</strong> {selectedCandidate.email}
-                </div>
-                <div>
-                  <strong>Status:</strong> {selectedCandidate.status}
-                </div>
-                <div>
-                  <strong>Registered:</strong>{" "}
-                  {new Date(selectedCandidate.registeredAt).toLocaleString()}
-                </div>
-                <div>
-                  <strong>Attempts Count:</strong>{" "}
-                  {selectedCandidate.totalAttempts}
-                </div>
-              </div>
+              {(() => {
+                const candAttempts = results
+                  .filter(
+                    (r) =>
+                      r.companyId.toLowerCase() === selectedCandidate.companyId.toLowerCase() ||
+                      r.candidateEmail.toLowerCase() === selectedCandidate.email.toLowerCase()
+                  )
+                  .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
 
-              <h3 style={{ fontSize: "15px", marginBottom: "12px" }}>
-                Recorded Attempts
-              </h3>
+                const latestAttempt = candAttempts.length > 0 ? candAttempts[candAttempts.length - 1] : null;
+                const lastAttemptTime = selectedCandidate.lastAttemptAt
+                  ? new Date(selectedCandidate.lastAttemptAt).getTime()
+                  : latestAttempt
+                  ? new Date(latestAttempt.submittedAt).getTime()
+                  : 0;
+                const timeSince = Date.now() - lastAttemptTime;
+                const isCooldownActive = lastAttemptTime > 0 && timeSince < 48 * 60 * 60 * 1000;
+                const remainingHours = Math.ceil((48 * 60 * 60 * 1000 - timeSince) / (1000 * 60 * 60));
+                const unlockTime = new Date(lastAttemptTime + 48 * 60 * 60 * 1000);
 
-              {results.filter(
-                (r) =>
-                  r.companyId.toLowerCase() ===
-                    selectedCandidate.companyId.toLowerCase() ||
-                  r.candidateEmail.toLowerCase() ===
-                    selectedCandidate.email.toLowerCase()
-              ).length === 0 ? (
-                <p style={{ color: "#64748b", fontSize: "13px" }}>
-                  No exam attempts recorded yet for this candidate.
-                </p>
-              ) : (
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Score</th>
-                      <th>Percentage</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results
-                      .filter(
-                        (r) =>
-                          r.companyId.toLowerCase() ===
-                            selectedCandidate.companyId.toLowerCase() ||
-                          r.candidateEmail.toLowerCase() ===
-                            selectedCandidate.email.toLowerCase()
-                      )
-                      .map((r) => (
-                        <tr key={r.id}>
-                          <td>{new Date(r.submittedAt).toLocaleDateString()}</td>
-                          <td>
-                            <strong>
-                              {r.score} / {r.totalQuestions}
-                            </strong>
-                          </td>
-                          <td>{r.percentage.toFixed(1)}%</td>
-                          <td>
-                            <span
-                              className={`badge ${
-                                r.isPassed ? "badge-passed" : "badge-failed"
-                              }`}
-                            >
-                              {r.isPassed ? "Passed" : "Failed"}
-                            </span>
-                          </td>
-                          <td>
-                            <button
-                              className="btn-sm"
-                              onClick={() => {
-                                setSelectedCandidate(null);
-                                setSelectedResult(r);
-                              }}
-                            >
-                              Review
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              )}
+                return (
+                  <>
+                    <div
+                      style={{
+                        background: "#f8fafc",
+                        padding: "16px",
+                        borderRadius: "10px",
+                        marginBottom: "16px",
+                        fontSize: "13px",
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, 1fr)",
+                        gap: "10px",
+                      }}
+                    >
+                      <div>
+                        <strong>Email:</strong> {selectedCandidate.email}
+                      </div>
+                      <div>
+                        <strong>Status:</strong> {selectedCandidate.status}
+                      </div>
+                      <div>
+                        <strong>Registered:</strong>{" "}
+                        {new Date(selectedCandidate.registeredAt).toLocaleString()}
+                      </div>
+                      <div>
+                        <strong>Total Attempts:</strong>{" "}
+                        <span
+                          className="badge"
+                          style={{
+                            background: candAttempts.length > 1 ? "#fef3c7" : "#f1f5f9",
+                            color: candAttempts.length > 1 ? "#92400e" : "#475569",
+                            fontWeight: 700,
+                            marginLeft: "6px",
+                          }}
+                        >
+                          {candAttempts.length} {candAttempts.length === 1 ? "attempt" : "attempts"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Cooldown Status Panel */}
+                    {isCooldownActive ? (
+                      <div
+                        style={{
+                          background: "#fffbeb",
+                          border: "1px solid #f59e0b",
+                          padding: "14px 16px",
+                          borderRadius: "8px",
+                          marginBottom: "20px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "12px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, color: "#92400e", fontSize: "13px" }}>
+                            ⛔ 48-Hour Re-attempt Cooldown Active
+                          </div>
+                          <div style={{ fontSize: "12px", color: "#b45309", marginTop: "2px" }}>
+                            Candidate locked until: <strong>{unlockTime.toLocaleString()}</strong> (~{remainingHours}h remaining)
+                          </div>
+                        </div>
+                        <button
+                          className="btn-sm"
+                          style={{
+                            background: "#f59e0b",
+                            color: "#ffffff",
+                            border: "none",
+                            fontWeight: 600,
+                            padding: "7px 14px",
+                            cursor: "pointer",
+                            borderRadius: "6px",
+                          }}
+                          onClick={() => handleClearCandidateCooldown(selectedCandidate.id)}
+                          title="Admin override to allow candidate to retake exam immediately"
+                        >
+                          🔓 Clear Cooldown (Allow Retest)
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          background: "#f0fdf4",
+                          border: "1px solid #86efac",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          marginBottom: "20px",
+                          fontSize: "12px",
+                          color: "#166534",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <span>✓</span>
+                        <span>
+                          Candidate is currently <strong>eligible</strong> to take the examination (no active 48-hour cooldown lockout).
+                        </span>
+                      </div>
+                    )}
+
+                    <h3 style={{ fontSize: "15px", marginBottom: "12px" }}>
+                      Chronological Attempt History ({candAttempts.length})
+                    </h3>
+
+                    {candAttempts.length === 0 ? (
+                      <p style={{ color: "#64748b", fontSize: "13px" }}>
+                        No exam attempts recorded yet for this candidate.
+                      </p>
+                    ) : (
+                      <table className="admin-table">
+                        <thead>
+                          <tr>
+                            <th>Attempt #</th>
+                            <th>Date & Time</th>
+                            <th>Score</th>
+                            <th>Percentage</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {candAttempts.map((r, idx) => {
+                            const attemptNum = r.attemptNumber || idx + 1;
+                            return (
+                              <tr key={r.id}>
+                                <td>
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      background: attemptNum > 1 ? "#fef3c7" : "#f1f5f9",
+                                      color: attemptNum > 1 ? "#92400e" : "#475569",
+                                      border: attemptNum > 1 ? "1px solid #f59e0b" : "1px solid #cbd5e1",
+                                      fontWeight: 700,
+                                      fontSize: "11px",
+                                    }}
+                                  >
+                                    {attemptNum > 1 ? `🔁 Attempt #${attemptNum}` : `Attempt #${attemptNum}`}
+                                  </span>
+                                </td>
+                                <td style={{ fontSize: "12px", color: "#64748b" }}>
+                                  {new Date(r.submittedAt).toLocaleString()}
+                                </td>
+                                <td>
+                                  <strong>
+                                    {r.score} / {r.totalQuestions}
+                                  </strong>
+                                </td>
+                                <td>
+                                  <strong
+                                    style={{
+                                      color: r.isPassed ? "#16a34a" : "#dc2626",
+                                    }}
+                                  >
+                                    {r.percentage.toFixed(1)}%
+                                  </strong>
+                                </td>
+                                <td>
+                                  <span
+                                    className={`badge ${
+                                      r.isPassed ? "badge-passed" : "badge-failed"
+                                    }`}
+                                  >
+                                    {r.isPassed ? "Passed" : "Failed"}
+                                  </span>
+                                </td>
+                                <td>
+                                  <button
+                                    className="btn-sm"
+                                    onClick={() => {
+                                      setSelectedCandidate(null);
+                                      setSelectedResult(r);
+                                    }}
+                                  >
+                                    Review
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <div className="modal-footer">
