@@ -7,7 +7,13 @@ import {
   notifyStorageChange,
 } from "./storage";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== "undefined" &&
+  window.location.hostname !== "localhost" &&
+  window.location.hostname !== "127.0.0.1"
+    ? `${window.location.origin}/api`
+    : "http://localhost:5000/api");
 
 function getAuthHeaders(): HeadersInit {
   const token = sessionStorage.getItem("adminToken");
@@ -208,6 +214,36 @@ export const api = {
     }
     storage.deleteQuestion(id);
     notifyStorageChange("questions");
+  },
+
+  async createQuestion(questionData: Omit<Question, "id">): Promise<Question> {
+    return this.saveQuestion(questionData as Question);
+  },
+
+  async updateQuestion(question: Question): Promise<Question> {
+    return this.saveQuestion(question);
+  },
+
+  async resetQuestions(): Promise<Question[]> {
+    try {
+      const res = await fetch(`${API_BASE}/questions/reset`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          storage.saveQuestions(data);
+          notifyStorageChange("questions");
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn("Backend unavailable, resetting questions locally.");
+    }
+    const defaults = storage.resetQuestions();
+    notifyStorageChange("questions");
+    return defaults;
   },
 
   /**

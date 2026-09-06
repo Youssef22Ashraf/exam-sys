@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
 import { authenticateAdmin } from "../middleware/auth";
+import { QUESTIONS } from "../config/defaultQuestions";
 
 const router = Router();
 
@@ -113,6 +114,40 @@ router.delete("/:id", authenticateAdmin, async (req: Request, res: Response) => 
   } catch (error) {
     console.error("Delete question error:", error);
     return res.status(500).json({ error: "Failed to delete question." });
+  }
+});
+
+// POST /api/questions/reset - Restore default 40 questions (Admin)
+router.post("/reset", authenticateAdmin, async (_req: Request, res: Response) => {
+  try {
+    await prisma.question.deleteMany();
+    for (const q of QUESTIONS) {
+      await prisma.question.create({
+        data: {
+          id: q.id,
+          section: q.section,
+          sectionTitle: q.sectionTitle,
+          question: q.question,
+          options: q.options,
+          correctAnswer: q.correctAnswer,
+        },
+      });
+    }
+    const questions = await prisma.question.findMany({
+      orderBy: { id: "asc" },
+    });
+    const formatted = questions.map((q) => ({
+      id: q.id,
+      section: q.section,
+      sectionTitle: q.sectionTitle,
+      question: q.question,
+      options: JSON.parse(q.options),
+      correctAnswer: q.correctAnswer,
+    }));
+    return res.json(formatted);
+  } catch (error) {
+    console.error("Reset questions error:", error);
+    return res.status(500).json({ error: "Failed to reset questions to default." });
   }
 });
 

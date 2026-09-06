@@ -1,4 +1,4 @@
-﻿import nodemailer from "nodemailer";
+import nodemailer from "nodemailer";
 import { prisma } from "../config/db";
 
 export interface ExamCompletionEmailData {
@@ -126,7 +126,7 @@ Submitted:       ${new Date().toISOString()}
           <tr><td>Submission Time</td><td>${new Date().toLocaleString()}</td></tr>
         </table>
         <div class="cta">
-          <a href="http://localhost:5173/admin" class="button">Open Admin Dashboard</a>
+          <a href="${process.env.APP_URL ? `${process.env.APP_URL.replace(/\/$/, '')}/admin` : (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/admin` : 'http://localhost:5173/admin')}" class="button">Open Admin Dashboard</a>
         </div>
       </div>
       <div class="footer">

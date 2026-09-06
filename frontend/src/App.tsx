@@ -24,12 +24,21 @@ function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
 
-  // Synchronize latest exam settings from backend on launch
+  // Synchronize latest exam settings & questions from backend on launch
   useEffect(() => {
     api
       .getSettings()
       .then((settings) => {
         ExamStorage.saveSettings(settings);
+      })
+      .catch(() => {});
+
+    api
+      .getQuestions()
+      .then((questions) => {
+        if (questions && questions.length > 0) {
+          ExamStorage.saveQuestions(questions);
+        }
       })
       .catch(() => {});
   }, []);

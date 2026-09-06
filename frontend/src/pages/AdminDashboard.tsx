@@ -66,8 +66,15 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
         }
       });
       if (selectedResult.videoFilename) {
+        const videoBase =
+          import.meta.env.VITE_API_URL ||
+          (typeof window !== "undefined" &&
+          window.location.hostname !== "localhost" &&
+          window.location.hostname !== "127.0.0.1"
+            ? `${window.location.origin}/api`
+            : "http://localhost:5000/api");
         setLoadedVideoUrl(
-          `http://localhost:5000/api/proctor/video/${selectedResult.videoFilename}`
+          `${videoBase}/proctor/video/${selectedResult.videoFilename}`
         );
       } else {
         VideoStorage.getVideo(selectedResult.id).then((blob) => {
@@ -127,7 +134,14 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setSettings(ExamStorage.getSettings());
   }
 
-  // Real-time live synchronization across tabs and windows
+  // Load latest state from backend on mount
+  useEffect(() => {
+    api.getCandidates().then((c) => { if (c) setCandidates(c); }).catch(() => {});
+    api.getResults().then((r) => { if (r) setResults(r); }).catch(() => {});
+    api.getQuestions().then((q) => { if (q) setQuestions(q); }).catch(() => {});
+    api.getSettings().then((s) => { if (s) setSettings(s); }).catch(() => {});
+  }, []);
+
   // Real-time live synchronization across tabs, windows, and remote computers via WebSocket
   useEffect(() => {
     // 1. Local BroadcastChannel & Storage events
@@ -283,22 +297,26 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
         : "Part B — Stakeholder Management";
 
     if (questionModalMode === "add") {
-      ExamStorage.addQuestion({
+      const newQ = {
         section: qSection,
         sectionTitle,
         question: qText,
         options: qOptions,
         correctAnswer: qCorrect,
-      });
+      };
+      ExamStorage.addQuestion(newQ);
+      api.createQuestion(newQ).catch(() => {});
     } else if (editingQuestion) {
-      ExamStorage.updateQuestion({
+      const updatedQ = {
         ...editingQuestion,
         section: qSection,
         sectionTitle,
         question: qText,
         options: qOptions,
         correctAnswer: qCorrect,
-      });
+      };
+      ExamStorage.updateQuestion(updatedQ);
+      api.updateQuestion(updatedQ).catch(() => {});
     }
 
     setIsQuestionModalOpen(false);
@@ -308,6 +326,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   function handleDeleteQuestion(id: number) {
     if (window.confirm(`Are you sure you want to delete question #${id}?`)) {
       ExamStorage.deleteQuestion(id);
+      api.deleteQuestion(id).catch(() => {});
       reloadData();
     }
   }
@@ -319,6 +338,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       )
     ) {
       ExamStorage.resetQuestions();
+      api.resetQuestions().catch(() => {});
       reloadData();
     }
   }

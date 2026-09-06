@@ -23,7 +23,21 @@ interface ExamProps {
 function Exam({ userData, onFinishExam }: ExamProps) {
   // Load settings & questions from storage
   const settings = useMemo(() => ExamStorage.getSettings(), []);
-  const questions: Question[] = useMemo(() => ExamStorage.getQuestions(), []);
+  const [questions, setQuestions] = useState<Question[]>(() =>
+    ExamStorage.getQuestions()
+  );
+
+  useEffect(() => {
+    api
+      .getQuestions()
+      .then((remote) => {
+        if (remote && remote.length > 0) {
+          setQuestions(remote);
+          ExamStorage.saveQuestions(remote);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const partA = useMemo(
     () => questions.filter((q) => q.section === "A"),
