@@ -30,3 +30,4 @@ if (typeof window !== "undefined") {
   window.addEventListener("pagehide", releaseCamera);
   window.addEventListener("unload", releaseCamera);
 }
+

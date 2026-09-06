@@ -151,6 +151,7 @@ export function CameraProctor({
       }
 
       mediaRecorderRef.current.onstop = () => {
+        setIsRecording(false);
         const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
         stopCamera();
         resolve(blob);
