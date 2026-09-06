@@ -1,4 +1,4 @@
-import type { ExamResult } from "../services/storage";
+import { ExamStorage, type ExamResult } from "../services/storage";
 import "./ExamResults.css";
 
 interface ExamResultsProps {
@@ -10,6 +10,10 @@ function ExamResults({
   result,
   onReturnHome,
 }: ExamResultsProps) {
+  const settings = ExamStorage.getSettings();
+  const passingScore = result.passingPercentage ?? settings.passingPercentage ?? 70;
+  const examDuration = settings.durationMinutes ?? 30;
+
   function formatTime(seconds: number) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -60,7 +64,7 @@ function ExamResults({
           <p>
             {result.isPassed
               ? "You have met the passing threshold for site and workplace access clearance."
-              : "You did not achieve the required 70% passing threshold for this assessment."}
+              : `You did not achieve the required ${passingScore}% passing threshold for this assessment.`}
           </p>
 
           <span
@@ -84,14 +88,14 @@ function ExamResults({
 
           <div className="score-stat-box">
             <span>Passing Mark</span>
-            <strong>70%</strong>
+            <strong>{passingScore}%</strong>
             <small>Standard requirement</small>
           </div>
 
           <div className="score-stat-box">
             <span>Time Taken</span>
             <strong>{formatTime(result.timeSpentSeconds)}</strong>
-            <small>Allocated: 30 minutes</small>
+            <small>Allocated: {examDuration} minutes</small>
           </div>
 
           <div className="score-stat-box">
@@ -200,9 +204,9 @@ function ExamResults({
               <div className="section-bar-track">
                 <div
                   className={`section-bar-fill ${
-                    partAPercent >= 70
+                    partAPercent >= passingScore
                       ? "high"
-                      : partAPercent >= 50
+                      : partAPercent >= Math.round(passingScore * 0.7)
                       ? "mid"
                       : "low"
                   }`}
@@ -221,9 +225,9 @@ function ExamResults({
               <div className="section-bar-track">
                 <div
                   className={`section-bar-fill ${
-                    partBPercent >= 70
+                    partBPercent >= passingScore
                       ? "high"
-                      : partBPercent >= 50
+                      : partBPercent >= Math.round(passingScore * 0.7)
                       ? "mid"
                       : "low"
                   }`}
@@ -259,7 +263,7 @@ function ExamResults({
             </div>
           ) : (
             <div>
-              <strong>⚠️ Retest Notice:</strong> Candidates who score below 70%
+              <strong>⚠️ Retest Notice:</strong> Candidates who score below {passingScore}%
               must complete an orientation review before re-attempting the
               assessment. Please consult your supervisor.
             </div>

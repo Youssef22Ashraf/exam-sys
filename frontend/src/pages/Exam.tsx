@@ -170,6 +170,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       proctoringStatus,
       candidatePhoto: photo || undefined,
       hasVideoRecording: false,
+      passingPercentage: settings.passingPercentage || 70,
     };
 
     return result;

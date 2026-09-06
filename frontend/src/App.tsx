@@ -7,6 +7,7 @@ import ExamResults from "./pages/ExamResults";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import { ExamStorage, type ExamResult } from "./services/storage";
+import { api } from "./services/api";
 
 import "./styles.css";
 import "./App.css";
@@ -21,6 +22,16 @@ function App() {
   const [page, setPage] = useState("home");
   const [userData, setUserData] = useState<UserData | null>(null);
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
+
+  // Synchronize latest exam settings from backend on launch
+  useEffect(() => {
+    api
+      .getSettings()
+      .then((settings) => {
+        ExamStorage.saveSettings(settings);
+      })
+      .catch(() => {});
+  }, []);
 
   // Dedicated route listener for Admin Portal:
   // Access via URL pathname (/admin, /admin/login) or URL hash (#admin, #admin-login)

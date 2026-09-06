@@ -41,6 +41,7 @@ export interface ExamResult {
   candidatePhoto?: string;
   hasVideoRecording?: boolean;
   videoFilename?: string;
+  passingPercentage?: number;
 }
 
 export interface ExamSettings {
