@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { socketService } from "../services/socket";
+import { registerActiveCameraStream, releaseCamera } from "../services/camera";
 import "./CameraProctor.css";
 
 interface CameraProctorProps {
@@ -42,6 +43,7 @@ export function CameraProctor({
         });
 
         streamRef.current = stream;
+        registerActiveCameraStream(stream);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -84,25 +86,53 @@ export function CameraProctor({
     }
   }, []);
 
+  const stopCamera = useCallback(() => {
+    // 1. Stop recorder
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== "inactive"
+    ) {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {}
+    }
+    // 2. Stop all camera media tracks immediately
+    if (streamRef.current) {
+      try {
+        streamRef.current.getTracks().forEach((track) => {
+          track.stop();
+          track.enabled = false;
+        });
+      } catch {}
+      streamRef.current = null;
+    }
+    // 3. Clear video element source
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    // 4. Global safety release
+    releaseCamera();
+    setIsRecording(false);
+  }, []);
+
   useEffect(() => {
     startCamera();
 
-    return () => {
-      // Clean up recorder
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state !== "inactive"
-      ) {
-        try {
-          mediaRecorderRef.current.stop();
-        } catch {}
-      }
-      // Clean up media tracks
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
+    const handleWindowUnload = () => {
+      stopCamera();
     };
-  }, [startCamera]);
+
+    window.addEventListener("beforeunload", handleWindowUnload);
+    window.addEventListener("pagehide", handleWindowUnload);
+    window.addEventListener("unload", handleWindowUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleWindowUnload);
+      window.removeEventListener("pagehide", handleWindowUnload);
+      window.removeEventListener("unload", handleWindowUnload);
+      stopCamera();
+    };
+  }, [startCamera, stopCamera]);
 
   // Stop recording handler
   const stopRecording = useCallback((): Promise<Blob | null> => {
@@ -111,27 +141,29 @@ export function CameraProctor({
         !mediaRecorderRef.current ||
         mediaRecorderRef.current.state === "inactive"
       ) {
-        if (recordedChunksRef.current.length > 0) {
-          resolve(new Blob(recordedChunksRef.current, { type: "video/webm" }));
-        } else {
-          resolve(null);
-        }
+        const resultBlob =
+          recordedChunksRef.current.length > 0
+            ? new Blob(recordedChunksRef.current, { type: "video/webm" })
+            : null;
+        stopCamera();
+        resolve(resultBlob);
         return;
       }
 
       mediaRecorderRef.current.onstop = () => {
-        setIsRecording(false);
         const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+        stopCamera();
         resolve(blob);
       };
 
       try {
         mediaRecorderRef.current.stop();
       } catch {
+        stopCamera();
         resolve(null);
       }
     });
-  }, []);
+  }, [stopCamera]);
 
   // Register stop recording getter
   useEffect(() => {

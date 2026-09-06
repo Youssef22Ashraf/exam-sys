@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { ExamStorage, type ExamResult } from "../services/storage";
+import { releaseCamera } from "../services/camera";
 import "./ExamResults.css";
 
 interface ExamResultsProps {
@@ -10,6 +12,10 @@ function ExamResults({
   result,
   onReturnHome,
 }: ExamResultsProps) {
+  useEffect(() => {
+    releaseCamera();
+  }, []);
+
   const settings = ExamStorage.getSettings();
   const passingScore = result.passingPercentage ?? settings.passingPercentage ?? 70;
   const examDuration = settings.durationMinutes ?? 30;

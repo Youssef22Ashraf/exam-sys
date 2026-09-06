@@ -6,6 +6,7 @@ import {
 } from "../services/storage";
 import { VideoStorage } from "../services/videoStorage";
 import { CameraProctor } from "../components/CameraProctor";
+import { releaseCamera } from "../services/camera";
 import { api } from "../services/api";
 import { socketService } from "../services/socket";
 import "./Exam.css";
@@ -188,11 +189,10 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     if (stopRecordingRef.current) {
       try {
         const videoBlob = await stopRecordingRef.current();
+        releaseCamera();
         if (videoBlob && videoBlob.size > 0) {
           await VideoStorage.saveVideo(result.id, videoBlob);
           result.hasVideoRecording = true;
-          // Upload to backend if online
-          api.uploadVideo(videoBlob, result.id).catch(() => {});
           // Upload to backend so remote admin can stream/watch it
           const uploadRes = await api.uploadVideo(videoBlob, result.id);
           if (uploadRes && uploadRes.filename) {
@@ -201,7 +201,10 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         }
       } catch (err) {
         console.warn("Could not save video recording:", err);
+        releaseCamera();
       }
+    } else {
+      releaseCamera();
     }
 
     // Persist to local storage
@@ -246,7 +249,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     }
   }
 
-  // Announce candidate start via WebSocket on mount
+  // Announce candidate start via WebSocket on mount & cleanup camera on unmount
   useEffect(() => {
     if (userData) {
       socketService.emitCandidateStarted({
@@ -255,6 +258,10 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         companyId: userData.companyId,
       });
     }
+
+    return () => {
+      releaseCamera();
+    };
   }, []);
 
   function confirmSubmit() {

@@ -8,6 +8,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import { ExamStorage, type ExamResult } from "./services/storage";
 import { api } from "./services/api";
+import { releaseCamera } from "./services/camera";
 
 import "./styles.css";
 import "./App.css";
@@ -110,6 +111,7 @@ function App() {
   }
 
   function openCandidateHome() {
+    releaseCamera();
     window.history.pushState(null, "", "/");
     window.location.hash = "";
     setPage("home");
