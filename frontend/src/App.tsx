@@ -22,25 +22,64 @@ function App() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
 
-  // Support direct access via URL hash (e.g. http://localhost:5173/#admin)
+  // Dedicated route listener for Admin Portal:
+  // Access via URL pathname (/admin, /admin/login) or URL hash (#admin, #admin-login)
   useEffect(() => {
-    function handleHash() {
+    function handleRouting() {
+      const pathname = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
-      if (hash === "#admin" || hash === "#admin-login") {
-        setPage("admin-login");
+      const isAdminRoute =
+        pathname === "/admin" ||
+        pathname.startsWith("/admin/") ||
+        hash === "#admin" ||
+        hash === "#admin-login";
+
+      if (isAdminRoute) {
+        const token = sessionStorage.getItem("adminToken");
+        if (token) {
+          setPage("admin-dashboard");
+        } else {
+          setPage("admin-login");
+        }
       }
     }
-    handleHash();
-    window.addEventListener("hashchange", handleHash);
-    return () => window.removeEventListener("hashchange", handleHash);
+
+    handleRouting();
+    window.addEventListener("hashchange", handleRouting);
+    window.addEventListener("popstate", handleRouting);
+    return () => {
+      window.removeEventListener("hashchange", handleRouting);
+      window.removeEventListener("popstate", handleRouting);
+    };
+  }, []);
+
+  // Hidden proctor hotkey (Ctrl + Shift + A) to toggle Admin Portal
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.shiftKey &&
+        (e.key === "A" || e.key === "a")
+      ) {
+        e.preventDefault();
+        setPage((prev) => {
+          if (prev === "admin-login" || prev === "admin-dashboard") {
+            window.history.pushState(null, "", "/");
+            return "home";
+          } else {
+            window.history.pushState(null, "", "/admin");
+            const token = sessionStorage.getItem("adminToken");
+            return token ? "admin-dashboard" : "admin-login";
+          }
+        });
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   function startExam() {
     setPage("registration");
-  }
-
-  function openAdmin() {
-    setPage("admin-login");
   }
 
   function handleRegistration(data: UserData) {
@@ -60,15 +99,19 @@ function App() {
   }
 
   function openCandidateHome() {
+    window.history.pushState(null, "", "/");
     window.location.hash = "";
     setPage("home");
   }
 
   function openAdminDashboard() {
+    window.history.pushState(null, "", "/admin");
     setPage("admin-dashboard");
   }
 
   function logoutAdmin() {
+    sessionStorage.removeItem("adminToken");
+    window.history.pushState(null, "", "/");
     window.location.hash = "";
     setPage("home");
   }
@@ -76,7 +119,7 @@ function App() {
   if (page === "registration") {
     return (
       <div className="app">
-        <AppHeader onOpenAdmin={openAdmin} />
+        <AppHeader />
 
         <ExamRegistration onContinue={handleRegistration} />
 
@@ -88,7 +131,7 @@ function App() {
   if (page === "instructions") {
     return (
       <div className="app">
-        <AppHeader onOpenAdmin={openAdmin} />
+        <AppHeader />
 
         <ExamInstructions onStart={beginExam} />
 
@@ -107,9 +150,7 @@ function App() {
     return (
       <ExamResults
         result={examResult}
-        questions={ExamStorage.getQuestions()}
         onReturnHome={openCandidateHome}
-        onOpenAdmin={openAdmin}
       />
     );
   }
@@ -135,7 +176,7 @@ function App() {
 
   return (
     <div className="app">
-      <AppHeader onOpenAdmin={openAdmin} />
+      <AppHeader />
 
       <main className="page-container home-page">
         <section className="home-hero">
@@ -154,11 +195,7 @@ function App() {
 
             <div className="hero-actions">
               <button className="primary-button" onClick={startExam}>
-                Take an Exam →
-              </button>
-
-              <button className="secondary-button" onClick={openAdmin}>
-                Admin Portal
+                Start Assessment →
               </button>
             </div>
           </div>
@@ -216,7 +253,7 @@ function App() {
   );
 }
 
-function AppHeader({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
+function AppHeader() {
   return (
     <header className="app-header">
       <div className="brand">
@@ -228,23 +265,6 @@ function AppHeader({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
           <span className="brand-subtitle">Workplace Assessment Portal</span>
         </div>
       </div>
-
-      {onOpenAdmin && (
-        <button
-          onClick={onOpenAdmin}
-          className="secondary-button"
-          style={{
-            padding: "8px 16px",
-            fontSize: "13px",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-          }}
-        >
-          <span>Admin Portal</span>
-          <span style={{ fontSize: "11px", color: "#64748b" }}>🔒</span>
-        </button>
-      )}
     </header>
   );
 }

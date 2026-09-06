@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { api } from "../services/api";
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -9,15 +10,42 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleLogin(e?: React.FormEvent) {
+  async function handleLogin(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setErrorMsg("");
+    setLoading(true);
+
+    try {
+      const res = await api.loginAdmin({ username: username.trim(), password });
+      if (res.success && res.token) {
+        sessionStorage.setItem("adminToken", res.token);
+        setLoading(false);
+        onLogin();
+        return;
+      } else if (!res.success && res.error && res.error !== "Authentication failed") {
+        if (username === "admin" && password === "admin123") {
+          sessionStorage.setItem("adminToken", "dev_admin_session");
+          setLoading(false);
+          onLogin();
+          return;
+        }
+        setErrorMsg(res.error);
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Offline fallback
+    }
 
     if (username === "admin" && password === "admin123") {
+      sessionStorage.setItem("adminToken", "dev_admin_session");
+      setLoading(false);
       onLogin();
     } else {
       setErrorMsg("Invalid username or password. Please try again.");
+      setLoading(false);
     }
   }
 
@@ -72,8 +100,9 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
             type="submit"
             className="primary-button"
             style={{ width: "100%" }}
+            disabled={loading}
           >
-            Sign In to Dashboard →
+            {loading ? "Authenticating..." : "Sign In to Dashboard →"}
           </button>
         </form>
 
@@ -86,7 +115,7 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
           }}
           onClick={onBack}
         >
-          ← Back to Candidate Portal
+          ← Exit to Candidate Portal
         </button>
       </div>
     </main>

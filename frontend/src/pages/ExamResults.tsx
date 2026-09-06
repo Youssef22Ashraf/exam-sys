@@ -1,22 +1,15 @@
-import { useState } from "react";
-import type { ExamResult, Question } from "../services/storage";
+import type { ExamResult } from "../services/storage";
 import "./ExamResults.css";
 
 interface ExamResultsProps {
   result: ExamResult;
-  questions: Question[];
   onReturnHome: () => void;
-  onOpenAdmin: () => void;
 }
 
 function ExamResults({
   result,
-  questions,
   onReturnHome,
-  onOpenAdmin,
 }: ExamResultsProps) {
-  const [showReview, setShowReview] = useState(false);
-
   function formatTime(seconds: number) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -33,10 +26,6 @@ function ExamResults({
       ? Math.round((result.partBScore / result.partBTotal) * 100)
       : 0;
 
-  function handlePrint() {
-    window.print();
-  }
-
   return (
     <div className="results-page">
       <header className="app-header">
@@ -49,7 +38,7 @@ function ExamResults({
         </div>
 
         <button className="secondary-button" onClick={onReturnHome}>
-          Exit to Home
+          Exit Assessment
         </button>
       </header>
 
@@ -265,9 +254,8 @@ function ExamResults({
         >
           {result.isPassed ? (
             <div>
-              <strong>✓ Verification Recorded:</strong> Your examination results
-              have been stored in the workplace database. You may print this
-              summary or show it to your site supervisor upon entry.
+              <strong>✓ Verification Recorded:</strong> Your assessment submission
+              has been recorded and securely transmitted to administration. Your site supervisor or proctor will review your assessment record.
             </div>
           ) : (
             <div>
@@ -278,104 +266,16 @@ function ExamResults({
           )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="results-actions">
-          <button className="primary-button" onClick={handlePrint}>
-            🖨️ Print / Save Result
-          </button>
-
+        {/* Candidate Action */}
+        <div className="results-actions" style={{ justifyContent: "center", marginTop: "28px" }}>
           <button
-            className="secondary-button"
-            onClick={() => setShowReview(!showReview)}
+            className="primary-button"
+            onClick={onReturnHome}
+            style={{ minWidth: "240px", padding: "14px 28px", fontSize: "15px" }}
           >
-            {showReview ? "Hide Answer Review ▲" : "Review All Answers ▼"}
-          </button>
-
-          <button className="secondary-button" onClick={onReturnHome}>
-            Return to Home
-          </button>
-
-          <button
-            className="secondary-button"
-            onClick={onOpenAdmin}
-            style={{ color: "#2563eb", borderColor: "#bfdbfe" }}
-          >
-            Admin Portal →
+            Finish & Exit Assessment →
           </button>
         </div>
-
-        {/* Answer Breakdown Section */}
-        {showReview && (
-          <section className="review-section">
-            <div className="review-header-btn">
-              <h3>Detailed Question & Answer Review</h3>
-              <span style={{ fontSize: "13px", color: "#64748b" }}>
-                {result.score} of {questions.length} correct
-              </span>
-            </div>
-
-            <div className="review-items-container">
-              {questions.map((q) => {
-                const selectedIdx = result.answers[q.id];
-                const isAnswered = selectedIdx !== undefined;
-                const isCorrect = selectedIdx === q.correctAnswer;
-
-                return (
-                  <div
-                    key={q.id}
-                    className={`review-card ${
-                      isCorrect ? "correct" : "incorrect"
-                    }`}
-                  >
-                    <div className="review-card-top">
-                      <span className="q-num">
-                        Question {q.id} • {q.sectionTitle}
-                      </span>
-                      <span
-                        className={`q-status ${
-                          isCorrect ? "correct" : "incorrect"
-                        }`}
-                      >
-                        {isCorrect ? "✓ Correct" : "✗ Incorrect"}
-                      </span>
-                    </div>
-
-                    <h4>{q.question}</h4>
-
-                    <div className="review-answers-box">
-                      <div className="review-answer-row">
-                        <strong>Your Answer:</strong>
-                        <span
-                          style={{
-                            color: isCorrect
-                              ? "#16a34a"
-                              : isAnswered
-                              ? "#dc2626"
-                              : "#94a3b8",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {isAnswered
-                            ? q.options[selectedIdx]
-                            : "(Not answered)"}
-                        </span>
-                      </div>
-
-                      {!isCorrect && (
-                        <div className="review-answer-row">
-                          <strong>Correct Answer:</strong>
-                          <span style={{ color: "#16a34a", fontWeight: 600 }}>
-                            {q.options[q.correctAnswer]}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
       </main>
 
       <footer className="app-footer">Workplace Assessment System</footer>
@@ -384,4 +284,3 @@ function ExamResults({
 }
 
 export default ExamResults;
-
