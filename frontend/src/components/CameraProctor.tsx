@@ -127,6 +127,19 @@ export function CameraProctor({
     window.addEventListener("unload", handleWindowUnload);
 
     return () => {
+      // Clean up recorder
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {}
+      }
+      // Clean up media tracks
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
       window.removeEventListener("beforeunload", handleWindowUnload);
       window.removeEventListener("pagehide", handleWindowUnload);
       window.removeEventListener("unload", handleWindowUnload);
