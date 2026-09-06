@@ -1132,25 +1132,13 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Admin Alert Email</label>
-                <input
-                  className="form-input"
-                  type="email"
-                  placeholder="admin@harbico.com"
-                  value={tempSettings.notifyEmail || ""}
-                  onChange={(e) =>
-                    setTempSettings({
-                      ...tempSettings,
-                      notifyEmail: e.target.value,
-                    })
-                  }
-                />
+                <label className="form-label">Admin Alert Email(s)</label>
                 <div style={{ display: "flex", gap: "8px", alignItems: "stretch" }}>
                   <input
                     className="form-input"
                     style={{ flex: 1 }}
-                    type="email"
-                    placeholder="admin@harbico.com"
+                    type="text"
+                    placeholder="admin@gmail.com, proctor@outlook.com"
                     value={tempSettings.notifyEmail || ""}
                     onChange={(e) =>
                       setTempSettings({
@@ -1184,7 +1172,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     display: "block",
                   }}
                 >
-                  Receives email alerts immediately upon exam completion.
+                  Receives exam completion alerts. Supports Gmail, Outlook, or multiple addresses separated by commas.
                 </span>
 
                 {testEmailMsg && (

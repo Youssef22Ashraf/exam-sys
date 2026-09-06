@@ -14,20 +14,36 @@ export interface ExamCompletionEmailData {
   tabSwitches: number;
 }
 
-// Configured nodemailer transport if SMTP env variables are present
+export function parseRecipients(raw: string | undefined): string {
+  if (!raw) return process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com";
+  const list = raw
+    .split(/[,;]+/)
+    .map((e) => e.trim())
+    .filter((e) => e.length > 0);
+  return list.length > 0 ? list.join(", ") : (process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com");
+}
+
+// Configured nodemailer transport supporting Gmail, Outlook / Office 365, Resend, SendGrid, etc.
 export const createTransporter = () => {
   if (
     process.env.SMTP_HOST &&
     process.env.SMTP_USER &&
     process.env.SMTP_PASS
   ) {
+    const port = Number(process.env.SMTP_PORT) || 587;
+    const isSecure = port === 465;
+
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: Number(process.env.SMTP_PORT) === 465,
+      port,
+      secure: isSecure,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
+      },
+      tls: {
+        ciphers: "SSLv3",
+        rejectUnauthorized: false,
       },
     });
   }
@@ -35,17 +51,19 @@ export const createTransporter = () => {
 };
 
 export async function sendExamCompletionAlert(data: ExamCompletionEmailData) {
-  let recipient = process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com";
+  let rawRecipient = process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com";
   try {
     const settings = await prisma.examSetting.findFirst({
       where: { id: "default-settings" },
     });
     if (settings?.notifyEmail) {
-      recipient = settings.notifyEmail.trim();
+      rawRecipient = settings.notifyEmail;
     }
   } catch (err) {
     // Fallback to env
   }
+
+  const recipient = parseRecipients(rawRecipient);
 
   const statusEmoji = data.isPassed ? "PASSED" : "FAILED";
   const statusColor = data.isPassed ? "#16a34a" : "#dc2626";
@@ -129,7 +147,7 @@ Submitted:       ${new Date().toISOString()}
         text: textBody,
         html: htmlBody,
       });
-      console.log(`📧 [Email Alert Sent] Executive notification delivered to ${recipient}`);
+      console.log(`📧 [Email Alert Sent] Notification delivered to: ${recipient}`);
     } else {
       console.log(`📧 [Email Mock Logged - No SMTP Configured to ${recipient}]:\n${textBody}`);
     }
@@ -139,15 +157,17 @@ Submitted:       ${new Date().toISOString()}
 }
 
 export async function sendTestEmailAlert(targetEmail?: string) {
-  let recipient = targetEmail || process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com";
+  let rawRecipient = targetEmail || process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com";
   try {
     const settings = await prisma.examSetting.findFirst({
       where: { id: "default-settings" },
     });
     if (!targetEmail && settings?.notifyEmail) {
-      recipient = settings.notifyEmail.trim();
+      rawRecipient = settings.notifyEmail;
     }
   } catch (err) {}
+
+  const recipient = parseRecipients(rawRecipient);
 
   const subject = `[Test Alert] Workplace Assessment System Email Verification`;
   const textBody = `This is a test notification verifying that your Admin Notification Email (${recipient}) is receiving alerts from Workplace Assessment System.`;
@@ -172,7 +192,7 @@ export async function sendTestEmailAlert(targetEmail?: string) {
       <div class="content">
         <p>Hello Admin,</p>
         <div class="status-box">
-          ✓ Your notification service is successfully operational and reaching <strong>${recipient}</strong>.
+          ✓ Your notification service is successfully operational and reaching: <strong>${recipient}</strong>.
         </div>
         <p>When examinees complete assessments, detailed score reports and proctoring summaries will be dispatched to this address.</p>
         <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Timestamp: ${new Date().toLocaleString()}</p>
@@ -184,19 +204,29 @@ export async function sendTestEmailAlert(targetEmail?: string) {
 
   const transporter = createTransporter();
   if (transporter) {
-    await transporter.sendMail({
-      from: `"Workplace Assessment System" <${process.env.SMTP_USER}>`,
-      to: recipient,
-      subject,
-      text: textBody,
-      html: htmlBody,
-    });
-    return { success: true, message: `Test email successfully dispatched to ${recipient}`, simulated: false };
+    try {
+      await transporter.sendMail({
+        from: `"Workplace Assessment System" <${process.env.SMTP_USER}>`,
+        to: recipient,
+        subject,
+        text: textBody,
+        html: htmlBody,
+      });
+      return { success: true, message: `✓ Test email successfully dispatched to ${recipient}`, simulated: false };
+    } catch (err: any) {
+      console.error("SMTP Delivery Error:", err);
+      return {
+        success: false,
+        error: `SMTP Error (${err.code || "AUTH"}): ${err.message}`,
+        message: "Failed to send email via SMTP server.",
+        simulated: false,
+      };
+    }
   } else {
     console.log(`📧 [Simulated Test Email dispatched to ${recipient}]`);
     return {
       success: true,
-      message: `SMTP not configured in .env. Simulated email alert logged to server console for ${recipient}. To send real emails, add SMTP credentials in backend/.env.`,
+      message: `SMTP not configured in .env. Simulated email alert logged to server console for ${recipient}. Add SMTP credentials to backend/.env to send real emails.`,
       simulated: true,
     };
   }
