@@ -12,8 +12,8 @@ export interface ActiveCooldown {
 /**
  * Newest attempt matching the email OR the company ID, if it is younger
  * than 48 hours. Shared by check-cooldown (registration) and submit so
- * the two can never disagree. clear-cooldown backdates submittedAt, so
- * an admin override is honoured here without a second code path.
+ * the two can never disagree. clear-cooldown stamps cooldownClearedAt on
+ * the candidate; that is honoured here without touching attempt rows.
  */
 export async function findActiveCooldown(
   email: string,
@@ -27,8 +27,14 @@ export async function findActiveCooldown(
   const last = await prisma.examAttempt.findFirst({
     where: { OR: or },
     orderBy: { submittedAt: "desc" },
+    include: { candidate: { select: { cooldownClearedAt: true } } },
   });
   if (!last) return null;
+
+  // Admin override: an attempt submitted at or before cooldownClearedAt is
+  // spent. The attempt's own timestamp is never rewritten.
+  const cleared = last.candidate?.cooldownClearedAt;
+  if (cleared && cleared.getTime() >= last.submittedAt.getTime()) return null;
 
   const elapsedMs = Date.now() - last.submittedAt.getTime();
   if (elapsedMs >= COOLDOWN_MS) return null;

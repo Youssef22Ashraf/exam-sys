@@ -30,9 +30,9 @@ and in. In prod, a secret rotation logs everyone out — expected.
 Gmail needs an App Password. Use the admin "Send test" button.
 
 ## Cooldown says blocked but admin cleared it
-`clear-cooldown` backdates timestamps; a browser with the local result in
-`exam_system_results` may still block via the fallback. Clear localStorage
-or wait for the network path to win.
+The server honours `cooldownClearedAt`; a browser with the local result in
+`exam_system_results` may still block via the localStorage fallback when
+the API is unreachable. Clear localStorage or restore connectivity.
 
 ## `prisma db push` in the container wipes data
 You changed a column type or name. See ADR 007. Restore `dev.db` from the

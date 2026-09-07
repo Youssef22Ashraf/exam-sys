@@ -26,5 +26,4 @@ the locally computed `ExamResult` is shown and stored with
 
 ## Known gaps
 
-- Two concurrent submits for one candidate race on `attemptNumber` —
-  `TODO.md` §Correctness.
+- None open.

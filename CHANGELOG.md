@@ -45,6 +45,21 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Fixed
 
+- **Concurrent submits and question adds no longer collide.** The
+  candidate upsert and the attempt insert in `POST /api/exam/submit` run
+  in one `prisma.$transaction`, so two simultaneous submits cannot both
+  read `totalAttempts = N` and both write `attemptNumber = N + 1`.
+  `POST /api/questions` computes `max(id) + 1` and inserts inside one
+  transaction for the same reason.
+- **`clear-cooldown` no longer rewrites audit timestamps.** It used to
+  backdate `lastAttemptAt` and every attempt's `submittedAt` by 49 hours.
+  It now stamps a new nullable `Candidate.cooldownClearedAt`, and the
+  shared cooldown query treats attempts at or before that stamp as spent.
+  Additive schema change; `prisma db push` adds the column without
+  touching rows.
+- `.dockerignore` no longer excludes `*.md`, so a runtime read of a
+  markdown file inside the image cannot silently fail.
+- README badge said Prisma 6; `package.json` pins 5.x. Badge corrected.
 - `npm run seed` now runs `prisma db seed`, which loads `backend/.env`.
   The old `ts-node prisma/seed.ts` did not, so on a fresh clone it failed
   with `Environment variable not found: DATABASE_URL` while the README

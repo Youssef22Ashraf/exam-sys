@@ -36,4 +36,3 @@ eligible only if `now - submittedAt >= 48h`. See
 
 ## Known gaps
 
-- `clear-cooldown` backdates timestamps — `TODO.md` §Correctness.

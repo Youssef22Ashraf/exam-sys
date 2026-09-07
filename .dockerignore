@@ -4,4 +4,3 @@ dist
 .gitignore
 *.log
 .DS_Store
-*.md
