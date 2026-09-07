@@ -4,7 +4,7 @@
 [![React](https://img.shields.io/badge/React-19.0-61dafb?logo=react&logoColor=black)](https://react.dev/)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.19-000000?logo=express&logoColor=white)](https://expressjs.com/)
-[![Prisma](https://img.shields.io/badge/Prisma-6.0+-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Prisma](https://img.shields.io/badge/Prisma-5.x-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)](https://railway.app/)
 
@@ -163,7 +163,7 @@ exam-system/
 ### Backend
 - **Runtime**: Node.js 18+ / Express
 - **Language**: TypeScript
-- **ORM**: Prisma ORM (v6+)
+- **ORM**: Prisma ORM (v5)
 - **Database**: SQLite (default zero-config) / PostgreSQL (production-ready)
 - **Real-Time Communication**: Socket.io
 - **Security**: JSON Web Tokens (JWT), bcrypt password hashing, CORS whitelist

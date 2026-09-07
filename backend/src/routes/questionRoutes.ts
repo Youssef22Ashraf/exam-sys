@@ -37,13 +37,14 @@ router.post("/", authenticateAdmin, async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Invalid question data provided." });
     }
 
-    // Auto-determine next ID
-    const maxIdQuestion = await prisma.question.findFirst({
-      orderBy: { id: "desc" },
-    });
-    const nextId = (maxIdQuestion?.id || 0) + 1;
-
-    const created = await prisma.question.create({
+    // max(id)+1 and the insert in one transaction, or two concurrent adds
+    // pick the same id and the second one fails on the primary key.
+    const created = await prisma.$transaction(async (tx) => {
+      const maxIdQuestion = await tx.question.findFirst({
+        orderBy: { id: "desc" },
+      });
+      const nextId = (maxIdQuestion?.id || 0) + 1;
+      return tx.question.create({
       data: {
         id: nextId,
         section,
@@ -56,6 +57,7 @@ router.post("/", authenticateAdmin, async (req: Request, res: Response) => {
         options: JSON.stringify(options),
         correctAnswer: Number(correctAnswer),
       },
+      });
     });
 
     return res.status(201).json({

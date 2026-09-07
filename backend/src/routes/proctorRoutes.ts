@@ -3,6 +3,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { prisma } from "../config/db";
+import { authenticateAdmin } from "../middleware/auth";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ const videoStorage = multer.diskStorage({
     cb(null, videosDir);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".webm";
+    const ext = ".webm"; // the frontend only ever records webm; never trust originalname
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(null, `proctor-video-${uniqueSuffix}${ext}`);
   },
@@ -100,7 +101,7 @@ router.post("/upload-snapshot", snapshotUpload.single("photo"), async (req: Requ
 });
 
 // GET /api/proctor/video/:filename - Stream video with HTTP 206 Range headers
-router.get("/video/:filename", (req: Request, res: Response) => {
+router.get("/video/:filename", authenticateAdmin, (req: Request, res: Response) => {
   try {
     const filename = path.basename(req.params.filename);
     const videoPath = path.join(videosDir, filename);
@@ -141,7 +142,7 @@ router.get("/video/:filename", (req: Request, res: Response) => {
 });
 
 // GET /api/proctor/download/:filename - Force download
-router.get("/download/:filename", (req: Request, res: Response) => {
+router.get("/download/:filename", authenticateAdmin, (req: Request, res: Response) => {
   try {
     const filename = path.basename(req.params.filename);
     const videoPath = path.join(videosDir, filename);

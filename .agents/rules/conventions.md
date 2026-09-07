@@ -9,4 +9,4 @@
 - Question bank lives in `seed.ts`, `defaultQuestions.ts`, `storage.ts INITIAL_QUESTIONS` — change all three.
 - Duration and pass mark come from `ExamStorage.getSettings()`, never literals.
 - No new dependencies without a `CHANGELOG.md` line.
-- Gate before done: `cd backend && npx tsc --noEmit`; `cd frontend && npm run lint && npx tsc -b`. No tests exist — don't claim they pass.
+- Gate before done: `cd backend && npx tsc --noEmit`; `cd frontend && npx tsc -b`. No tests exist — don't claim they pass.

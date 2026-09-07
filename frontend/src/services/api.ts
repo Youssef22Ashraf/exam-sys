@@ -319,6 +319,10 @@ export const api = {
         body: JSON.stringify(payload),
       });
 
+      if (res.status === 403) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Submission refused: 48-hour cooldown active.");
+      }
       if (res.ok) {
         const data = await res.json();
         if (data.result) {
@@ -329,6 +333,7 @@ export const api = {
         }
       }
     } catch (err) {
+      if (err instanceof Error && err.message.includes("cooldown")) throw err;
       console.warn("Backend unavailable, submitting and scoring locally.");
     }
 
@@ -512,7 +517,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/settings/test-email`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ email }),
       });
       return await res.json();

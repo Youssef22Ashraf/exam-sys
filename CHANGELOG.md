@@ -8,19 +8,109 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Added
 
+- **Dark theme for the admin portal.** A token layer at the top of
+  `styles.css` (`--bg`, `--surface`, `--text`, `--primary`, semantic
+  soft/border pairs, shadows, focus ring) with a `[data-theme="dark"]`
+  palette. `hooks/useTheme.ts` sets the attribute on `<html>` while the
+  admin login or dashboard is mounted and removes it on unmount, so the
+  candidate portal always renders light. Toggle in the admin header;
+  choice persisted in `localStorage`, default follows
+  `prefers-color-scheme`.
+- **Admin dashboard UI pass.** Tabs are a sticky segmented control under
+  the header; stat cards carry a colour accent and tabular numerals;
+  tables get sticky headers, zebra rows, hover highlight, and a 70vh
+  scroll region; badges get a status dot and border; inputs get a visible
+  focus ring; modals and toasts animate in and respect
+  `prefers-reduced-motion`. Every hard-coded colour in
+  `AdminDashboard.css`, `AdminDashboard.tsx` (105 inline literals),
+  `AdminLogin.tsx`, and `styles.css` is now a token.
+
+### Security
+
+- **Every read that returns candidate data now requires the admin JWT.**
+  `GET /api/candidates`, `/candidates/:id/history`, `/exam/results`,
+  `/exam/results/:id`, `/exam/export/csv`, `/proctor/video/:filename`,
+  `/proctor/download/:filename`, and `POST /settings/test-email` all take
+  `authenticateAdmin`. Before this, anyone with the domain could pull every
+  candidate's name, email, company ID, score, and webcam recording.
+  `authenticateAdmin` also accepts the same JWT as `?token=` because a
+  `<video src>` cannot set an `Authorization` header; the admin dashboard
+  appends it for playback. `api.ts` sends the bearer header on `test-email`.
+
+- **The 48-hour lockout is enforced at submit.** `POST /api/exam/submit`
+  returns `403 COOLDOWN_ACTIVE` when an attempt by the same email or
+  company ID exists inside the window. Before this only the registration
+  screen checked, so a client that skipped it could submit. The query
+  moved to `backend/src/services/cooldown.ts` and `check-cooldown` uses the
+  same function, so the two cannot disagree. `api.ts` treats a 403 as a
+  refusal and throws instead of falling back to local scoring.
+
+- **`CORS_ORIGIN` is applied** to both Express and Socket.io. Unset means
+  `*` (dev); set means a comma-separated list of exact origins, and
+  `credentials` is only enabled in that case. Previously the variable was
+  read and ignored.
+- **Production refuses to boot on the fallback `JWT_SECRET`.**
+  `config/env.ts` throws at import when `NODE_ENV=production` and the
+  secret is unset or still the dev string that is in git.
+
+- **`POST /api/admin/login` is rate-limited**: 10 attempts per IP per
+  15 minutes, then `429` with `Retry-After`. In-memory, single process
+  (`middleware/rateLimit.ts`).
+- **`videoFilename` and `candidatePhoto` are validated at submit.** The
+  filename must be a bare `*.webm` basename; the photo must be an image
+  data URL. A crafted body can no longer store a path for the admin UI to
+  fetch. The video upload also ignores the client's extension and always
+  writes `.webm`.
+
+### Fixed
+
+- **Concurrent submits and question adds no longer collide.** The
+  candidate upsert and the attempt insert in `POST /api/exam/submit` run
+  in one `prisma.$transaction`, so two simultaneous submits cannot both
+  read `totalAttempts = N` and both write `attemptNumber = N + 1`.
+  `POST /api/questions` computes `max(id) + 1` and inserts inside one
+  transaction for the same reason.
+- **`clear-cooldown` no longer rewrites audit timestamps.** It used to
+  backdate `lastAttemptAt` and every attempt's `submittedAt` by 49 hours.
+  It now stamps a new nullable `Candidate.cooldownClearedAt`, and the
+  shared cooldown query treats attempts at or before that stamp as spent.
+  Additive schema change; `prisma db push` adds the column without
+  touching rows.
+- `.dockerignore` no longer excludes `*.md`, so a runtime read of a
+  markdown file inside the image cannot silently fail.
+- README badge said Prisma 6; `package.json` pins 5.x. Badge corrected.
+- `npm run seed` now runs `prisma db seed`, which loads `backend/.env`.
+  The old `ts-node prisma/seed.ts` did not, so on a fresh clone it failed
+  with `Environment variable not found: DATABASE_URL` while the README
+  said it would work.
+- `socket.ts` derives the Socket.io origin from `VITE_API_URL` instead of
+  hardcoding `localhost:5000`, so a dev backend on another port gets the
+  live feed too.
+
+- **The results screen now shows the server's verdict.** `Exam.tsx`
+  computed a local result and fired `submitExam` without awaiting it, so
+  the candidate saw the browser's score and attempt id while the server
+  stored (or refused) something else. It now awaits the response and
+  renders the server object; the local calculation is used only when
+  `api.ts` falls back because the API is unreachable. A `403
+  COOLDOWN_ACTIVE` shows a "Submission refused" screen instead of a
+  result.
+- The recording was uploaded twice on submit (one fire-and-forget call
+  followed by an awaited one). One upload now.
+
+### Added
+
 - Project convention docs: `AGENTS.md`, `CLAUDE.md`, and
   `tech_readme_files/` (`plan.md`, `TODO.md`, `CURRENT_STATUS.md`).
 
 ### Known issues (not yet fixed — tracked in `tech_readme_files/TODO.md`)
 
-- Candidate PII is readable without a token: `GET /api/candidates`,
-  `GET /api/candidates/:id/history`, `GET /api/exam/results`,
-  `GET /api/exam/export/csv`, and proctor video streaming take no auth.
+- Frontend `npm run lint` reports 43 pre-existing errors (unused `err`
+  in catch blocks, `any`, empty blocks). It has never been green; the
+  documented gate said otherwise until this entry. `tsc -b` is clean.
 - The 48-hour lockout is enforced at `check-cooldown` and in the browser,
   but `POST /api/exam/submit` does not re-check it. A candidate who skips
   the registration screen can submit inside the window.
-- `CORS_ORIGIN` is read in `index.ts` but `cors({ origin: "*" })` is what
-  is applied. The env var does nothing.
 - No automated tests exist for either package.
 
 ## [1.0.0] — 2026-09-07

@@ -6,8 +6,10 @@ import path from "path";
 import fs from "fs";
 import dotenv from "dotenv";
 
-// Load environment variables
+// Load environment variables before config/env reads them
 dotenv.config();
+
+import { CORS_ORIGIN } from "./config/env";
 
 import authRoutes from "./routes/authRoutes";
 import candidateRoutes from "./routes/candidateRoutes";
@@ -20,14 +22,13 @@ const app = express();
 const httpServer = http.createServer(app);
 
 const PORT = process.env.PORT || 5000;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
 
 // Configure Socket.IO
 export const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: "*",
+    origin: CORS_ORIGIN,
     methods: ["GET", "POST"],
-    credentials: true,
+    credentials: CORS_ORIGIN !== "*",
   },
 });
 
@@ -71,8 +72,8 @@ io.on("connection", (socket) => {
 // Middleware
 app.use(
   cors({
-    origin: "*",
-    credentials: true,
+    origin: CORS_ORIGIN,
+    credentials: CORS_ORIGIN !== "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })

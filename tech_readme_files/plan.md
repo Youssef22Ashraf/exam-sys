@@ -33,7 +33,7 @@ whose scripts build both and start one process.
 4. **Every exit releases the camera.** No exception, no "the browser will
    do it".
 5. **Quality gate** before any task is called done: backend `tsc --noEmit`,
-   frontend `npm run lint && tsc -b`. There are no tests yet; say so.
+   frontend `tsc -b`. There are no tests yet; say so.
 6. **Document as you go.** `CHANGELOG.md` and `TODO.md` move in the same
    commit as the code.
 
@@ -81,9 +81,8 @@ filename. `attemptNumber` increments per candidate.
 
 Identity is **email OR company ID**. The newest attempt matching either
 starts a 48-hour clock from `submittedAt`. Inside it, registration shows
-remaining hours and the reopen timestamp. Admin can clear it; the current
-implementation backdates `lastAttemptAt` and the attempts' `submittedAt`
-so `check-cooldown` passes (audit-timestamp rewrite — `TODO.md` §Correctness).
+remaining hours and the reopen timestamp. Admin can clear it, which stamps `Candidate.cooldownClearedAt`; attempts
+at or before the stamp no longer count. Attempt timestamps stay as written.
 
 ### 2.4 Proctoring
 

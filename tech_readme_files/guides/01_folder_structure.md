@@ -13,8 +13,10 @@ exam-sys/
 │   │   ├── index.ts             Express app, Socket.io, static SPA, /api mounts, error handler
 │   │   ├── config/
 │   │   │   ├── db.ts            the single PrismaClient
+│   │   ├── env.ts           JWT_SECRET (prod boot guard) and CORS_ORIGIN parsing
 │   │   │   └── defaultQuestions.ts   bank used by POST /api/questions/reset
-│   │   ├── middleware/auth.ts   authenticateAdmin (Bearer JWT)
+│   │   ├── middleware/auth.ts   authenticateAdmin (Bearer JWT or ?token=)
+│   │   ├── middleware/rateLimit.ts   in-memory per-IP limiter, login only
 │   │   ├── routes/              authRoutes · candidateRoutes · questionRoutes · examRoutes · proctorRoutes · settingRoutes
 │   │   └── services/emailService.ts
 │   ├── uploads/{videos,snapshots}/   gitignored, mounted as a volume in prod
@@ -26,6 +28,7 @@ exam-sys/
 │   │   ├── main.tsx · App.tsx   entry + page state machine
 │   │   ├── pages/               ExamRegistration · ExamInstructions · Exam · ExamResults · AdminLogin · AdminDashboard (+ .css each)
 │   │   ├── components/CameraProctor.tsx
+│   │   ├── hooks/useTheme.ts    admin-only dark/light, data-theme on <html>
 │   │   ├── services/            api · storage · socket · camera · videoStorage
 │   │   ├── assets/
 │   │   └── styles.css · index.css · App.css
@@ -49,4 +52,4 @@ exam-sys/
 | Add a screen | `frontend/src/pages/` + `App.tsx` switch — [04](04_how_to_add_new_page.md) |
 | Change a question | three files — [05](05_how_to_change_questions.md) |
 | Add a DB column | `schema.prisma` → `prisma db push` → routes → `storage.ts` types |
-| Change colours | `frontend/src/styles.css` CSS variables |
+| Change colours | `frontend/src/styles.css` `:root` tokens; dark palette in `[data-theme="dark"]` |

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
 import { authenticateAdmin } from "../middleware/auth";
+import { findActiveCooldown } from "../services/cooldown";
 
 const router = Router();
 
@@ -14,35 +15,14 @@ router.get("/check-cooldown", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Email or Company ID is required." });
     }
 
-    const whereConditions: any[] = [];
-    if (email) whereConditions.push({ candidateEmail: email });
-    if (companyId) whereConditions.push({ companyId: companyId });
-
-    const lastAttempt = await prisma.examAttempt.findFirst({
-      where: { OR: whereConditions },
-      orderBy: { submittedAt: "desc" },
-    });
-
-    if (lastAttempt) {
-      const now = new Date();
-      const elapsedMs = now.getTime() - new Date(lastAttempt.submittedAt).getTime();
-      const cooldownMs = 48 * 60 * 60 * 1000; // 48 hours
-
-      if (elapsedMs < cooldownMs) {
-        const remainingMs = cooldownMs - elapsedMs;
-        const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
-        const availableAt = new Date(new Date(lastAttempt.submittedAt).getTime() + cooldownMs);
-
-        return res.json({
-          eligible: false,
-          error: "COOLDOWN_ACTIVE",
-          message: `You completed an assessment on ${new Date(lastAttempt.submittedAt).toLocaleString()}. You are eligible to re-attempt after 48 hours.`,
-          lastAttemptAt: lastAttempt.submittedAt.toISOString(),
-          nextAttemptAvailableAt: availableAt.toISOString(),
-          remainingHours,
-          attemptNumber: (lastAttempt.attemptNumber || 1) + 1,
-        });
-      }
+    const cooldown = await findActiveCooldown(email, companyId);
+    if (cooldown) {
+      return res.json({
+        eligible: false,
+        error: "COOLDOWN_ACTIVE",
+        message: `You completed an assessment on ${new Date(cooldown.lastAttemptAt).toLocaleString()}. You are eligible to re-attempt after 48 hours.`,
+        ...cooldown,
+      });
     }
 
     return res.json({ eligible: true });
@@ -134,7 +114,7 @@ router.post("/register", async (req: Request, res: Response) => {
 });
 
 // GET /api/candidates - Admin candidate directory
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { search, status } = req.query;
 
@@ -182,7 +162,7 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // GET /api/candidates/:id/history - Retrieve all attempts of a candidate
-router.get("/:id/history", async (req: Request, res: Response) => {
+router.get("/:id/history", authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const candidate = await prisma.candidate.findUnique({
@@ -247,22 +227,10 @@ router.post("/:id/clear-cooldown", authenticateAdmin, async (req: Request, res: 
       return res.status(404).json({ error: "Candidate not found." });
     }
 
-    // Shift last attempts back by 49 hours so cooldown is immediately lifted
-    const pastDate = new Date(Date.now() - 49 * 60 * 60 * 1000);
+    // Stamp the override; attempt timestamps are audit data and stay as they are.
     await prisma.candidate.update({
       where: { id },
-      data: { lastAttemptAt: pastDate },
-    });
-
-    await prisma.examAttempt.updateMany({
-      where: {
-        OR: [
-          { candidateId: candidate.id },
-          { candidateEmail: candidate.email },
-          { companyId: candidate.companyId },
-        ],
-      },
-      data: { submittedAt: pastDate },
+      data: { cooldownClearedAt: new Date() },
     });
 
     return res.json({

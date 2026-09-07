@@ -11,7 +11,10 @@ breakdown, pass or fail, attempt number, and the retest policy line.
 `passingPercentage` ([ADR 001](../decisions/001-server-side-scoring.md)),
 upserts the `Candidate`, computes `attemptNumber = totalAttempts + 1`,
 creates the `ExamAttempt`, sends the email, and returns the attempt.
-`ExamResults.tsx` renders the returned object. If the API was unreachable,
+`Exam.tsx` awaits that response, merges it over the local preview
+(keeping `passingPercentage` for display), and hands it to
+`ExamResults.tsx`. A `403 COOLDOWN_ACTIVE` renders a "Submission
+refused" screen. If the API was unreachable,
 the locally computed `ExamResult` is shown and stored with
 `ExamStorage.recordExamResult`; it is never synced later
 ([ADR 005](../decisions/005-localstorage-fallback-not-offline-first.md)).
@@ -23,5 +26,4 @@ the locally computed `ExamResult` is shown and stored with
 
 ## Known gaps
 
-- Two concurrent submits for one candidate race on `attemptNumber` —
-  `TODO.md` §Correctness.
+- None open.

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
 import { authenticateAdmin } from "../middleware/auth";
+import { findActiveCooldown } from "../services/cooldown";
 import { sendExamCompletionAlert } from "../services/emailService";
 
 const router = Router();
@@ -26,6 +27,34 @@ router.post("/submit", async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({ error: "Candidate name and email are required." });
+    }
+
+    // videoFilename must be a bare file the proctor upload produced; the
+    // photo is a data URL from the canvas. Anything else is rejected so a
+    // crafted body cannot store a path for the admin UI to fetch later.
+    if (videoFilename !== undefined && videoFilename !== null) {
+      if (typeof videoFilename !== "string" || !/^[\w.-]+\.webm$/.test(videoFilename)) {
+        return res.status(400).json({ error: "Invalid videoFilename." });
+      }
+    }
+    if (candidatePhoto !== undefined && candidatePhoto !== null) {
+      if (typeof candidatePhoto !== "string" || !/^data:image\/(jpeg|png|webp);base64,/.test(candidatePhoto)) {
+        return res.status(400).json({ error: "Invalid candidatePhoto." });
+      }
+    }
+
+    // 0. The registration screen checks this too, but a client that skips
+    //    it must not be able to submit inside the 48-hour window.
+    const cooldown = await findActiveCooldown(
+      String(candidateEmail).trim().toLowerCase(),
+      String(companyId || "").trim()
+    );
+    if (cooldown) {
+      return res.status(403).json({
+        error: "COOLDOWN_ACTIVE",
+        message: `A submission for this candidate exists within the last 48 hours. Next attempt allowed at ${cooldown.nextAttemptAvailableAt}.`,
+        ...cooldown,
+      });
     }
 
     // 1. Fetch questions to evaluate score on the server
@@ -67,70 +96,75 @@ router.post("/submit", async (req: Request, res: Response) => {
     const passThreshold = settings?.passingPercentage ?? 70;
     const isPassed = percentage >= passThreshold;
 
-    // 3. Upsert candidate if not already present
+    // 3+4. Candidate upsert and attempt insert in ONE transaction so two
+    //      concurrent submits for the same candidate cannot both read
+    //      totalAttempts=N and both write attemptNumber=N+1.
     const trimmedEmail = candidateEmail.trim().toLowerCase();
     const submissionTime = new Date();
-    let candidate = await prisma.candidate.findUnique({
-      where: { email: trimmedEmail },
-    });
-
     let attemptNumber = 1;
+    type CandidateRow = NonNullable<Awaited<ReturnType<typeof prisma.candidate.findUnique>>>;
+    let candidate!: CandidateRow; // assigned inside the transaction callback
+    const attempt = await prisma.$transaction(async (tx) => {
+      const existing = await tx.candidate.findUnique({
+        where: { email: trimmedEmail },
+      });
 
-    if (!candidate) {
-      candidate = await prisma.candidate.create({
+      if (!existing) {
+        candidate = await tx.candidate.create({
+          data: {
+            name: candidateName.trim(),
+            email: trimmedEmail,
+            companyId: (companyId || "N/A").trim(),
+            status: "Completed",
+            totalAttempts: 1,
+            highestScore: score,
+            latestScore: score,
+            lastAttemptAt: submissionTime,
+          },
+        });
+        attemptNumber = 1;
+      } else {
+        const highest = Math.max(existing.highestScore ?? 0, score);
+        const newAttemptsCount = (existing.totalAttempts || 0) + 1;
+        candidate = await tx.candidate.update({
+          where: { id: existing.id },
+          data: {
+            status: "Completed",
+            totalAttempts: newAttemptsCount,
+            latestScore: score,
+            highestScore: highest,
+            lastAttemptAt: submissionTime,
+          },
+        });
+        attemptNumber = newAttemptsCount;
+      }
+
+      // 4. Save Attempt Record
+      return tx.examAttempt.create({
         data: {
-          name: candidateName.trim(),
-          email: trimmedEmail,
-          companyId: (companyId || "N/A").trim(),
-          status: "Completed",
-          totalAttempts: 1,
-          highestScore: score,
-          latestScore: score,
-          lastAttemptAt: submissionTime,
+          candidateId: candidate.id,
+          candidateName: candidate.name,
+          candidateEmail: candidate.email,
+          companyId: candidate.companyId,
+          submittedAt: submissionTime,
+          score,
+          totalQuestions,
+          percentage,
+          isPassed,
+          timeSpentSeconds: Number(timeSpentSeconds),
+          partAScore,
+          partATotal,
+          partBScore,
+          partBTotal,
+          answers: JSON.stringify(answers),
+          tabSwitches: Number(tabSwitches),
+          proctoringStatus,
+          candidatePhoto: candidatePhoto || null,
+          hasVideoRecording: Boolean(hasVideoRecording),
+          videoFilename: videoFilename || null,
+          attemptNumber,
         },
       });
-      attemptNumber = 1;
-    } else {
-      const highest = Math.max(candidate.highestScore ?? 0, score);
-      const newAttemptsCount = (candidate.totalAttempts || 0) + 1;
-      candidate = await prisma.candidate.update({
-        where: { id: candidate.id },
-        data: {
-          status: "Completed",
-          totalAttempts: newAttemptsCount,
-          latestScore: score,
-          highestScore: highest,
-          lastAttemptAt: submissionTime,
-        },
-      });
-      attemptNumber = newAttemptsCount;
-    }
-
-    // 4. Save Attempt Record
-    const attempt = await prisma.examAttempt.create({
-      data: {
-        candidateId: candidate.id,
-        candidateName: candidate.name,
-        candidateEmail: candidate.email,
-        companyId: candidate.companyId,
-        submittedAt: submissionTime,
-        score,
-        totalQuestions,
-        percentage,
-        isPassed,
-        timeSpentSeconds: Number(timeSpentSeconds),
-        partAScore,
-        partATotal,
-        partBScore,
-        partBTotal,
-        answers: JSON.stringify(answers),
-        tabSwitches: Number(tabSwitches),
-        proctoringStatus,
-        candidatePhoto: candidatePhoto || null,
-        hasVideoRecording: Boolean(hasVideoRecording),
-        videoFilename: videoFilename || null,
-        attemptNumber,
-      },
     });
 
     // 5. Asynchronous Email Alert (non-blocking)
@@ -182,7 +216,7 @@ router.post("/submit", async (req: Request, res: Response) => {
 });
 
 // GET /api/exam/results - List results for Admin Dashboard
-router.get("/results", async (req: Request, res: Response) => {
+router.get("/results", authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { status, search } = req.query;
 
@@ -239,7 +273,7 @@ router.get("/results", async (req: Request, res: Response) => {
 });
 
 // GET /api/exam/results/:id - Single attempt details
-router.get("/results/:id", async (req: Request, res: Response) => {
+router.get("/results/:id", authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const a = await prisma.examAttempt.findUnique({
@@ -281,7 +315,7 @@ router.get("/results/:id", async (req: Request, res: Response) => {
 });
 
 // GET /api/exam/results/export/csv - Export CSV file for Excel
-router.get("/export/csv", async (_req: Request, res: Response) => {
+router.get("/export/csv", authenticateAdmin, async (_req: Request, res: Response) => {
   try {
     const attempts = await prisma.examAttempt.findMany({
       orderBy: { submittedAt: "desc" },

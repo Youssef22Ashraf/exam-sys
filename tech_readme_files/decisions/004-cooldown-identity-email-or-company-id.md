@@ -14,11 +14,12 @@ must not bypass that.
 where `candidateEmail = email OR companyId = companyId` and applies a
 48-hour window from its `submittedAt`. The client mirrors the check in
 `ExamStorage.checkCandidateCooldown` for the offline path. Admin
-`clear-cooldown` overrides.
+`clear-cooldown` stamps `Candidate.cooldownClearedAt`; an attempt at or
+before that stamp is spent. Attempt timestamps are never rewritten.
 
 ## Consequences
 - Changing either identifier alone does not evade the lockout.
 - A typo in company ID at first registration creates a candidate row
   that a later correct ID will not match — admin must merge by hand.
-- The check is only at registration. Enforcing it inside
-  `POST /api/exam/submit` is `TODO.md` Phase 8, item 2.
+- Enforced at registration (`check-cooldown`) and at `POST /api/exam/submit`
+  (403) through one shared function, `services/cooldown.ts`.
