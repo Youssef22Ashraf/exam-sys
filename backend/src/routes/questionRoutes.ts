@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
-import { authenticateAdmin, optionalAdmin, AuthRequest } from "../middleware/auth";
+import { authenticateAdmin, optionalAdmin, requireRole, AuthRequest } from "../middleware/auth";
 import { QUESTIONS } from "../config/defaultQuestions";
 
 const router = Router();
@@ -125,7 +125,7 @@ router.delete("/:id", authenticateAdmin, async (req: Request, res: Response) => 
 });
 
 // POST /api/questions/reset - Restore default 40 questions (Admin)
-router.post("/reset", authenticateAdmin, async (_req: Request, res: Response) => {
+router.post("/reset", authenticateAdmin, requireRole("SUPERADMIN"), async (_req: Request, res: Response) => {
   try {
     await prisma.question.deleteMany();
     for (const q of QUESTIONS) {

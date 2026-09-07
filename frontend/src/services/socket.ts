@@ -18,12 +18,23 @@ export function getSocket(): Socket | null {
         ? window.location.origin
         : "http://localhost:5000";
 
+    // An admin token, when present, puts this socket in the server's `admins`
+    // room — the only place admin:* events are delivered. A candidate connects
+    // without one and can emit but not listen in.
+    let token: string | null = null;
+    try {
+      token = sessionStorage.getItem("adminToken");
+    } catch {
+      token = null;
+    }
+
     socket = io(SOCKET_URL, {
       transports: ["websocket", "polling"],
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 2000,
+      auth: token ? { token } : undefined,
     });
 
     socket.on("connect", () => {
@@ -36,6 +47,21 @@ export function getSocket(): Socket | null {
   }
 
   return socket;
+}
+
+/**
+ * Drop the connection so the next getSocket() re-handshakes with whatever
+ * token is in sessionStorage now. The socket is a singleton created on first
+ * use, so an admin who logs in after the page loaded would otherwise keep the
+ * unauthenticated connection and never join the `admins` room. Call on login
+ * and on logout.
+ */
+export function reconnectSocket(): void {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  getSocket();
 }
 
 export const socketService = {

@@ -24,9 +24,12 @@ always. This file only covers tool-use rules specific to working here.
 - Never commit `backend/.env`, `*.db`, or anything under
   `backend/uploads/{videos,snapshots}` — they hold candidate PII and
   webcam recordings. `.gitignore` already excludes them; do not weaken it.
-- Default credentials (`admin` / `admin123`) and the fallback `JWT_SECRET`
-  are seeded for local dev only. Never paste real SMTP passwords or a
-  production JWT secret into a tracked file.
+- There are no default credentials in the code. Admin accounts are created
+  from `ADMIN_INITIAL_PASSWORD`; production refuses to boot without it, and
+  refuses to boot on a `JWT_SECRET` that has ever appeared in this repo (the
+  denylist is in `backend/src/config/env.ts`). Dev falls back to
+  `devadmin1234`. Never paste a real SMTP password, admin password, or
+  production JWT secret into a tracked file — not in README or compose either.
 - `ref-for ui/` holds the client's WhatsApp screenshots of the target UI.
   Read-only reference — never edit, never delete.
 - All docs (`plan.md`, `TODO.md`, `CURRENT_STATUS.md`, `decisions/`, `features/`,

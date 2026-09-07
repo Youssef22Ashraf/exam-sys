@@ -181,7 +181,16 @@ PORT=5000
 NODE_ENV=production
 
 # Security & Authentication
-JWT_SECRET=super_secret_exam_jwt_key_production_2026_x89
+# Generate a private value -- never reuse one printed in documentation:
+#   openssl rand -base64 48
+# In production the server refuses to boot if JWT_SECRET is a value that has
+# appeared in this repository, or is shorter than 32 characters.
+JWT_SECRET=
+
+# Password for the two admin accounts created on an empty database.
+# Required in production, minimum 12 characters. Change it in the admin
+# portal (Settings -> Change password) after the first login.
+ADMIN_INITIAL_PASSWORD=
 
 # Database Connection
 DATABASE_URL="file:./dev.db"
@@ -193,6 +202,10 @@ SMTP_USER=your_email@gmail.com
 SMTP_PASS=your_gmail_app_password
 ADMIN_ALERT_EMAIL=supervisor_recipient@gmail.com
 ```
+
+> **Never commit real values for `JWT_SECRET`, `ADMIN_INITIAL_PASSWORD` or
+> `SMTP_PASS`.** A secret printed in a README is public: anyone who reads it
+> can forge an admin token against any deployment using it.
 
 ---
 
@@ -288,7 +301,12 @@ The Prisma schema defines 5 core models:
 
 - **Examinee Portal**: Share root domain (e.g., `https://your-domain.up.railway.app/`) with candidates.
 - **Admin Command Portal**: Access via `/admin` (e.g., `https://your-domain.up.railway.app/admin`).
-  - **Default Credentials**: `admin` / `admin123` *(change upon first deployment)*.
+  - Two accounts are created on an empty database: `mofarreh.admin`
+    (SUPERADMIN) and `admin` (ADMIN), both with the password you set in
+    `ADMIN_INITIAL_PASSWORD`. There is no default password in the code.
+  - **Change it after the first login** via Settings -> Change password.
+  - SUPERADMIN is required to reset the question bank or delete a candidate
+    or a result.
 
 ---
 

@@ -9,7 +9,8 @@ import dotenv from "dotenv";
 // Load environment variables before config/env reads them
 dotenv.config();
 
-import { CORS_ORIGIN } from "./config/env";
+import jwt from "jsonwebtoken";
+import { CORS_ORIGIN, JWT_SECRET } from "./config/env";
 import { recordWarning } from "./services/examSession";
 
 import authRoutes from "./routes/authRoutes";
@@ -35,8 +36,31 @@ export const io = new SocketIOServer(httpServer, {
 
 app.set("io", io);
 
+/**
+ * Sockets presenting a valid admin JWT join the `admins` room; everyone else
+ * connects as a candidate and can only emit. Without this, `io.emit` delivered
+ * every candidate's name, email and company ID to every connected client,
+ * candidates included.
+ */
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token || socket.handshake.query?.token;
+  if (typeof token === "string" && token) {
+    try {
+      jwt.verify(token, JWT_SECRET);
+      socket.data.isAdmin = true;
+    } catch {
+      // An invalid token is not a connection error — the socket simply does
+      // not get admin visibility.
+      socket.data.isAdmin = false;
+    }
+  }
+  next();
+});
+
 io.on("connection", (socket) => {
-  console.log("🔌 [Socket.io] Client connected:", socket.id);
+  if (socket.data.isAdmin) {
+    socket.join("admins");
+  }
 
   // When candidate switches tab or triggers warning.
   // The count is banked against the server-owned sitting so the submit body
@@ -47,7 +71,7 @@ io.on("connection", (socket) => {
         console.error("Failed to record proctor warning:", err)
       );
     }
-    io.emit("admin:candidate_warning", {
+    io.to("admins").emit("admin:candidate_warning", {
       ...payload,
       timestamp: new Date().toISOString(),
     });
@@ -55,7 +79,7 @@ io.on("connection", (socket) => {
 
   // When candidate starts exam
   socket.on("candidate:started", (payload) => {
-    io.emit("admin:candidate_started", {
+    io.to("admins").emit("admin:candidate_started", {
       ...payload,
       timestamp: new Date().toISOString(),
     });
@@ -63,7 +87,7 @@ io.on("connection", (socket) => {
 
   // When candidate finishes exam
   socket.on("candidate:submitted", (payload) => {
-    io.emit("admin:exam_submitted", {
+    io.to("admins").emit("admin:exam_submitted", {
       ...payload,
       timestamp: new Date().toISOString(),
     });
@@ -87,12 +111,15 @@ app.use(
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Static directory for uploaded proctoring snapshots and recordings
+// Uploaded snapshots and recordings are NOT served statically. They are
+// candidate webcam footage; every read goes through an authenticated route in
+// routes/proctorRoutes.ts. A public `express.static` mount here made the
+// snapshots world-readable and gave the admin-only video route a second,
+// unguarded door.
 const uploadsDir = path.resolve(__dirname, "../uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use("/uploads", express.static(uploadsDir));
 
 // Serve static frontend SPA bundle in production
 const candidateFrontendPaths = [
@@ -103,7 +130,7 @@ const candidateFrontendPaths = [
 ];
 const frontendDist = candidateFrontendPaths.find((p) => fs.existsSync(p));
 if (frontendDist) {
-  console.log(`📦 Serving frontend static bundle from: ${frontendDist}`);
+  console.log(`Serving frontend static bundle from: ${frontendDist}`);
   app.use(express.static(frontendDist));
 }
 
@@ -151,12 +178,11 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 // Start Server
 httpServer.listen(PORT, async () => {
-  console.log(`🚀 Exam System Backend Server listening on port ${PORT}`);
-  console.log(`📡 API Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`🔌 WebSocket Server: ws://localhost:${PORT}`);
-  console.log(`🔒 Static Uploads: http://localhost:${PORT}/uploads`);
+  console.log(`Exam System Backend Server listening on port ${PORT}`);
+  console.log(`API Health Check: http://localhost:${PORT}/api/health`);
+  console.log(`WebSocket Server: ws://localhost:${PORT}`);
   if (frontendDist) {
-    console.log(`🌐 Public Web Application ready on http://localhost:${PORT}`);
+    console.log(`Public Web Application ready on http://localhost:${PORT}`);
   }
 
   // Automatically bootstrap database with questions, settings & admin credentials if empty

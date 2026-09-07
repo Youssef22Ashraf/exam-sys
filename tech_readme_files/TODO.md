@@ -18,7 +18,9 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
 - [ ] Retest identity: email OR company ID (current) vs. company ID only
 - [ ] Question / option randomisation wanted or not
 - [ ] Real SMTP account and recipient list for production
-- [ ] Change `admin/admin123` on first deploy — who holds the new password
+- [ ] Who holds the admin password after the first deploy (the code no longer
+      has a default: `ADMIN_INITIAL_PASSWORD` is required in production, and it
+      is changed in the portal after first login)
 
 ---
 
@@ -102,6 +104,31 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
       labelled "Verified" as the identity snapshot for a candidate with no camera
 - [x] **A failed submit no longer scores locally** — `SubmitFailedError` with a
       visible retry banner; supersedes the submit half of ADR 005 (ADR 008)
+- [x] **Purge hardcoded credentials** — offline login fallbacks deleted from
+      `api.ts` and `AdminLogin.tsx` (they shipped the real admin password in the
+      bundle and minted a fake token); `ADMIN_INITIAL_PASSWORD` replaces the
+      literal in `bootstrap.ts`/`seed.ts`; JWT secret removed from `README.md`
+      and `docker-compose.yml`; boot guard now rejects every secret published in
+      this repo and anything under 32 chars (feat/hardening-2-access)
+- [x] **Password rotation** — `POST /api/admin/password` + settings-tab form
+- [x] **Role enforcement** — `requireRole("SUPERADMIN")` on `questions/reset`,
+      `DELETE candidates/:id`, `DELETE exam/results/:id`. Proven: ADMIN token
+      403 on all three, 200 on ordinary reads
+- [x] **Remove the public `/uploads` static mount** — candidate webcam snapshots
+      were world-readable and it bypassed the admin-only video route; snapshots
+      move to `GET /api/proctor/snapshot/:filename` behind `authenticateAdmin`
+- [x] **Upload hardening** — snapshot extension from mime type not
+      `originalname` (stored-XSS vector), mime `fileFilter` on both uploads,
+      both require an open `ExamSession`, attacker-controlled `attemptId` removed
+- [x] **Authenticate Socket.IO** — admin JWT in the handshake joins an `admins`
+      room; `admin:*` no longer broadcast to every connected client. Proven:
+      anonymous and invalid-token sockets receive nothing
+- [x] **Stop leaking PII from unauthenticated endpoints** — identity conflicts
+      return a `publicMessage` naming only the caller's own field; guessing a
+      company ID no longer returns its holder's name and email
+- [x] **SMTP certificate verification** — `rejectUnauthorized: false` +
+      SSLv3 ciphers removed; `SMTP_INSECURE_TLS` is an explicit opt-out.
+      Candidate input HTML-escaped in the mail body
 - [x] **Auth on every read that returns candidate data**: `GET /api/candidates`,
       `/candidates/:id/history`, `/exam/results`, `/exam/results/:id`,
       `/exam/export/csv`, `/proctor/video/:filename`, `/proctor/download/:filename`,

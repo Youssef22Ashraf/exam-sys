@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -31,15 +31,28 @@ const videoStorage = multer.diskStorage({
 const videoUpload = multer({
   storage: videoStorage,
   limits: { fileSize: 200 * 1024 * 1024 }, // 200MB limit for full exam session
+  fileFilter: (_req, file, cb) => {
+    cb(null, file.mimetype.startsWith("video/"));
+  },
 });
 
 // Multer Storage Configuration for Snapshots
+const SNAPSHOT_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
+
 const snapshotStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     cb(null, snapshotsDir);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".jpg";
+    // Derived from the mime type, never from originalname. Taking the caller's
+    // extension let an unauthenticated POST store `.html` or `.svg` and — with
+    // the old public /uploads mount — have it served executable from this
+    // app's own origin. The video path above already got this right.
+    const ext = SNAPSHOT_EXTENSIONS[file.mimetype] || ".jpg";
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(null, `snapshot-${uniqueSuffix}${ext}`);
   },
@@ -48,36 +61,43 @@ const snapshotStorage = multer.diskStorage({
 const snapshotUpload = multer({
   storage: snapshotStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (_req, file, cb) => {
+    cb(null, Boolean(SNAPSHOT_EXTENSIONS[file.mimetype]));
+  },
 });
 
+/**
+ * Both uploads are candidate-facing, so they cannot take an admin token — but
+ * they were fully anonymous, which meant anyone on the internet could write
+ * 200 MB per request into the uploads volume forever. An open sitting is the
+ * cheapest proof that the caller is a candidate mid-exam.
+ */
+async function requireOpenSession(req: Request, res: Response, next: NextFunction) {
+  const sessionId = req.query.sessionId || req.headers["x-exam-session"];
+  if (!sessionId || typeof sessionId !== "string") {
+    return res.status(400).json({ error: "An exam session is required to upload." });
+  }
+  const session = await prisma.examSession.findUnique({ where: { id: sessionId } });
+  if (!session || session.attemptId) {
+    return res.status(403).json({ error: "No open exam session for this upload." });
+  }
+  return next();
+}
+
 // POST /api/proctor/upload-video
-router.post("/upload-video", videoUpload.single("video"), async (req: Request, res: Response) => {
+router.post("/upload-video", requireOpenSession, videoUpload.single("video"), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No video file provided." });
     }
 
-    const { attemptId } = req.body;
     const filename = req.file.filename;
 
-    if (attemptId) {
-      try {
-        const attempt = await prisma.examAttempt.findUnique({
-          where: { id: attemptId },
-        });
-        if (attempt) {
-          await prisma.examAttempt.update({
-            where: { id: attemptId },
-            data: {
-              hasVideoRecording: true,
-              videoFilename: filename,
-            },
-          });
-        }
-      } catch (dbErr) {
-        console.warn("Attempt not found to link video immediately (will link via submission payload):", dbErr);
-      }
-    }
+    // The upload used to accept a free-form `attemptId` and write
+    // `videoFilename` onto whatever attempt it named, letting an anonymous
+    // caller replace another candidate's proctoring evidence. It was also
+    // dead: the upload happens before the attempt exists, so the id never
+    // matched. The submit payload carries `videoFilename` and links it.
 
     return res.status(200).json({
       success: true,
@@ -91,7 +111,7 @@ router.post("/upload-video", videoUpload.single("video"), async (req: Request, r
 });
 
 // POST /api/proctor/upload-snapshot
-router.post("/upload-snapshot", snapshotUpload.single("photo"), async (req: Request, res: Response) => {
+router.post("/upload-snapshot", requireOpenSession, snapshotUpload.single("photo"), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No image file provided." });
@@ -101,11 +121,30 @@ router.post("/upload-snapshot", snapshotUpload.single("photo"), async (req: Requ
     return res.status(200).json({
       success: true,
       filename,
-      url: `/uploads/snapshots/${filename}`,
+      url: `/api/proctor/snapshot/${filename}`,
     });
   } catch (error) {
     console.error("Snapshot upload error:", error);
     return res.status(500).json({ error: "Failed to save photo snapshot." });
+  }
+});
+
+// GET /api/proctor/snapshot/:filename - Serve an identity snapshot (Admin)
+//
+// These used to be served by `express.static("/uploads")` with no auth at all,
+// so a candidate's webcam still was a public URL and the admin-only video
+// route below could be bypassed via the same directory.
+router.get("/snapshot/:filename", authenticateAdmin, (req: Request, res: Response) => {
+  try {
+    const filename = path.basename(req.params.filename);
+    const snapshotPath = path.join(snapshotsDir, filename);
+    if (!fs.existsSync(snapshotPath)) {
+      return res.status(404).json({ error: "Snapshot not found." });
+    }
+    return res.sendFile(snapshotPath);
+  } catch (error) {
+    console.error("Snapshot read error:", error);
+    return res.status(500).json({ error: "Failed to read the snapshot." });
   }
 });
 

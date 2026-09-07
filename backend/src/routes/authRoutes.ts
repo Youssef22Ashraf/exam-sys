@@ -58,5 +58,60 @@ router.get("/me", authenticateAdmin, async (req: AuthRequest, res: Response) => 
   return res.json({ user: req.user });
 });
 
+// POST /api/admin/password - Change the signed-in admin's own password.
+//
+// There was previously no way to rotate a password at all: the initial one was
+// a committed literal, identical on every deployment, and permanent.
+router.post(
+  "/password",
+  rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }),
+  authenticateAdmin,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+
+      if (typeof currentPassword !== "string" || typeof newPassword !== "string") {
+        return res
+          .status(400)
+          .json({ error: "Current and new password are required." });
+      }
+      if (newPassword.length < 12) {
+        return res
+          .status(400)
+          .json({ error: "The new password must be at least 12 characters." });
+      }
+      if (newPassword === currentPassword) {
+        return res
+          .status(400)
+          .json({ error: "The new password must differ from the current one." });
+      }
+
+      const admin = await prisma.adminUser.findUnique({
+        where: { id: req.user!.id },
+      });
+      if (!admin) {
+        return res.status(401).json({ error: "Account no longer exists." });
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, admin.passwordHash);
+      if (!isMatch) {
+        return res.status(401).json({ error: "Current password is incorrect." });
+      }
+
+      await prisma.adminUser.update({
+        where: { id: admin.id },
+        data: { passwordHash: await bcrypt.hash(newPassword, 10) },
+      });
+
+      // Tokens already issued stay valid until they expire (24h). Revocation
+      // needs a token store; see TODO.md.
+      return res.json({ success: true, message: "Password updated." });
+    } catch (error) {
+      console.error("Password change error:", error);
+      return res.status(500).json({ error: "Failed to update the password." });
+    }
+  }
+);
+
 export default router;
 

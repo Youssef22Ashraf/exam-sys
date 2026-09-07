@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
-import { authenticateAdmin } from "../middleware/auth";
+import { authenticateAdmin, requireRole } from "../middleware/auth";
 import { findActiveCooldown } from "../services/cooldown";
 import { validateExamineeEmail } from "../services/validation";
 import { validateCandidateIdentity } from "../services/candidateIdentity";
@@ -37,7 +37,7 @@ router.get("/check-cooldown", async (req: Request, res: Response) => {
         return res.status(409).json({
           eligible: false,
           error: "IDENTITY_CONFLICT",
-          message: identityCheck.message,
+          message: identityCheck.publicMessage,
         });
       }
     }
@@ -89,7 +89,7 @@ router.post("/register", async (req: Request, res: Response) => {
     if (identityCheck.conflict) {
       return res.status(409).json({
         error: "IDENTITY_CONFLICT",
-        message: identityCheck.message,
+        message: identityCheck.publicMessage,
       });
     }
 
@@ -226,7 +226,7 @@ router.get("/:id/history", authenticateAdmin, async (req: Request, res: Response
 });
 
 // DELETE /api/candidates/:id - Delete candidate
-router.delete("/:id", authenticateAdmin, async (req: Request, res: Response) => {
+router.delete("/:id", authenticateAdmin, requireRole("SUPERADMIN"), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.candidate.delete({
