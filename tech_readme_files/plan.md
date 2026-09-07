@@ -81,9 +81,8 @@ filename. `attemptNumber` increments per candidate.
 
 Identity is **email OR company ID**. The newest attempt matching either
 starts a 48-hour clock from `submittedAt`. Inside it, registration shows
-remaining hours and the reopen timestamp. Admin can clear it; the current
-implementation backdates `lastAttemptAt` and the attempts' `submittedAt`
-so `check-cooldown` passes (audit-timestamp rewrite — `TODO.md` §Correctness).
+remaining hours and the reopen timestamp. Admin can clear it, which stamps `Candidate.cooldownClearedAt`; attempts
+at or before the stamp no longer count. Attempt timestamps stay as written.
 
 ### 2.4 Proctoring
 

@@ -14,7 +14,8 @@ must not bypass that.
 where `candidateEmail = email OR companyId = companyId` and applies a
 48-hour window from its `submittedAt`. The client mirrors the check in
 `ExamStorage.checkCandidateCooldown` for the offline path. Admin
-`clear-cooldown` overrides.
+`clear-cooldown` stamps `Candidate.cooldownClearedAt`; an attempt at or
+before that stamp is spent. Attempt timestamps are never rewritten.
 
 ## Consequences
 - Changing either identifier alone does not evade the lockout.

@@ -104,11 +104,11 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
 
 ### Correctness — do now
 
-- [ ] `attemptNumber` = candidate attempt count + 1, read then written outside a transaction; two concurrent submits for one candidate collide. Wrap upsert + count + create in `prisma.$transaction`
-- [ ] `POST /api/questions` picks `max(id)+1` outside a transaction; concurrent adds collide on the primary key
-- [ ] `.dockerignore` excludes `*.md`, so any future runtime read of a markdown file (email template, instructions) will fail in the image
-- [ ] `clear-cooldown` backdates `lastAttemptAt` and every attempt's `submittedAt` — it rewrites audit timestamps. Prefer a `cooldownClearedAt` column that `check-cooldown` honours
-- [ ] README says Prisma 6; `package.json` pins `^5.18`. Pick one
+- [x] `attemptNumber` upsert + attempt insert in one `prisma.$transaction` (fix/correctness-transactions-and-cooldown-column)
+- [x] `POST /api/questions` `max(id)+1` + insert in one transaction — 5 parallel adds → ids 41–45, all 201
+- [x] `.dockerignore` no longer excludes `*.md`
+- [x] `clear-cooldown` stamps `Candidate.cooldownClearedAt`; attempt `submittedAt` untouched — proven: 403 → clear → 201 attempt #2, attempt #1 timestamp identical
+- [x] README badge → Prisma 5.x
 
 ### Lint — never been green
 

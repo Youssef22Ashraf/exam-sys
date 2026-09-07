@@ -34,5 +34,4 @@ the row if missing), `PUT` admin. Stored client-side as
 
 ## Known gaps
 
-- `POST /api/questions` picks `max(id)+1` non-atomically — `TODO.md` §Correctness.
 - Collapse triplication — `TODO.md` §Later.

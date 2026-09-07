@@ -96,70 +96,75 @@ router.post("/submit", async (req: Request, res: Response) => {
     const passThreshold = settings?.passingPercentage ?? 70;
     const isPassed = percentage >= passThreshold;
 
-    // 3. Upsert candidate if not already present
+    // 3+4. Candidate upsert and attempt insert in ONE transaction so two
+    //      concurrent submits for the same candidate cannot both read
+    //      totalAttempts=N and both write attemptNumber=N+1.
     const trimmedEmail = candidateEmail.trim().toLowerCase();
     const submissionTime = new Date();
-    let candidate = await prisma.candidate.findUnique({
-      where: { email: trimmedEmail },
-    });
-
     let attemptNumber = 1;
+    type CandidateRow = NonNullable<Awaited<ReturnType<typeof prisma.candidate.findUnique>>>;
+    let candidate!: CandidateRow; // assigned inside the transaction callback
+    const attempt = await prisma.$transaction(async (tx) => {
+      const existing = await tx.candidate.findUnique({
+        where: { email: trimmedEmail },
+      });
 
-    if (!candidate) {
-      candidate = await prisma.candidate.create({
+      if (!existing) {
+        candidate = await tx.candidate.create({
+          data: {
+            name: candidateName.trim(),
+            email: trimmedEmail,
+            companyId: (companyId || "N/A").trim(),
+            status: "Completed",
+            totalAttempts: 1,
+            highestScore: score,
+            latestScore: score,
+            lastAttemptAt: submissionTime,
+          },
+        });
+        attemptNumber = 1;
+      } else {
+        const highest = Math.max(existing.highestScore ?? 0, score);
+        const newAttemptsCount = (existing.totalAttempts || 0) + 1;
+        candidate = await tx.candidate.update({
+          where: { id: existing.id },
+          data: {
+            status: "Completed",
+            totalAttempts: newAttemptsCount,
+            latestScore: score,
+            highestScore: highest,
+            lastAttemptAt: submissionTime,
+          },
+        });
+        attemptNumber = newAttemptsCount;
+      }
+
+      // 4. Save Attempt Record
+      return tx.examAttempt.create({
         data: {
-          name: candidateName.trim(),
-          email: trimmedEmail,
-          companyId: (companyId || "N/A").trim(),
-          status: "Completed",
-          totalAttempts: 1,
-          highestScore: score,
-          latestScore: score,
-          lastAttemptAt: submissionTime,
+          candidateId: candidate.id,
+          candidateName: candidate.name,
+          candidateEmail: candidate.email,
+          companyId: candidate.companyId,
+          submittedAt: submissionTime,
+          score,
+          totalQuestions,
+          percentage,
+          isPassed,
+          timeSpentSeconds: Number(timeSpentSeconds),
+          partAScore,
+          partATotal,
+          partBScore,
+          partBTotal,
+          answers: JSON.stringify(answers),
+          tabSwitches: Number(tabSwitches),
+          proctoringStatus,
+          candidatePhoto: candidatePhoto || null,
+          hasVideoRecording: Boolean(hasVideoRecording),
+          videoFilename: videoFilename || null,
+          attemptNumber,
         },
       });
-      attemptNumber = 1;
-    } else {
-      const highest = Math.max(candidate.highestScore ?? 0, score);
-      const newAttemptsCount = (candidate.totalAttempts || 0) + 1;
-      candidate = await prisma.candidate.update({
-        where: { id: candidate.id },
-        data: {
-          status: "Completed",
-          totalAttempts: newAttemptsCount,
-          latestScore: score,
-          highestScore: highest,
-          lastAttemptAt: submissionTime,
-        },
-      });
-      attemptNumber = newAttemptsCount;
-    }
-
-    // 4. Save Attempt Record
-    const attempt = await prisma.examAttempt.create({
-      data: {
-        candidateId: candidate.id,
-        candidateName: candidate.name,
-        candidateEmail: candidate.email,
-        companyId: candidate.companyId,
-        submittedAt: submissionTime,
-        score,
-        totalQuestions,
-        percentage,
-        isPassed,
-        timeSpentSeconds: Number(timeSpentSeconds),
-        partAScore,
-        partATotal,
-        partBScore,
-        partBTotal,
-        answers: JSON.stringify(answers),
-        tabSwitches: Number(tabSwitches),
-        proctoringStatus,
-        candidatePhoto: candidatePhoto || null,
-        hasVideoRecording: Boolean(hasVideoRecording),
-        videoFilename: videoFilename || null,
-        attemptNumber,
-      },
     });
 
     // 5. Asynchronous Email Alert (non-blocking)

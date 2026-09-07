@@ -227,22 +227,10 @@ router.post("/:id/clear-cooldown", authenticateAdmin, async (req: Request, res: 
       return res.status(404).json({ error: "Candidate not found." });
     }
 
-    // Shift last attempts back by 49 hours so cooldown is immediately lifted
-    const pastDate = new Date(Date.now() - 49 * 60 * 60 * 1000);
+    // Stamp the override; attempt timestamps are audit data and stay as they are.
     await prisma.candidate.update({
       where: { id },
-      data: { lastAttemptAt: pastDate },
-    });
-
-    await prisma.examAttempt.updateMany({
-      where: {
-        OR: [
-          { candidateId: candidate.id },
-          { candidateEmail: candidate.email },
-          { companyId: candidate.companyId },
-        ],
-      },
-      data: { submittedAt: pastDate },
+      data: { cooldownClearedAt: new Date() },
     });
 
     return res.json({
