@@ -10,6 +10,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { CORS_ORIGIN } from "./config/env";
+import { recordWarning } from "./services/examSession";
 
 import authRoutes from "./routes/authRoutes";
 import candidateRoutes from "./routes/candidateRoutes";
@@ -37,9 +38,15 @@ app.set("io", io);
 io.on("connection", (socket) => {
   console.log("🔌 [Socket.io] Client connected:", socket.id);
 
-  // When candidate switches tab or triggers warning
+  // When candidate switches tab or triggers warning.
+  // The count is banked against the server-owned sitting so the submit body
+  // cannot under-report it (services/examSession.ts).
   socket.on("candidate:warning", (payload) => {
-    console.log("⚠️ [Proctor Warning]:", payload);
+    if (payload?.sessionId) {
+      recordWarning(payload.sessionId).catch((err) =>
+        console.error("Failed to record proctor warning:", err)
+      );
+    }
     io.emit("admin:candidate_warning", {
       ...payload,
       timestamp: new Date().toISOString(),
@@ -48,7 +55,6 @@ io.on("connection", (socket) => {
 
   // When candidate starts exam
   socket.on("candidate:started", (payload) => {
-    console.log("📝 [Candidate Started]:", payload);
     io.emit("admin:candidate_started", {
       ...payload,
       timestamp: new Date().toISOString(),
@@ -57,7 +63,6 @@ io.on("connection", (socket) => {
 
   // When candidate finishes exam
   socket.on("candidate:submitted", (payload) => {
-    console.log("🎉 [Exam Submitted]:", payload);
     io.emit("admin:exam_submitted", {
       ...payload,
       timestamp: new Date().toISOString(),

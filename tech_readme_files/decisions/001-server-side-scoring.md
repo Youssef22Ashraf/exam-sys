@@ -17,9 +17,11 @@ threshold comes from `ExamSetting.passingPercentage` at submit time. The
 client's own tally is used only for the instant preview.
 
 ## Consequences
-- A tampered client can still see the correct answers (they are in
+- ~~A tampered client can still see the correct answers (they are in
   localStorage). Removing them from the public `GET /api/questions`
-  payload is a follow-up, not part of this decision.
+  payload is a follow-up, not part of this decision.~~ **Closed 2026-09-07
+  by [ADR 008](008-submit-must-reach-the-server.md)**: `correctAnswer` is
+  returned only to an admin JWT and no longer ships in the client bundle.
 - Scoring logic exists once, so a question-bank edit changes results
   consistently.
 - The localStorage fallback path (ADR 005) scores locally when the API is

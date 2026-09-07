@@ -90,6 +90,18 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
 
 ### Security — do now
 
+- [x] **Strip `correctAnswer` from the public `GET /api/questions`** and from
+      `INITIAL_QUESTIONS` in the client bundle — `optionalAdmin` middleware,
+      answers returned only to an admin JWT (ADR 008, feat/hardening-1-integrity)
+- [x] **Server-owned exam clock and proctoring signal** — `ExamSession` +
+      `POST /api/exam/start`; submit derives `timeSpentSeconds`, refuses a late
+      submit, takes `tabSwitches = max(client, serverWarnings)` and derives
+      `proctoringStatus`. Proven live: missing / unknown / mismatched / expired /
+      replayed sessions each refused (ADR 008)
+- [x] **Remove "Use Simulation" from `CameraProctor`** — it filed a drawn avatar
+      labelled "Verified" as the identity snapshot for a candidate with no camera
+- [x] **A failed submit no longer scores locally** — `SubmitFailedError` with a
+      visible retry banner; supersedes the submit half of ADR 005 (ADR 008)
 - [x] **Auth on every read that returns candidate data**: `GET /api/candidates`,
       `/candidates/:id/history`, `/exam/results`, `/exam/results/:id`,
       `/exam/export/csv`, `/proctor/video/:filename`, `/proctor/download/:filename`,
@@ -131,4 +143,4 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
 - [ ] Video retention job (delete `.webm` older than N days, keep the attempt row)
 - [ ] Question / option shuffle per attempt, seeded and stored so the answer sheet replays correctly
 - [ ] Replace `page` string state with a real router if a third top-level area appears
-- [ ] Remove `console.log` of candidate data in `App.tsx` `beginExam` and socket handlers
+- [ ] Remove `console.log` of candidate data in `App.tsx` `beginExam` (backend socket handlers done in feat/hardening-1-integrity)

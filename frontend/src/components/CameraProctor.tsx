@@ -7,6 +7,8 @@ import "./CameraProctor.css";
 interface CameraProctorProps {
   candidateName?: string;
   candidateId?: string;
+  /** Server-owned sitting; warnings are banked against it. */
+  sessionId?: string;
   onWarningChange?: (warningsCount: number) => void;
   onRegisterSnapshotGetter?: (getSnapshotFn: () => string | null) => void;
   onRegisterStopRecording?: (stopFn: () => Promise<Blob | null>) => void;
@@ -15,6 +17,7 @@ interface CameraProctorProps {
 export function CameraProctor({
   candidateName,
   candidateId,
+  sessionId,
   onWarningChange,
   onRegisterSnapshotGetter,
   onRegisterStopRecording,
@@ -25,7 +28,6 @@ export function CameraProctor({
   const recordedChunksRef = useRef<Blob[]>([]);
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [isSimulated, setIsSimulated] = useState(false);
   const [warningsCount, setWarningsCount] = useState(0);
   const [activeAlert, setActiveAlert] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -49,7 +51,6 @@ export function CameraProctor({
           videoRef.current.srcObject = stream;
         }
         setHasPermission(true);
-        setIsSimulated(false);
 
         // Start background media recording
         try {
@@ -201,6 +202,7 @@ export function CameraProctor({
           companyId: candidateId || "N/A",
           warningType: reason,
           totalWarnings: newCount,
+          sessionId,
         });
         return newCount;
       });
@@ -228,36 +230,10 @@ export function CameraProctor({
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("blur", onWindowBlur);
     };
-  }, [onWarningChange]);
+  }, [onWarningChange, candidateName, candidateId, sessionId]);
 
   // Snapshot capture function
   const captureSnapshot = useCallback((): string | null => {
-    if (isSimulated) {
-      // Return a simulated candidate avatar canvas
-      const canvas = document.createElement("canvas");
-      canvas.width = 320;
-      canvas.height = 240;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.fillStyle = "#1e293b";
-        ctx.fillRect(0, 0, 320, 240);
-        ctx.fillStyle = "#3b82f6";
-        ctx.beginPath();
-        ctx.arc(160, 100, 50, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(160, 240, 90, Math.PI, 0);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 13px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(candidateName || "Candidate", 160, 215);
-        ctx.font = "10px monospace";
-        ctx.fillText(`ID: ${candidateId || "N/A"} • Verified`, 160, 230);
-      }
-      return canvas.toDataURL("image/jpeg", 0.8);
-    }
-
     if (!videoRef.current || !hasPermission) {
       return null;
     }
@@ -291,7 +267,7 @@ export function CameraProctor({
       console.error("Failed to capture snapshot:", e);
     }
     return null;
-  }, [candidateName, candidateId, hasPermission, isSimulated]);
+  }, [hasPermission]);
 
   // Register snapshot getter to parent
   useEffect(() => {
@@ -299,11 +275,6 @@ export function CameraProctor({
       onRegisterSnapshotGetter(captureSnapshot);
     }
   }, [onRegisterSnapshotGetter, captureSnapshot]);
-
-  function enableSimulatedCamera() {
-    setIsSimulated(true);
-    setHasPermission(true);
-  }
 
   return (
     <>
@@ -330,18 +301,12 @@ export function CameraProctor({
               warningsCount > 0 ? "warn" : hasPermission ? "active" : ""
             }`}
           >
-            {hasPermission
-              ? isSimulated
-                ? "Simulated"
-                : isRecording
-                ? "Recording"
-                : "Active"
-              : "Camera Off"}
+            {hasPermission ? (isRecording ? "Recording" : "Active") : "Camera Off"}
           </span>
         </div>
 
         <div className="proctor-video-wrapper">
-          {hasPermission && !isSimulated && (
+          {hasPermission && (
             <>
               <video
                 ref={videoRef}
@@ -358,36 +323,6 @@ export function CameraProctor({
             </>
           )}
 
-          {hasPermission && isSimulated && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "8px",
-                color: "#94a3b8",
-              }}
-            >
-              <div
-                style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "50%",
-                  background: "#334155",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "24px",
-                }}
-              >
-                
-              </div>
-              <span style={{ fontSize: "11px", color: "#cbd5e1" }}>
-                Proctoring Verified (Simulation)
-              </span>
-            </div>
-          )}
-
           {!hasPermission && (
             <div className="proctor-fallback-box">
               <span className="fallback-icon"><Icon name="camera" size={36} /></span>
@@ -400,14 +335,11 @@ export function CameraProctor({
                 >
                   Retry Camera
                 </button>
-                <button
-                  type="button"
-                  className="proctor-retry-btn"
-                  onClick={enableSimulatedCamera}
-                >
-                  Use Simulation
-                </button>
               </div>
+              <p className="proctor-fallback-note">
+                The assessment is recorded. Without a camera this attempt is
+                filed as <strong>Camera Disabled</strong>.
+              </p>
             </div>
           )}
         </div>

@@ -89,3 +89,22 @@ model AdminUser {
   updatedAt    DateTime @updatedAt
 }
 
+/// A server-owned exam sitting. Created by POST /api/exam/start when the
+/// candidate opens the exam, and consumed by POST /api/exam/submit.
+///
+/// Exists because the client used to supply timeSpentSeconds, tabSwitches and
+/// proctoringStatus in the submit body — the proctored party reporting on
+/// itself. startedAt gives the server its own clock, and serverWarnings is
+/// incremented by the candidate:warning socket handler, not by the payload.
+model ExamSession {
+  id             String    @id @default(uuid())
+  candidateEmail String
+  companyId      String
+  startedAt      DateTime  @default(now())
+  serverWarnings Int       @default(0)
+  attemptId      String?   // set once the sitting is submitted; blocks reuse
+  createdAt      DateTime  @default(now())
+
+  @@index([candidateEmail])
+  @@index([startedAt])
+}

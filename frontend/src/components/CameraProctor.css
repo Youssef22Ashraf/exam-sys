@@ -216,3 +216,13 @@
   }
 }
 
+
+/* Shown when the camera is unavailable, so the consequence is stated up front
+   rather than discovered by a supervisor later. */
+.proctor-fallback-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #cbd5e1;
+  text-align: center;
+}

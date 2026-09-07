@@ -13,7 +13,10 @@ always. This file only covers tool-use rules specific to working here.
   `prisma migrate` is not in use; the Dockerfile runs `prisma db push` on
   boot, so a destructive schema change wipes production rows. Say so before
   making one.
-- The question bank lives in **three** places that must stay identical:
+- The question bank wording lives in **three** places that must stay
+  identical, but only the two backend copies carry `correctAnswer` —
+  `INITIAL_QUESTIONS` must never regain the answers, they ship in the
+  candidate's bundle (ADR 008). The three places:
   `backend/prisma/seed.ts`, `backend/src/config/defaultQuestions.ts`, and
   `INITIAL_QUESTIONS` in `frontend/src/services/storage.ts`. Edit all three
   in one commit or none. Source of truth for the wording is

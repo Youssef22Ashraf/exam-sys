@@ -293,7 +293,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setQSection(q.section);
     setQText(q.question);
     setQOptions([...q.options]);
-    setQCorrect(q.correctAnswer);
+    setQCorrect(q.correctAnswer ?? 0);
     setIsQuestionModalOpen(true);
   }
 
@@ -1695,7 +1695,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           </span>
                         </div>
 
-                        {!isCorrect && (
+                        {!isCorrect && q.correctAnswer !== undefined && (
                           <div>
                             <strong>Correct answer: </strong>
                             <span style={{ color: "var(--success)" }}>

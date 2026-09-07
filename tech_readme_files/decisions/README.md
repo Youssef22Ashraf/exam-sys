@@ -17,6 +17,7 @@
 | [005](005-localstorage-fallback-not-offline-first.md) | API fallback to localStorage is graceful degradation, not offline-first | Accepted | 2026-09-05 |
 | [006](006-webcam-recording-indexeddb-then-upload.md) | Buffer the webcam recording in IndexedDB, upload one `.webm` on submit | Accepted | 2026-09-06 |
 | [007](007-prisma-db-push-not-migrate.md) | `prisma db push` on boot instead of migrations | Accepted | 2026-09-06 |
+| [008](008-submit-must-reach-the-server.md) | A submit must reach the server, and the server owns the clock | Accepted | 2026-09-07 |
 
 ## Template
 

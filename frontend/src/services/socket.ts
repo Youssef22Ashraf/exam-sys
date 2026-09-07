@@ -71,6 +71,8 @@ export const socketService = {
     companyId: string;
     warningType: string;
     totalWarnings: number;
+    /** Server-owned sitting; without it the backend cannot bank the warning. */
+    sessionId?: string;
   }) {
     this.emit("candidate:warning", data);
   },
