@@ -56,8 +56,8 @@ Listed in priority order; all are `TODO.md` Phase 8.
    every candidate-data read and `test-email` now require the admin JWT.
 2. ~~**Lockout is bypassable.**~~ Closed on `fix/cooldown-at-submit`:
    submit returns 403 inside the window, shared query with `check-cooldown`.
-3. **`CORS_ORIGIN` is decorative.** The env var is read and ignored;
-   `origin: "*"` is applied for HTTP and sockets.
+3. ~~**`CORS_ORIGIN` is decorative.**~~ Closed on `fix/cors-and-jwt-boot-guard`:
+   applied to HTTP and sockets; production boot fails on the fallback JWT secret.
 4. **No tests, no CI.** A regression in scoring or camera release would
    only be caught by a human.
 

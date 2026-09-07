@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "../config/env";
 import { prisma } from "../config/db";
 import { authenticateAdmin, AuthRequest } from "../middleware/auth";
 
@@ -30,10 +31,9 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Invalid username or password." });
     }
 
-    const secret = process.env.JWT_SECRET || "super_secret_exam_jwt_key_default";
     const token = jwt.sign(
       { id: admin.id, username: admin.username, role: admin.role },
-      secret,
+      JWT_SECRET,
       { expiresIn: "24h" }
     );
 

@@ -26,6 +26,14 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
   same function, so the two cannot disagree. `api.ts` treats a 403 as a
   refusal and throws instead of falling back to local scoring.
 
+- **`CORS_ORIGIN` is applied** to both Express and Socket.io. Unset means
+  `*` (dev); set means a comma-separated list of exact origins, and
+  `credentials` is only enabled in that case. Previously the variable was
+  read and ignored.
+- **Production refuses to boot on the fallback `JWT_SECRET`.**
+  `config/env.ts` throws at import when `NODE_ENV=production` and the
+  secret is unset or still the dev string that is in git.
+
 ### Added
 
 - Project convention docs: `AGENTS.md`, `CLAUDE.md`, and
@@ -39,8 +47,6 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 - The 48-hour lockout is enforced at `check-cooldown` and in the browser,
   but `POST /api/exam/submit` does not re-check it. A candidate who skips
   the registration screen can submit inside the window.
-- `CORS_ORIGIN` is read in `index.ts` but `cors({ origin: "*" })` is what
-  is applied. The env var does nothing.
 - No automated tests exist for either package.
 
 ## [1.0.0] — 2026-09-07

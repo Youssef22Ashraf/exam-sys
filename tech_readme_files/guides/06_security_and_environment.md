@@ -8,9 +8,9 @@
 |---|---|---|
 | `PORT` | no (5000) | |
 | `DATABASE_URL` | yes | `file:./dev.db` or a Postgres URL |
-| `JWT_SECRET` | **yes** | fallback string in `auth.ts` is public in git |
+| `JWT_SECRET` | **yes** | production refuses to boot on the dev fallback (`config/env.ts`) |
 | `NODE_ENV` | yes | `production` disables Prisma query logging |
-| `CORS_ORIGIN` | — | read but not applied; `TODO.md` §Security 3 |
+| `CORS_ORIGIN` | recommended | comma-separated exact origins; unset = `*`. Applied to HTTP and Socket.io |
 | `SMTP_HOST/PORT/USER/PASS` | for email | all three of host/user/pass or no transport |
 | `ADMIN_ALERT_EMAIL` | for email | overridden by `ExamSetting.notifyEmail` |
 
