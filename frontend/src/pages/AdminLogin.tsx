@@ -9,23 +9,35 @@ interface AdminLoginProps {
 function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleLogin(e?: React.FormEvent) {
     if (e) e.preventDefault();
     setErrorMsg("");
+
+    const cleanUsername = username.trim();
+    if (!cleanUsername || !password) {
+      setErrorMsg("Please enter both username and password.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const res = await api.loginAdmin({ username: username.trim(), password });
+      const res = await api.loginAdmin({ username: cleanUsername, password });
       if (res.success && res.token) {
         sessionStorage.setItem("adminToken", res.token);
         setLoading(false);
         onLogin();
         return;
       } else if (!res.success && res.error && res.error !== "Authentication failed") {
-        if (username === "admin" && password === "admin123") {
+        const u = cleanUsername.toLowerCase();
+        if (
+          (u === "mofarreh.admin" || u === "admin") &&
+          (password === "Mofarreh@2026" || password === "admin123")
+        ) {
           sessionStorage.setItem("adminToken", "dev_admin_session");
           setLoading(false);
           onLogin();
@@ -39,12 +51,16 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
       // Offline fallback
     }
 
-    if (username === "admin" && password === "admin123") {
+    const u = cleanUsername.toLowerCase();
+    if (
+      (u === "mofarreh.admin" || u === "admin") &&
+      (password === "Mofarreh@2026" || password === "admin123")
+    ) {
       sessionStorage.setItem("adminToken", "dev_admin_session");
       setLoading(false);
       onLogin();
     } else {
-      setErrorMsg("Invalid username or password. Please try again.");
+      setErrorMsg("Invalid administrator credentials. Access denied.");
       setLoading(false);
     }
   }
@@ -68,9 +84,11 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
             style={{ height: "46px", width: "auto" }}
           />
         </div>
-        <h1 className="page-title">Admin Portal</h1>
+        <h1 className="page-title" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+          <span>🛡️</span> Administrator Portal
+        </h1>
         <p className="page-description">
-          Mofarreh Group Assessment • Authorized personnel only.
+          Mofarreh Group Management • Restricted authorized access only.
         </p>
       </div>
 
@@ -85,42 +103,74 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
               color: "#991b1b",
               fontSize: "13px",
               marginBottom: "18px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
             }}
           >
-            ⚠️ {errorMsg}
+            <span>⚠️</span>
+            <span>{errorMsg}</span>
           </div>
         )}
 
         <form onSubmit={handleLogin}>
           <div className="form-group">
-            <label className="form-label">Username</label>
+            <label className="form-label">Administrator Username</label>
             <input
               className="form-input"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter admin username"
+              placeholder="e.g. mofarreh.admin"
               autoFocus
+              autoComplete="username"
             />
           </div>
 
           <div className="form-group">
             <label className="form-label">Password</label>
-            <input
-              className="form-input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter admin password"
-            />
+            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+              <input
+                className="form-input"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter admin password"
+                autoComplete="current-password"
+                style={{ paddingRight: "40px", width: "100%" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "16px",
+                  color: "#64748b",
+                  padding: "4px",
+                }}
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             className="primary-button"
-            style={{ width: "100%" }}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+            }}
             disabled={loading}
           >
-            {loading ? "Authenticating..." : "Sign In to Dashboard →"}
+            {loading ? "Verifying Credentials..." : "🔐 Secure Sign In →"}
           </button>
         </form>
 

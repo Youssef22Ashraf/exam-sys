@@ -502,9 +502,19 @@ const QUESTIONS = [
 async function main() {
   console.log("🌱 Starting database seeding...");
 
-  // 1. Seed Admin User
-  const adminPassword = await bcrypt.hash("admin123", 10);
-  const admin = await prisma.adminUser.upsert({
+  // 1. Seed Admin Users
+  const adminPassword = await bcrypt.hash("Mofarreh@2026", 10);
+  await prisma.adminUser.upsert({
+    where: { username: "mofarreh.admin" },
+    update: { passwordHash: adminPassword },
+    create: {
+      username: "mofarreh.admin",
+      passwordHash: adminPassword,
+      role: "ADMIN",
+    },
+  });
+
+  await prisma.adminUser.upsert({
     where: { username: "admin" },
     update: { passwordHash: adminPassword },
     create: {
@@ -513,7 +523,7 @@ async function main() {
       role: "ADMIN",
     },
   });
-  console.log("👤 Admin user seeded: admin");
+  console.log("👤 Admin users seeded: mofarreh.admin & admin (password: Mofarreh@2026)");
 
   // 2. Seed Exam Settings
   await prisma.examSetting.upsert({

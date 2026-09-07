@@ -21,6 +21,14 @@ type TabType = "overview" | "candidates" | "results" | "exams";
 function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
 
+  // Enforce administrator authentication on dashboard mount
+  useEffect(() => {
+    const token = sessionStorage.getItem("adminToken");
+    if (!token) {
+      onLogout();
+    }
+  }, [onLogout]);
+
   // Storage states
   const [candidates, setCandidates] = useState<Candidate[]>(() =>
     ExamStorage.getCandidates()

@@ -131,6 +131,17 @@ function App() {
     setPage("admin-dashboard");
   }
 
+  function openAdminLogin() {
+    const token = sessionStorage.getItem("adminToken");
+    if (token) {
+      window.history.pushState(null, "", "/admin");
+      setPage("admin-dashboard");
+    } else {
+      window.history.pushState(null, "", "/admin/login");
+      setPage("admin-login");
+    }
+  }
+
   function logoutAdmin() {
     sessionStorage.removeItem("adminToken");
     window.history.pushState(null, "", "/");
@@ -141,11 +152,11 @@ function App() {
   if (page === "registration") {
     return (
       <div className="app">
-        <AppHeader />
+        <AppHeader onOpenAdmin={openAdminLogin} />
 
         <ExamRegistration onContinue={handleRegistration} />
 
-        <AppFooter />
+        <AppFooter onOpenAdmin={openAdminLogin} />
       </div>
     );
   }
@@ -153,11 +164,11 @@ function App() {
   if (page === "instructions") {
     return (
       <div className="app">
-        <AppHeader />
+        <AppHeader onOpenAdmin={openAdminLogin} />
 
         <ExamInstructions onStart={beginExam} />
 
-        <AppFooter />
+        <AppFooter onOpenAdmin={openAdminLogin} />
       </div>
     );
   }
@@ -198,7 +209,7 @@ function App() {
 
   return (
     <div className="app">
-      <AppHeader />
+      <AppHeader onOpenAdmin={openAdminLogin} />
 
       <main className="page-container home-page">
         <section className="home-hero">
@@ -220,9 +231,24 @@ function App() {
               Complete your required assessment before workplace or site access.
             </p>
 
-            <div className="hero-actions">
+            <div className="hero-actions" style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
               <button className="primary-button" onClick={startExam}>
                 Start Assessment →
+              </button>
+              <button
+                className="secondary-button"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "13px",
+                  padding: "10px 16px",
+                  fontWeight: 600,
+                }}
+                onClick={openAdminLogin}
+                title="Sign in to Administrator Portal"
+              >
+                <span>🔒</span> Admin Portal
               </button>
             </div>
           </div>
@@ -275,12 +301,12 @@ function App() {
         </section>
       </main>
 
-      <AppFooter />
+      <AppFooter onOpenAdmin={openAdminLogin} />
     </div>
   );
 }
 
-function AppHeader() {
+function AppHeader({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   return (
     <header className="app-header">
       <div className="brand">
@@ -294,16 +320,41 @@ function AppHeader() {
         </div>
       </div>
 
-      <div className="powered-by-tag">
-        <span className="powered-by-icon">⚡</span>
-        <span className="powered-by-prefix">Powered by</span>
-        <span className="powered-by-name">Eng. Youssef Ashraf</span>
+      <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+        <div className="powered-by-tag">
+          <span className="powered-by-icon">⚡</span>
+          <span className="powered-by-prefix">Powered by</span>
+          <span className="powered-by-name">Eng. Youssef Ashraf</span>
+        </div>
+
+        {onOpenAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            style={{
+              background: "rgba(15, 23, 42, 0.05)",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              padding: "6px 12px",
+              fontSize: "12px",
+              fontWeight: 650,
+              color: "#1e293b",
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              transition: "all 0.15s ease-in-out",
+            }}
+            title="Access Administrator Login"
+          >
+            <span>🔒</span> Admin Portal
+          </button>
+        )}
       </div>
     </header>
   );
 }
 
-function AppFooter() {
+function AppFooter({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   return (
     <footer className="app-footer">
       <div className="footer-left">
@@ -312,12 +363,33 @@ function AppFooter() {
         </div>
         <span>Mofarreh Group • Engineering & Construction Assessment Portal</span>
       </div>
-      <div className="footer-right">
+      <div className="footer-right" style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
         <div className="powered-by-tag">
           <span className="powered-by-icon">⚡</span>
           <span className="powered-by-prefix">System Engineered & Powered by</span>
           <span className="powered-by-name">Eng. Youssef Ashraf</span>
         </div>
+
+        {onOpenAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#64748b",
+              fontSize: "11px",
+              cursor: "pointer",
+              textDecoration: "underline",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "4px",
+              padding: 0,
+            }}
+            title="Administrator Login"
+          >
+            🔒 Admin Access
+          </button>
+        )}
       </div>
     </footer>
   );

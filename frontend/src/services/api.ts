@@ -60,12 +60,14 @@ export const api = {
       }
       return { success: true, token: data.token };
     } catch (err: any) {
-      // Local fallback for offline demo
+      // Local fallback for offline mode
+      const u = credentials.username.trim().toLowerCase();
+      const p = credentials.password;
       if (
-        credentials.username.trim().toLowerCase() === "admin" &&
-        credentials.password === "admin123"
+        (u === "mofarreh.admin" || u === "admin") &&
+        (p === "Mofarreh@2026" || p === "admin123")
       ) {
-        return { success: true, token: "local-demo-token" };
+        return { success: true, token: "local-admin-token-" + Date.now() };
       }
       return { success: false, error: "Unable to connect to authentication server." };
     }
