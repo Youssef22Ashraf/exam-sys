@@ -34,6 +34,19 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
   `config/env.ts` throws at import when `NODE_ENV=production` and the
   secret is unset or still the dev string that is in git.
 
+### Fixed
+
+- **The results screen now shows the server's verdict.** `Exam.tsx`
+  computed a local result and fired `submitExam` without awaiting it, so
+  the candidate saw the browser's score and attempt id while the server
+  stored (or refused) something else. It now awaits the response and
+  renders the server object; the local calculation is used only when
+  `api.ts` falls back because the API is unreachable. A `403
+  COOLDOWN_ACTIVE` shows a "Submission refused" screen instead of a
+  result.
+- The recording was uploaded twice on submit (one fire-and-forget call
+  followed by an awaited one). One upload now.
+
 ### Added
 
 - Project convention docs: `AGENTS.md`, `CLAUDE.md`, and
