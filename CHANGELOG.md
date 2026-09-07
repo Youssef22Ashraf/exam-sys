@@ -45,6 +45,14 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Fixed
 
+- `npm run seed` now runs `prisma db seed`, which loads `backend/.env`.
+  The old `ts-node prisma/seed.ts` did not, so on a fresh clone it failed
+  with `Environment variable not found: DATABASE_URL` while the README
+  said it would work.
+- `socket.ts` derives the Socket.io origin from `VITE_API_URL` instead of
+  hardcoding `localhost:5000`, so a dev backend on another port gets the
+  live feed too.
+
 - **The results screen now shows the server's verdict.** `Exam.tsx`
   computed a local result and fired `submitExam` without awaiting it, so
   the candidate saw the browser's score and attempt id while the server
