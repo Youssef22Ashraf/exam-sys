@@ -15,35 +15,68 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
   const [email, setEmail] = useState("");
   const [companyId, setCompanyId] = useState("");
   const [isChecking, setIsChecking] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [emailFormatError, setEmailFormatError] = useState<string | null>(null);
   const [cooldownInfo, setCooldownInfo] = useState<{
     eligible: boolean;
+    error?: string;
     message?: string;
     remainingHours?: number;
     nextAttemptAvailableAt?: string;
   } | null>(null);
 
+  function validateEmailFormat(val: string): boolean {
+    const trimmed = val.trim().toLowerCase();
+    if (!trimmed) {
+      setEmailFormatError(null);
+      return false;
+    }
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!regex.test(trimmed)) {
+      setEmailFormatError(
+        "Please enter a valid email address (e.g. employee@gmail.com, candidate@outlook.com, or company email)."
+      );
+      return false;
+    }
+    const parts = trimmed.split("@");
+    if (parts.length !== 2 || !parts[1].includes(".") || parts[1].startsWith(".") || parts[1].endsWith(".")) {
+      setEmailFormatError("Email domain is incomplete or invalid.");
+      return false;
+    }
+    setEmailFormatError(null);
+    return true;
+  }
+
   function handleFieldChange(setter: (val: string) => void, val: string) {
     setter(val);
-    if (cooldownInfo) {
-      setCooldownInfo(null);
-    }
+    if (formError) setFormError(null);
+    if (cooldownInfo) setCooldownInfo(null);
   }
 
   async function handleContinue() {
+    setFormError(null);
     const trimmedName = name.trim();
     const trimmedEmail = email.trim();
     const trimmedCompanyId = companyId.trim();
 
     if (!trimmedName || !trimmedEmail || !trimmedCompanyId) {
-      alert("Please fill in all fields.");
+      setFormError("Please fill in all fields (Full Name, Email Address, and Company ID).");
+      return;
+    }
+
+    if (!validateEmailFormat(trimmedEmail)) {
+      setFormError("Please enter a valid email address before proceeding.");
       return;
     }
 
     setIsChecking(true);
     try {
-      const cooldown = await api.checkCandidateCooldown(trimmedEmail, trimmedCompanyId);
+      const cooldown = await api.checkCandidateCooldown(trimmedEmail, trimmedCompanyId, trimmedName);
       if (!cooldown.eligible) {
         setCooldownInfo(cooldown);
+        if (cooldown.error === "IDENTITY_CONFLICT" || cooldown.error === "INVALID_EMAIL") {
+          setFormError(cooldown.message || "Identity conflict detected. Please verify your registered details.");
+        }
         setIsChecking(false);
         return;
       }
@@ -62,14 +95,57 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
 
   return (
     <main className="page-container">
-      <div style={{ textAlign: "center" }}>
+      <div style={{ textAlign: "center", marginBottom: "20px" }}>
+        <div
+          className="company-logo-badge"
+          style={{
+            height: "56px",
+            padding: "6px 16px",
+            margin: "0 auto 14px auto",
+            borderRadius: "10px",
+          }}
+          title="Mofarreh Group — Engineering & Construction"
+        >
+          <img
+            src="/mofarreh-logo.png"
+            alt="Mofarreh Group Logo"
+            style={{ height: "42px", width: "auto" }}
+          />
+        </div>
         <h1 className="page-title">Candidate Registration</h1>
         <p className="page-description">
-          Enter your employee information before starting the examination.
+          Mofarreh Group Assessment • Enter your employee details before starting.
         </p>
       </div>
 
       <div className="card form-card">
+        {formError && (
+          <div
+            style={{
+              background: "#fef2f2",
+              border: "1px solid #f87171",
+              borderRadius: "10px",
+              padding: "14px 16px",
+              marginBottom: "18px",
+              color: "#991b1b",
+              fontSize: "13px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "10px",
+              lineHeight: "1.4",
+              textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: "18px" }}><Icon name="alert-triangle" /></span>
+            <div>
+              <strong style={{ display: "block", marginBottom: "2px" }}>
+                Identity & Registration Notice:
+              </strong>
+              <span>{formError}</span>
+            </div>
+          </div>
+        )}
+
         {cooldownInfo && !cooldownInfo.eligible && (
           <div
             style={{
@@ -128,7 +204,7 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
           <input
             className="form-input"
             type="text"
-            placeholder="Enter your full name"
+            placeholder="Enter your full legal name"
             value={name}
             onChange={(event) => handleFieldChange(setName, event.target.value)}
           />
@@ -139,10 +215,26 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
           <input
             className="form-input"
             type="email"
-            placeholder="Enter your email"
+            placeholder="e.g. employee@gmail.com, candidate@outlook.com"
             value={email}
-            onChange={(event) => handleFieldChange(setEmail, event.target.value)}
+            onChange={(event) => {
+              handleFieldChange(setEmail, event.target.value);
+              if (emailFormatError) validateEmailFormat(event.target.value);
+            }}
+            onBlur={(event) => validateEmailFormat(event.target.value)}
+            style={{
+              borderColor: emailFormatError ? "#ef4444" : undefined,
+            }}
           />
+          {emailFormatError ? (
+            <span style={{ fontSize: "12px", color: "#dc2626", marginTop: "4px", display: "block" }}>
+              <Icon name="alert-triangle" /> {emailFormatError}
+            </span>
+          ) : (
+            <span style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", display: "block" }}>
+              Accepted: Google (@gmail.com), Microsoft/Outlook (@outlook.com, @hotmail.com), or company email.
+            </span>
+          )}
         </div>
 
         <div className="form-group">
@@ -150,7 +242,7 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
           <input
             className="form-input"
             type="text"
-            placeholder="Enter your company ID"
+            placeholder="Enter your unique company / employee ID"
             value={companyId}
             onChange={(event) => handleFieldChange(setCompanyId, event.target.value)}
           />
@@ -167,7 +259,7 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
           disabled={isChecking || (cooldownInfo !== null && !cooldownInfo.eligible)}
         >
           {isChecking
-            ? "Verifying Cooldown Eligibility..."
+            ? "Verifying Cooldown & Identity..."
             : cooldownInfo && !cooldownInfo.eligible
             ? <><Icon name="ban" /> Re-attempt Locked (48h Policy)</>
             : "Continue to Instructions →"}

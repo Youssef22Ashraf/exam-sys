@@ -5,9 +5,141 @@ import { findActiveCooldown } from "../services/cooldown";
 
 const router = Router();
 
-// GET /api/candidates/check-cooldown - Check if candidate is within 48-hour cooldown
+// Strict Examinee Email Validation Helper
+export function validateExamineeEmail(email: string): { valid: boolean; message?: string } {
+  if (!email || typeof email !== "string") {
+    return { valid: false, message: "Email address is required." };
+  }
+  const trimmed = email.trim().toLowerCase();
+
+  // Basic RFC format test (local@domain.tld)
+  const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!generalEmailRegex.test(trimmed)) {
+    return {
+      valid: false,
+      message: "Please enter a valid email address (e.g. employee@gmail.com, candidate@outlook.com, or company email).",
+    };
+  }
+
+  // Domain structure checks
+  const parts = trimmed.split("@");
+  if (parts.length !== 2) {
+    return { valid: false, message: "Malformed email address." };
+  }
+  const domain = parts[1];
+  if (!domain.includes(".") || domain.startsWith(".") || domain.endsWith(".")) {
+    return { valid: false, message: "Email domain is invalid." };
+  }
+
+  return { valid: true };
+}
+
+// 1-to-1 Candidate Identity Consistency Checker
+export async function validateCandidateIdentity(name: string, email: string, companyId: string) {
+  const normName = name.trim().toLowerCase();
+  const normEmail = email.trim().toLowerCase();
+  const normCompanyId = companyId.trim().toLowerCase();
+
+  // Query all candidates to check for 1-to-1 uniqueness and cross-consistency
+  const allCandidates = await prisma.candidate.findMany();
+
+  for (const cand of allCandidates) {
+    const cName = cand.name.trim().toLowerCase();
+    const cEmail = cand.email.trim().toLowerCase();
+    const cCompanyId = cand.companyId.trim().toLowerCase();
+
+    // Check Company ID collisions
+    if (cCompanyId === normCompanyId) {
+      if (cName !== normName) {
+        return {
+          conflict: true,
+          message: `Company ID '${companyId.trim()}' is already registered to candidate '${cand.name}'. The entered name does not match.`,
+        };
+      }
+      if (cEmail !== normEmail) {
+        return {
+          conflict: true,
+          message: `Company ID '${companyId.trim()}' is already registered with email '${cand.email}'. The entered email does not match.`,
+        };
+      }
+    }
+
+    // Check Name collisions
+    if (cName === normName) {
+      if (cCompanyId !== normCompanyId) {
+        return {
+          conflict: true,
+          message: `Candidate '${name.trim()}' is already registered under Company ID '${cand.companyId}'. Please use your registered Company ID.`,
+        };
+      }
+      if (cEmail !== normEmail) {
+        return {
+          conflict: true,
+          message: `Candidate '${name.trim()}' is already registered with email '${cand.email}'. Please use your registered email address.`,
+        };
+      }
+    }
+
+    // Check Email collisions
+    if (cEmail === normEmail) {
+      if (cCompanyId !== normCompanyId) {
+        return {
+          conflict: true,
+          message: `Email '${email.trim()}' is already registered under Company ID '${cand.companyId}'. The entered Company ID does not match.`,
+        };
+      }
+      if (cName !== normName) {
+        return {
+          conflict: true,
+          message: `Email '${email.trim()}' is already registered to candidate '${cand.name}'. The entered name does not match.`,
+        };
+      }
+    }
+  }
+
+  // Also check prior exam attempts to catch any attempts submitted before
+  const allAttempts = await prisma.examAttempt.findMany({
+    select: { candidateName: true, candidateEmail: true, companyId: true },
+  });
+
+  for (const att of allAttempts) {
+    const aName = att.candidateName.trim().toLowerCase();
+    const aEmail = att.candidateEmail.trim().toLowerCase();
+    const aCompanyId = att.companyId.trim().toLowerCase();
+
+    if (aCompanyId === normCompanyId && aName !== normName) {
+      return {
+        conflict: true,
+        message: `Company ID '${companyId.trim()}' has a previous exam record under candidate '${att.candidateName}'.`,
+      };
+    }
+    if (aCompanyId === normCompanyId && aEmail !== normEmail) {
+      return {
+        conflict: true,
+        message: `Company ID '${companyId.trim()}' has a previous exam record with email '${att.candidateEmail}'.`,
+      };
+    }
+    if (aName === normName && aCompanyId !== normCompanyId) {
+      return {
+        conflict: true,
+        message: `Candidate '${name.trim()}' has a previous exam record under Company ID '${att.companyId}'.`,
+      };
+    }
+    if (aEmail === normEmail && aCompanyId !== normCompanyId) {
+      return {
+        conflict: true,
+        message: `Email '${email.trim()}' has a previous exam record under Company ID '${att.companyId}'.`,
+      };
+    }
+  }
+
+  return { conflict: false };
+}
+
+// GET /api/candidates/check-cooldown - Check if candidate is within 48-hour cooldown & validate identity
 router.get("/check-cooldown", async (req: Request, res: Response) => {
   try {
+    const name = req.query.name ? String(req.query.name).trim() : "";
     const email = req.query.email ? String(req.query.email).trim().toLowerCase() : "";
     const companyId = req.query.companyId ? String(req.query.companyId).trim() : "";
 
@@ -15,6 +147,31 @@ router.get("/check-cooldown", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Email or Company ID is required." });
     }
 
+    // 1. Strict Email Format Check
+    if (email) {
+      const emailCheck = validateExamineeEmail(email);
+      if (!emailCheck.valid) {
+        return res.status(400).json({
+          eligible: false,
+          error: "INVALID_EMAIL",
+          message: emailCheck.message,
+        });
+      }
+    }
+
+    // 2. Identity Consistency Check (prevent mismatched ID/Name/Email)
+    if (name && email && companyId) {
+      const identityCheck = await validateCandidateIdentity(name, email, companyId);
+      if (identityCheck.conflict) {
+        return res.status(409).json({
+          eligible: false,
+          error: "IDENTITY_CONFLICT",
+          message: identityCheck.message,
+        });
+      }
+    }
+
+    // 3. Cooldown Check
     const cooldown = await findActiveCooldown(email, companyId);
     if (cooldown) {
       return res.json({
@@ -47,39 +204,35 @@ router.post("/register", async (req: Request, res: Response) => {
     const trimmedName = name.trim();
     const trimmedCompanyId = companyId.trim();
 
-    // 1. Enforce 48-Hour Re-attempt Lockout
-    const lastAttempt = await prisma.examAttempt.findFirst({
-      where: {
-        OR: [
-          { candidateEmail: trimmedEmail },
-          { companyId: trimmedCompanyId },
-        ],
-      },
-      orderBy: { submittedAt: "desc" },
-    });
-
-    if (lastAttempt) {
-      const now = new Date();
-      const elapsedMs = now.getTime() - new Date(lastAttempt.submittedAt).getTime();
-      const cooldownMs = 48 * 60 * 60 * 1000;
-
-      if (elapsedMs < cooldownMs) {
-        const remainingMs = cooldownMs - elapsedMs;
-        const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
-        const availableAt = new Date(new Date(lastAttempt.submittedAt).getTime() + cooldownMs);
-
-        return res.status(403).json({
-          error: "COOLDOWN_ACTIVE",
-          message: `You completed an assessment on ${new Date(lastAttempt.submittedAt).toLocaleString()}. Re-attempts are permitted 48 hours after your previous submission.`,
-          lastAttemptAt: lastAttempt.submittedAt.toISOString(),
-          nextAttemptAvailableAt: availableAt.toISOString(),
-          remainingHours,
-          attemptNumber: (lastAttempt.attemptNumber || 1) + 1,
-        });
-      }
+    // 1. Strict Email Format Validation
+    const emailCheck = validateExamineeEmail(trimmedEmail);
+    if (!emailCheck.valid) {
+      return res.status(400).json({
+        error: "INVALID_EMAIL",
+        message: emailCheck.message,
+      });
     }
 
-    // 2. Upsert candidate so existing candidates can take another exam
+    // 2. 1-to-1 Identity Consistency Validation
+    const identityCheck = await validateCandidateIdentity(trimmedName, trimmedEmail, trimmedCompanyId);
+    if (identityCheck.conflict) {
+      return res.status(409).json({
+        error: "IDENTITY_CONFLICT",
+        message: identityCheck.message,
+      });
+    }
+
+    // 3. Enforce 48-Hour Re-attempt Lockout
+    const cooldown = await findActiveCooldown(trimmedEmail, trimmedCompanyId);
+    if (cooldown) {
+      return res.status(403).json({
+        error: "COOLDOWN_ACTIVE",
+        message: `You completed an assessment on ${new Date(cooldown.lastAttemptAt).toLocaleString()}. Re-attempts are permitted 48 hours after your previous submission.`,
+        ...cooldown,
+      });
+    }
+
+    // 4. Upsert candidate
     let candidate = await prisma.candidate.findUnique({
       where: { email: trimmedEmail },
     });
@@ -244,4 +397,3 @@ router.post("/:id/clear-cooldown", authenticateAdmin, async (req: Request, res: 
 });
 
 export default router;
-

@@ -61,13 +61,22 @@ router.post("/upload-video", videoUpload.single("video"), async (req: Request, r
     const filename = req.file.filename;
 
     if (attemptId) {
-      await prisma.examAttempt.update({
-        where: { id: attemptId },
-        data: {
-          hasVideoRecording: true,
-          videoFilename: filename,
-        },
-      });
+      try {
+        const attempt = await prisma.examAttempt.findUnique({
+          where: { id: attemptId },
+        });
+        if (attempt) {
+          await prisma.examAttempt.update({
+            where: { id: attemptId },
+            data: {
+              hasVideoRecording: true,
+              videoFilename: filename,
+            },
+          });
+        }
+      } catch (dbErr) {
+        console.warn("Attempt not found to link video immediately (will link via submission payload):", dbErr);
+      }
     }
 
     return res.status(200).json({
@@ -151,7 +160,8 @@ router.get("/download/:filename", authenticateAdmin, (req: Request, res: Respons
       return res.status(404).json({ error: "Video file not found." });
     }
 
-    return res.download(videoPath, filename);
+    const downloadName = (req.query.name as string) || filename;
+    return res.download(videoPath, downloadName);
   } catch (error) {
     console.error("Video download error:", error);
     return res.status(500).json({ error: "Failed to download video." });

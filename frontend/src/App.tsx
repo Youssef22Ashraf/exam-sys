@@ -204,7 +204,12 @@ function App() {
       <main className="page-container home-page">
         <section className="home-hero">
           <div className="hero-content">
-            <div className="hero-badge">WORKPLACE ASSESSMENT</div>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
+              <div className="company-logo-badge" title="Mofarreh Group — Engineering & Construction">
+                <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" />
+              </div>
+              <div className="hero-badge">WORKPLACE ASSESSMENT</div>
+            </div>
 
             <h1>
               Employee & Workplace
@@ -280,13 +285,20 @@ function AppHeader() {
   return (
     <header className="app-header">
       <div className="brand">
-        <div className="brand-icon">E</div>
+        <div className="company-logo-badge" title="Mofarreh Group — Engineering & Construction">
+          <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" />
+        </div>
 
         <div className="brand-text">
           <span className="brand-title">EXAM SYSTEM</span>
-
           <span className="brand-subtitle">Workplace Assessment Portal</span>
         </div>
+      </div>
+
+      <div className="powered-by-tag">
+        <span className="powered-by-icon"><Icon name="zap" /></span>
+        <span className="powered-by-prefix">Powered by</span>
+        <span className="powered-by-name">Eng. Youssef Ashraf</span>
       </div>
     </header>
   );
@@ -294,7 +306,21 @@ function AppHeader() {
 
 function AppFooter() {
   return (
-    <footer className="app-footer">Workplace Assessment System</footer>
+    <footer className="app-footer">
+      <div className="footer-left">
+        <div className="company-logo-badge" style={{ height: "40px", padding: "3px 8px" }}>
+          <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" style={{ height: "30px" }} />
+        </div>
+        <span>Mofarreh Group • Engineering & Construction Assessment Portal</span>
+      </div>
+      <div className="footer-right">
+        <div className="powered-by-tag">
+          <span className="powered-by-icon"><Icon name="zap" /></span>
+          <span className="powered-by-prefix">System Engineered & Powered by</span>
+          <span className="powered-by-name">Eng. Youssef Ashraf</span>
+        </div>
+      </div>
+    </footer>
   );
 }
 

@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
 import { Icon } from "../components/Icon";
-import { useTheme } from "../hooks/useTheme";
 import {
   ExamStorage,
   onStorageSync,
@@ -22,7 +21,14 @@ type TabType = "overview" | "candidates" | "results" | "exams";
 
 function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [theme, toggleTheme] = useTheme();
+
+  // Enforce administrator authentication on dashboard mount
+  useEffect(() => {
+    const token = sessionStorage.getItem("adminToken");
+    if (!token) {
+      onLogout();
+    }
+  }, [onLogout]);
 
   // Storage states
   const [candidates, setCandidates] = useState<Candidate[]>(() =>
@@ -55,46 +61,48 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   );
   const [loadedVideoUrl, setLoadedVideoUrl] = useState<string | null>(null);
 
-  // Load video recording from IndexedDB when an attempt is opened
   // Load video recording from backend streaming endpoint or IndexedDB fallback
   useEffect(() => {
+    let isMounted = true;
     let currentObjectUrl: string | null = null;
-    if (selectedResult) {
-      VideoStorage.getVideo(selectedResult.id).then((blob) => {
-        if (blob && blob.size > 0) {
-          currentObjectUrl = URL.createObjectURL(blob);
-          setLoadedVideoUrl(currentObjectUrl);
-        } else {
-          setLoadedVideoUrl(null);
-        }
-      });
-      if (selectedResult.videoFilename) {
-        const videoBase =
-          import.meta.env.VITE_API_URL ||
-          (typeof window !== "undefined" &&
-          window.location.hostname !== "localhost" &&
-          window.location.hostname !== "127.0.0.1"
-            ? `${window.location.origin}/api`
-            : "http://localhost:5000/api");
-        const adminToken = sessionStorage.getItem("adminToken") || "";
-        setLoadedVideoUrl(
-          `${videoBase}/proctor/video/${selectedResult.videoFilename}?token=${encodeURIComponent(adminToken)}`
-        );
-      } else {
-        VideoStorage.getVideo(selectedResult.id).then((blob) => {
+    if (!selectedResult) {
+      setLoadedVideoUrl(null);
+      return;
+    }
+
+    const videoBase =
+      import.meta.env.VITE_API_URL ||
+      (typeof window !== "undefined" &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+        ? `${window.location.origin}/api`
+        : "http://localhost:5000/api");
+    const adminToken = sessionStorage.getItem("adminToken") || "";
+
+    if (selectedResult.videoFilename) {
+      // Backend streaming URL with auth token
+      setLoadedVideoUrl(
+        `${videoBase}/proctor/video/${selectedResult.videoFilename}?token=${encodeURIComponent(adminToken)}`
+      );
+    } else {
+      // IndexedDB local fallback
+      VideoStorage.getVideo(selectedResult.id)
+        .then((blob) => {
+          if (!isMounted) return;
           if (blob && blob.size > 0) {
             currentObjectUrl = URL.createObjectURL(blob);
             setLoadedVideoUrl(currentObjectUrl);
           } else {
             setLoadedVideoUrl(null);
           }
+        })
+        .catch(() => {
+          if (isMounted) setLoadedVideoUrl(null);
         });
-      }
-    } else {
-      setLoadedVideoUrl(null);
     }
 
     return () => {
+      isMounted = false;
       if (currentObjectUrl) {
         URL.revokeObjectURL(currentObjectUrl);
       }
@@ -432,23 +440,21 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       {/* Header */}
       <header className="admin-header">
         <div className="brand">
-          <div className="brand-icon">E</div>
+          <div className="company-logo-badge" title="Mofarreh Group — Engineering & Construction">
+            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" className="company-logo" />
+          </div>
           <div className="brand-text">
-            <span className="brand-title">EXAM SYSTEM</span>
-            <span className="brand-subtitle">Administration Portal</span>
+            <span className="brand-title">EXAM ADMIN</span>
+            <span className="brand-subtitle">Workplace Assessment Command Center</span>
           </div>
         </div>
 
         <div className="admin-header-actions">
-          <button
-            className="theme-toggle"
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-            title={theme === "dark" ? "Light theme" : "Dark theme"}
-          >
-            {theme === "dark" ? <Icon name="sun" label="Light theme" /> : <Icon name="moon" label="Dark theme" />}
-          </button>
+          <div className="powered-by-tag">
+            <span className="powered-by-icon"><Icon name="zap" /></span>
+            <span className="powered-by-prefix">Powered by</span>
+            <span className="powered-by-name">Eng. Youssef Ashraf</span>
+          </div>
           <button className="secondary-button" onClick={onLogout}>
             Logout
           </button>
@@ -723,7 +729,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       </td>
                     </tr>
                   ) : (
-                    filteredCandidates.map((c) => (
+                    filteredCandidates.map((c: Candidate) => (
                       <tr key={c.id}>
                         <td>
                           <strong>{c.name}</strong>
@@ -742,6 +748,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           >
                             {c.status}
                           </span>
+                        </td>
                         <td>
                           {c.totalAttempts > 1 ? (
                             <span
@@ -760,6 +767,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             <span>{c.totalAttempts}</span>
                           )}
                         </td>
+                        <td>
                           {c.highestScore !== undefined ? (
                             <strong>{c.highestScore} / {questions.length}</strong>
                           ) : (
@@ -854,7 +862,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       </td>
                     </tr>
                   ) : (
-                    filteredResults.map((r) => {
+                    filteredResults.map((r: ExamResult) => {
                       const mins = Math.floor(r.timeSpentSeconds / 60);
                       const secs = r.timeSpentSeconds % 60;
                       return (
@@ -1121,7 +1129,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     No questions found matching your filter.
                   </p>
                 ) : (
-                  filteredQuestions.map((q) => (
+                  filteredQuestions.map((q: Question) => (
                     <div key={q.id} className="q-item-card">
                       <div className="q-item-header">
                         <span className="badge badge-section">
@@ -1149,7 +1157,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       </h4>
 
                       <div className="q-options-list">
-                        {q.options.map((opt, i) => (
+                        {q.options.map((opt: string, i: number) => (
                           <div
                             key={i}
                             className={`q-option-pill ${
@@ -1445,7 +1453,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
               </div>
 
               {/* Proctor Video Recording if available */}
-              {loadedVideoUrl ? (
+              {(loadedVideoUrl || selectedResult.hasVideoRecording || selectedResult.videoFilename) ? (
                 <div
                   style={{
                     marginBottom: "22px",
@@ -1482,47 +1490,86 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       </span>
                     </div>
 
-                    <a
-                      href={loadedVideoUrl}
-                      download={`proctor_recording_${selectedResult.candidateName.replace(
-                        /\s+/g,
-                        "_"
-                      )}_${selectedResult.id}.webm`}
-                      className="btn-sm"
-                      style={{
-                        textDecoration: "none",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        color: "var(--primary)",
-                        borderColor: "var(--primary-border)",
-                      }}
-                    >
-                      <Icon name="download" /> Download Video (.webm)
-                    </a>
+                    {(() => {
+                      const videoBase =
+                        import.meta.env.VITE_API_URL ||
+                        (typeof window !== "undefined" &&
+                        window.location.hostname !== "localhost" &&
+                        window.location.hostname !== "127.0.0.1"
+                          ? `${window.location.origin}/api`
+                          : "http://localhost:5000/api");
+                      const adminToken = sessionStorage.getItem("adminToken") || "";
+                      const dlUrl = selectedResult.videoFilename
+                        ? `${videoBase}/proctor/download/${selectedResult.videoFilename}?token=${encodeURIComponent(adminToken)}&name=${encodeURIComponent(
+                            `proctor_${selectedResult.candidateName.replace(/\s+/g, "_")}_${selectedResult.id}.webm`
+                          )}`
+                        : loadedVideoUrl || "#";
+
+                      return (
+                        <a
+                          href={dlUrl}
+                          download={`proctor_recording_${selectedResult.candidateName.replace(
+                            /\s+/g,
+                            "_"
+                          )}_${selectedResult.id}.webm`}
+                          className="btn-sm"
+                          style={{
+                            textDecoration: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            color: "var(--surface)",
+                            background: "var(--primary)",
+                            borderColor: "var(--primary-border)",
+                            fontWeight: 650,
+                            padding: "6px 14px",
+                            borderRadius: "6px",
+                          }}
+                          title="Directly download full video recording"
+                        >
+                          <Icon name="download" /> Download Full Video (.webm)
+                        </a>
+                      );
+                    })()}
                   </div>
 
-                  <div
-                    style={{
-                      background: "var(--text)",
-                      borderRadius: "8px",
-                      overflow: "hidden",
-                      maxHeight: "320px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <video
-                      src={loadedVideoUrl}
-                      controls
+                  {loadedVideoUrl ? (
+                    <div
                       style={{
-                        width: "100%",
-                        maxHeight: "320px",
-                        objectFit: "contain",
+                        background: "var(--text, #0f172a)",
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                        maxHeight: "340px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
-                    />
-                  </div>
+                    >
+                      <video
+                        src={loadedVideoUrl}
+                        controls
+                        playsInline
+                        style={{
+                          width: "100%",
+                          maxHeight: "340px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        padding: "20px",
+                        background: "#0f172a",
+                        borderRadius: "8px",
+                        textAlign: "center",
+                        color: "#94a3b8",
+                        fontSize: "13px",
+                      }}
+                    >
+                      ⏳ Loading video recording stream...
+                    </div>
+                  )}
                 </div>
               ) : selectedResult.candidatePhoto ? (
                 <div
@@ -2017,6 +2064,35 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </div>
         </div>
       )}
+
+      {/* Admin Dashboard Attribution Footer */}
+      <footer
+        style={{
+          marginTop: "60px",
+          padding: "20px 36px",
+          borderTop: "1px solid #e2e8f0",
+          background: "#ffffff",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "14px",
+          fontSize: "13px",
+          color: "#64748b",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="company-logo-badge" style={{ height: "40px", padding: "3px 8px" }}>
+            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" style={{ height: "30px" }} />
+          </div>
+          <span>Mofarreh Group • Assessment Management Command Center</span>
+        </div>
+        <div className="powered-by-tag">
+          <span className="powered-by-icon"><Icon name="zap" /></span>
+          <span className="powered-by-prefix">Architected & Powered by</span>
+          <span className="powered-by-name">Eng. Youssef Ashraf</span>
+        </div>
+      </footer>
     </div>
   );
 }

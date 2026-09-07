@@ -1,6 +1,15 @@
-﻿node_modules
-dist
+node_modules
+frontend/node_modules
+backend/node_modules
+frontend/dist
+backend/dist
+backend/uploads
 .git
-.gitignore
+.agents
+.cursor
+ref-for ui
+tech_readme_files
 *.log
-.DS_Store
+*.tmp
+dev.db
+dev.db-journal

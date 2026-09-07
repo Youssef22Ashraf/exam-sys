@@ -3,6 +3,7 @@ import { prisma } from "../config/db";
 import { authenticateAdmin } from "../middleware/auth";
 import { findActiveCooldown } from "../services/cooldown";
 import { sendExamCompletionAlert } from "../services/emailService";
+import { validateExamineeEmail, validateCandidateIdentity } from "./candidateRoutes";
 
 const router = Router();
 
@@ -29,9 +30,23 @@ router.post("/submit", async (req: Request, res: Response) => {
         .json({ error: "Candidate name and email are required." });
     }
 
-    // videoFilename must be a bare file the proctor upload produced; the
-    // photo is a data URL from the canvas. Anything else is rejected so a
-    // crafted body cannot store a path for the admin UI to fetch later.
+    // Strict Email Format Check
+    const emailCheck = validateExamineeEmail(candidateEmail);
+    if (!emailCheck.valid) {
+      return res.status(400).json({ error: emailCheck.message });
+    }
+
+    // Strict 1-to-1 Candidate Identity Check
+    const idCheck = await validateCandidateIdentity(
+      candidateName,
+      candidateEmail,
+      companyId || "N/A"
+    );
+    if (idCheck.conflict) {
+      return res.status(400).json({ error: idCheck.message });
+    }
+
+    // Sanitize videoFilename & candidatePhoto
     if (videoFilename !== undefined && videoFilename !== null) {
       if (typeof videoFilename !== "string" || !/^[\w.-]+\.webm$/.test(videoFilename)) {
         return res.status(400).json({ error: "Invalid videoFilename." });
@@ -96,14 +111,13 @@ router.post("/submit", async (req: Request, res: Response) => {
     const passThreshold = settings?.passingPercentage ?? 70;
     const isPassed = percentage >= passThreshold;
 
-    // 3+4. Candidate upsert and attempt insert in ONE transaction so two
-    //      concurrent submits for the same candidate cannot both read
-    //      totalAttempts=N and both write attemptNumber=N+1.
     const trimmedEmail = candidateEmail.trim().toLowerCase();
     const submissionTime = new Date();
+
+    // 3 & 4. Atomically upsert candidate stats and insert attempt
+    let candidate: { id: string; name: string; email: string; companyId: string };
     let attemptNumber = 1;
-    type CandidateRow = NonNullable<Awaited<ReturnType<typeof prisma.candidate.findUnique>>>;
-    let candidate!: CandidateRow; // assigned inside the transaction callback
+
     const attempt = await prisma.$transaction(async (tx) => {
       const existing = await tx.candidate.findUnique({
         where: { email: trimmedEmail },
@@ -114,7 +128,7 @@ router.post("/submit", async (req: Request, res: Response) => {
           data: {
             name: candidateName.trim(),
             email: trimmedEmail,
-            companyId: (companyId || "N/A").trim(),
+            companyId: companyId ? companyId.trim() : "N/A",
             status: "Completed",
             totalAttempts: 1,
             highestScore: score,
@@ -139,7 +153,7 @@ router.post("/submit", async (req: Request, res: Response) => {
         attemptNumber = newAttemptsCount;
       }
 
-      // 4. Save Attempt Record
+      // Save Attempt Record
       return tx.examAttempt.create({
         data: {
           candidateId: candidate.id,
@@ -169,9 +183,9 @@ router.post("/submit", async (req: Request, res: Response) => {
 
     // 5. Asynchronous Email Alert (non-blocking)
     sendExamCompletionAlert({
-      candidateName: candidate.name,
-      candidateEmail: candidate.email,
-      companyId: candidate.companyId,
+      candidateName: candidate!.name,
+      candidateEmail: candidate!.email,
+      companyId: candidate!.companyId,
       score,
       totalQuestions,
       percentage,
@@ -388,4 +402,3 @@ router.delete("/results/:id", authenticateAdmin, async (req: Request, res: Respo
 });
 
 export default router;
-
