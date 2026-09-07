@@ -23,6 +23,20 @@ function getAuthHeaders(): HeadersInit {
   };
 }
 
+/**
+ * A submit that never reached the server, or that the server refused.
+ * `retryable` is false for a decision the server made on purpose (a cooldown
+ * refusal) — retrying that just fails again.
+ */
+export class SubmitFailedError extends Error {
+  readonly retryable: boolean;
+  constructor(message: string, retryable: boolean) {
+    super(message);
+    this.name = "SubmitFailedError";
+    this.retryable = retryable;
+  }
+}
+
 export const api = {
   /**
    * Ping backend health endpoint to check connection
@@ -219,7 +233,10 @@ export const api = {
    */
   async getQuestions(): Promise<Question[]> {
     try {
-      const res = await fetch(`${API_BASE}/questions`);
+      // getAuthHeaders() omits Authorization when there is no admin token, so
+      // a candidate gets the bank without `correctAnswer` and an admin gets it
+      // with. See backend questionRoutes GET /.
+      const res = await fetch(`${API_BASE}/questions`, { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         storage.saveQuestions(data);
@@ -303,98 +320,90 @@ export const api = {
   /**
    * Exam Submission & Results
    */
+
+  /**
+   * Open a server-owned sitting. Its id is what lets the backend time the
+   * exam and count proctoring warnings itself instead of trusting the submit
+   * body. Throws if the server is unreachable — an exam that cannot be
+   * submitted should not be started (ADR 008).
+   */
+  async startExam(candidateEmail: string, companyId: string): Promise<string> {
+    const res = await fetch(`${API_BASE}/exam/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ candidateEmail, companyId }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new SubmitFailedError(
+        data.error || "Could not start the exam session.",
+        true
+      );
+    }
+    const data = await res.json();
+    return data.sessionId as string;
+  },
+
   async submitExam(payload: {
     candidateId?: string;
     candidateName: string;
     candidateEmail: string;
     companyId: string;
     answers: Record<number, number>;
-    timeSpentSeconds: number;
+    /** Server-owned sitting from startExam(); the backend requires it. */
+    sessionId: string;
     tabSwitches?: number;
-    proctoringStatus?: "Verified" | "Warnings" | "Camera Disabled";
     candidatePhoto?: string;
     hasVideoRecording?: boolean;
     videoFilename?: string;
   }): Promise<ExamResult> {
+    // ADR 008: a submit that does not reach the server is an error the
+    // candidate must see. Scoring locally produced a "pass" screen for an
+    // attempt no admin ever saw and no email ever announced. The caller
+    // catches SubmitFailedError and offers a retry; the draft is already in
+    // sessionStorage, so nothing is lost by refusing here.
+    let res: Response;
     try {
-      const res = await fetch(`${API_BASE}/exam/submit`, {
+      res = await fetch(`${API_BASE}/exam/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (res.status === 403) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Submission refused: 48-hour cooldown active.");
-      }
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.result) {
-          storage.saveResult(data.result);
-          notifyStorageChange("results");
-          notifyStorageChange("candidates");
-          return data.result;
-        }
-      }
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("cooldown")) throw err;
-      console.warn("Backend unavailable, submitting and scoring locally.");
+    } catch {
+      throw new SubmitFailedError(
+        "Could not reach the assessment server. Your answers are saved on this device — check your connection and try again.",
+        true
+      );
     }
 
-    // Local evaluation fallback
-    const questions = storage.getQuestions();
-    let partAScore = 0;
-    let partATotal = 0;
-    let partBScore = 0;
-    let partBTotal = 0;
+    if (res.status === 403) {
+      const data = await res.json().catch(() => ({}));
+      throw new SubmitFailedError(
+        data.message || "Submission refused: 48-hour cooldown active.",
+        false
+      );
+    }
 
-    questions.forEach((q) => {
-      if (q.section === "A") {
-        partATotal++;
-        if (payload.answers[q.id] === q.correctAnswer) partAScore++;
-      } else {
-        partBTotal++;
-        if (payload.answers[q.id] === q.correctAnswer) partBScore++;
-      }
-    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new SubmitFailedError(
+        data.error || `The server rejected the submission (HTTP ${res.status}).`,
+        res.status >= 500
+      );
+    }
 
-    const score = partAScore + partBScore;
-    const totalQuestions = questions.length;
-    const percentage = Number(((score / totalQuestions) * 100).toFixed(1));
-    const settings = storage.getSettings();
-    const isPassed = percentage >= settings.passingPercentage;
+    const data = await res.json().catch(() => ({}));
+    if (!data.result) {
+      throw new SubmitFailedError(
+        "The server accepted the submission but returned no result.",
+        true
+      );
+    }
 
-    const localResult: ExamResult = {
-      id: `res-${Date.now()}`,
-      candidateId: payload.candidateId || `cand-${Date.now()}`,
-      candidateName: payload.candidateName,
-      candidateEmail: payload.candidateEmail,
-      companyId: payload.companyId,
-      submittedAt: new Date().toISOString(),
-      score,
-      totalQuestions,
-      percentage,
-      isPassed,
-      timeSpentSeconds: payload.timeSpentSeconds,
-      partAScore,
-      partATotal,
-      partBScore,
-      partBTotal,
-      answers: payload.answers,
-      tabSwitches: payload.tabSwitches || 0,
-      proctoringStatus: payload.proctoringStatus || "Verified",
-      candidatePhoto: payload.candidatePhoto,
-      hasVideoRecording: payload.hasVideoRecording,
-      videoFilename: payload.videoFilename,
-      passingPercentage: settings.passingPercentage,
-      attemptNumber: 1,
-    };
-
-    storage.saveResult(localResult);
+    storage.saveResult(data.result);
     notifyStorageChange("results");
     notifyStorageChange("candidates");
-    return localResult;
+    return data.result;
   },
 
   async uploadVideo(

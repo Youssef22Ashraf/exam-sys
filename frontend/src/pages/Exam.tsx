@@ -8,7 +8,7 @@ import {
 import { VideoStorage } from "../services/videoStorage";
 import { CameraProctor } from "../components/CameraProctor";
 import { releaseCamera } from "../services/camera";
-import { api } from "../services/api";
+import { api, SubmitFailedError } from "../services/api";
 import { socketService } from "../services/socket";
 import "./Exam.css";
 
@@ -28,6 +28,16 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     ExamStorage.getQuestions()
   );
 
+  // Server-owned sitting. Held in sessionStorage so a mid-exam reload rejoins
+  // the same sitting rather than resetting the server's clock.
+  const [sessionId, setSessionId] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem(`exam_sid_${userData?.email || "candidate"}`) || "";
+    } catch {
+      return "";
+    }
+  });
+
   useEffect(() => {
     api
       .getQuestions()
@@ -37,8 +47,11 @@ function Exam({ userData, onFinishExam }: ExamProps) {
           ExamStorage.saveQuestions(remote);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Could not refresh the question bank:", err);
+      });
   }, []);
+
 
   const partA = useMemo(
     () => questions.filter((q) => q.section === "A"),
@@ -99,6 +112,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
   const [submitted, setSubmitted] = useState(false);
   const [submitRefusal, setSubmitRefusal] = useState<string | null>(null);
+  const [submitCanRetry, setSubmitCanRetry] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [securityToast, setSecurityToast] = useState<string | null>(null);
   const [sessionResumed, setSessionResumed] = useState<boolean>(() => {
@@ -109,6 +123,31 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       return false;
     }
   });
+
+  // Open the server-owned sitting once. Without it the submit is refused, so
+  // failing here must be visible rather than silent.
+  useEffect(() => {
+    if (sessionId || !userData?.email) return;
+    const key = `exam_sid_${userData.email}`;
+    api
+      .startExam(userData.email, userData.companyId || "")
+      .then((id) => {
+        setSessionId(id);
+        try {
+          sessionStorage.setItem(key, id);
+        } catch (err) {
+          console.warn("Could not persist the exam session id:", err);
+        }
+      })
+      .catch((err) => {
+        setSubmitCanRetry(true);
+        setSubmitRefusal(
+          err instanceof Error
+            ? err.message
+            : "Could not start the exam session on the server."
+        );
+      });
+  }, [sessionId, userData?.email, userData?.companyId]);
 
   const getSnapshotRef = useRef<(() => string | null) | null>(null);
   const stopRecordingRef = useRef<(() => Promise<Blob | null>) | null>(null);
@@ -142,55 +181,26 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     }
   }
 
-  function calculateResults(): ExamResult {
-    let score = 0;
-    let partAScore = 0;
-    let partBScore = 0;
-
-    questions.forEach((q) => {
-      const isCorrect = selectedAnswers[q.id] === q.correctAnswer;
-      if (isCorrect) {
-        score++;
-        if (q.section === "A") partAScore++;
-        if (q.section === "B") partBScore++;
-      }
-    });
-
-    const totalQuestions = questions.length;
-    const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
-    const isPassed = percentage >= (settings.passingPercentage || 70);
-    const timeSpentSeconds = Math.max(0, EXAM_DURATION - timeLeft);
-
-    // Capture proctor photo snapshot if available
+  /**
+   * The payload the server scores. ADR 001 + ADR 008: the client no longer
+   * holds `correctAnswer`, so it cannot compute a score even for preview —
+   * pass/fail comes back from `POST /api/exam/submit` or the attempt fails.
+   */
+  function buildSubmission() {
     const photo = getSnapshotRef.current ? getSnapshotRef.current() : null;
-    const proctoringStatus: "Verified" | "Warnings" =
-      tabSwitches === 0 ? "Verified" : "Warnings";
 
-    const result: ExamResult = {
-      id: "res-" + Date.now(),
+    return {
+      draftId: "draft-" + Date.now(),
       candidateId: userData?.companyId || "cand-guest",
       candidateName: userData?.name || "Candidate",
       candidateEmail: userData?.email || "candidate@company.com",
       companyId: userData?.companyId || "N/A",
-      submittedAt: new Date().toISOString(),
-      score,
-      totalQuestions,
-      percentage,
-      isPassed,
-      timeSpentSeconds,
-      partAScore,
-      partATotal: partA.length,
-      partBScore,
-      partBTotal: partB.length,
       answers: selectedAnswers,
       tabSwitches,
-      proctoringStatus,
       candidatePhoto: photo || undefined,
-      hasVideoRecording: false,
-      passingPercentage: settings.passingPercentage || 70,
+      hasVideoRecording: false as boolean,
+      videoFilename: undefined as string | undefined,
     };
-
-    return result;
   }
 
   async function submitExam() {
@@ -199,7 +209,8 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     }
 
     setSubmitted(true);
-    const result = calculateResults();
+    setSubmitRefusal(null);
+    const submission = buildSubmission();
 
     // Finalize and store video recording
     if (stopRecordingRef.current) {
@@ -207,13 +218,13 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         const videoBlob = await stopRecordingRef.current();
         releaseCamera();
         if (videoBlob && videoBlob.size > 0) {
-          result.hasVideoRecording = true;
+          submission.hasVideoRecording = true;
           // Save to local IndexedDB backup
-          await VideoStorage.saveVideo(result.id, videoBlob);
+          await VideoStorage.saveVideo(submission.draftId, videoBlob);
           // Upload to backend so remote admin can stream/watch/download it
-          const uploadRes = await api.uploadVideo(videoBlob, result.id);
+          const uploadRes = await api.uploadVideo(videoBlob, submission.draftId);
           if (uploadRes && uploadRes.filename) {
-            result.videoFilename = uploadRes.filename;
+            submission.videoFilename = uploadRes.filename;
           }
         }
       } catch (err) {
@@ -224,40 +235,43 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       releaseCamera();
     }
 
-    // The server re-scores and owns pass/fail, attempt number and the id
-    // (ADR 001). The local calculation is only what we show if the API is
-    // unreachable (api.submitExam falls back to it), never the source of truth.
-    let finalResult: ExamResult = result;
+    let finalResult: ExamResult;
     try {
-      const serverResult = await api.submitExam({
-        candidateId: result.candidateId,
-        candidateName: result.candidateName,
-        candidateEmail: result.candidateEmail,
-        companyId: result.companyId,
-        answers: result.answers,
-        timeSpentSeconds: result.timeSpentSeconds,
-        tabSwitches: result.tabSwitches,
-        proctoringStatus: result.proctoringStatus,
-        candidatePhoto: result.candidatePhoto,
-        hasVideoRecording: result.hasVideoRecording,
-        videoFilename: result.videoFilename,
+      finalResult = await api.submitExam({
+        candidateId: submission.candidateId,
+        candidateName: submission.candidateName,
+        candidateEmail: submission.candidateEmail,
+        companyId: submission.companyId,
+        answers: submission.answers,
+        sessionId,
+        tabSwitches: submission.tabSwitches,
+        candidatePhoto: submission.candidatePhoto,
+        hasVideoRecording: submission.hasVideoRecording,
+        videoFilename: submission.videoFilename,
       });
-      finalResult = {
-        ...result,
-        ...serverResult,
-        passingPercentage: result.passingPercentage,
-      };
 
-      // Also map video in IndexedDB to server attempt ID if different
-      if (serverResult && serverResult.id && result.id !== serverResult.id) {
-        VideoStorage.getVideo(result.id).then((blob) => {
-          if (blob) VideoStorage.saveVideo(serverResult.id, blob);
+      // Re-key the local recording to the attempt id the server assigned.
+      if (finalResult.id && finalResult.id !== submission.draftId) {
+        VideoStorage.getVideo(submission.draftId).then((blob) => {
+          if (blob) VideoStorage.saveVideo(finalResult.id, blob);
         });
       }
     } catch (err) {
-      // A 403 cooldown refusal is the only thing api.submitExam throws.
+      const retryable = err instanceof SubmitFailedError ? err.retryable : true;
       setSubmitRefusal(err instanceof Error ? err.message : String(err));
+      // A retryable failure must not strand the candidate: re-arm the button.
+      // Their answers are still in sessionStorage.
+      setSubmitCanRetry(retryable);
+      if (retryable) {
+        setSubmitted(false);
+      }
       return;
+    }
+
+    try {
+      sessionStorage.removeItem(`exam_sid_${userData?.email || "candidate"}`);
+    } catch (err) {
+      console.warn("Could not clear the exam session id:", err);
     }
 
     // Persist to local storage
@@ -276,12 +290,6 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
     if (onFinishExam) {
       onFinishExam(finalResult);
-    } else {
-      alert(
-        `Exam submitted!\n\nScore: ${finalResult.score}/${questions.length} (${finalResult.percentage.toFixed(1)}%)\nStatus: ${
-          finalResult.isPassed ? "PASSED" : "FAILED"
-        }`
-      );
     }
   }
 
@@ -426,8 +434,10 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       ? question?.sectionTitle || "Part A — Interface Management"
       : question?.sectionTitle || "Part B — Stakeholder Management";
 
-  if (!question) {
-    if (submitRefusal) {
+  // A refusal the candidate cannot retry (a cooldown 403) ends the attempt.
+  // This used to be nested inside the `!question` branch below, which is false
+  // in the normal case — so a refused submit rendered nothing at all.
+  if (submitRefusal && !submitCanRetry) {
     return (
       <div className="exam-page" style={{ maxWidth: 560, margin: "80px auto", textAlign: "center" }}>
         <h2>Submission refused</h2>
@@ -437,7 +447,8 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     );
   }
 
-  return (
+  if (!question) {
+    return (
       <div className="exam-page">
         <p>No questions available.</p>
       </div>
@@ -446,6 +457,23 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
   return (
     <div className="exam-page">
+      {/* Submission failed but can be retried — answers are still held locally */}
+      {submitRefusal && submitCanRetry && (
+        <div className="exam-submit-error" role="alert">
+          <strong>Submission not sent.</strong> {submitRefusal}
+          <button
+            type="button"
+            className="btn-retry-submit"
+            onClick={() => {
+              setSubmitRefusal(null);
+              submitExam();
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       {/* Session Resumed Banner */}
       {sessionResumed && (
         <div className="exam-session-resumed-banner">
@@ -521,6 +549,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         <aside className="question-sidebar">
           {/* Live Camera Proctoring & Background Video Recording Card */}
           <CameraProctor
+            sessionId={sessionId}
             candidateName={userData?.name}
             candidateId={userData?.companyId}
             onWarningChange={(count) => setTabSwitches(count)}

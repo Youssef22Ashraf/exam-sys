@@ -6,6 +6,62 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ## [Unreleased]
 
+### Security
+
+- **The answer key no longer reaches candidates.** `GET /api/questions` ran
+  with no auth and returned `correctAnswer` for all 40 questions, and
+  `INITIAL_QUESTIONS` in `frontend/src/services/storage.ts` shipped the same
+  answers inside the candidate's JS bundle — server-side scoring (ADR 001)
+  was decorative. A new `optionalAdmin` middleware
+  (`backend/src/middleware/auth.ts`) sets `req.user` when a token is present
+  and continues when it is not; the route includes `correctAnswer` only for a
+  caller holding an admin JWT. `Question.correctAnswer` is now optional in the
+  frontend type and all 40 answer literals are gone from the bundle.
+  (ADR 008, closes the follow-up ADR 001 deferred.)
+- **The server owns the exam clock and the proctoring verdict.**
+  `timeSpentSeconds`, `tabSwitches` and `proctoringStatus` were body fields on
+  `POST /api/exam/submit`, trusted verbatim — the proctored client reporting
+  on its own conduct. A new `ExamSession` model plus `POST /api/exam/start`
+  gives the server its own `startedAt`; submit requires the session id,
+  derives elapsed time from it, and refuses a submit arriving more than
+  `durationMinutes + 5 min` late. The `candidate:warning` socket handler now
+  increments `serverWarnings` on the session, and the recorded `tabSwitches`
+  is `max(client, serverWarnings)` — the client can raise the count, never
+  lower it. `proctoringStatus` is derived, never accepted: no recording means
+  `Camera Disabled`. Sessions are bound to one candidate email, are spent on
+  submit, and cannot be replayed. Verified live: missing, unknown, mismatched,
+  expired and replayed sessions are each refused; a submit claiming
+  `tabSwitches: 0, proctoringStatus: "Verified"` with no video was recorded as
+  `Camera Disabled`.
+- **"Use Simulation" removed from `CameraProctor`.** It set
+  `hasPermission = true` with no camera and filed a drawn avatar — stamped
+  with the candidate's name and the word "Verified" — as the identity
+  snapshot. Declining the camera now states that the attempt is filed as
+  `Camera Disabled`.
+
+### Changed
+
+- **A failed submit is an error, not a local pass.** `api.submitExam` caught
+  every network error, scored the attempt from localStorage and returned a
+  result the candidate saw as authoritative — invisible to admin, no email.
+  That path is deleted. Failures throw `SubmitFailedError`; a transport
+  failure re-arms the submit behind a visible retry banner (the draft is still
+  in `sessionStorage`), a deliberate refusal such as a cooldown 403 ends the
+  attempt. Supersedes the submit half of ADR 005.
+- **The cooldown-refusal screen is reachable.** It was nested inside the
+  `!question` branch of `Exam.tsx`, which is false in the normal case, so a
+  403 at submit rendered nothing at all — frozen page, camera released, no
+  message.
+- **Scoring, identity and email validation extracted from route files.**
+  `services/scoring.ts` is a pure `(questions, answers, passMark) →
+  ScoreResult` with no Prisma and no `req`, so it is testable without an HTTP
+  request; `services/candidateIdentity.ts` and `services/validation.ts` end
+  `examRoutes.ts` importing from a sibling router. Behaviour unchanged.
+  `scoring.ts` and `examSession.ts` each carry a runnable `assert` self-check
+  until the Phase 5 test harness lands.
+- Candidate names, emails and company IDs are no longer written to stdout by
+  the `candidate:started` and `candidate:submitted` socket handlers.
+
 ### Added
 
 - **Inline SVG icons replace every emoji in the UI.**

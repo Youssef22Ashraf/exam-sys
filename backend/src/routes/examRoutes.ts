@@ -3,9 +3,41 @@ import { prisma } from "../config/db";
 import { authenticateAdmin } from "../middleware/auth";
 import { findActiveCooldown } from "../services/cooldown";
 import { sendExamCompletionAlert } from "../services/emailService";
-import { validateExamineeEmail, validateCandidateIdentity } from "./candidateRoutes";
+import { validateExamineeEmail } from "../services/validation";
+import { validateCandidateIdentity } from "../services/candidateIdentity";
+import { scoreExam } from "../services/scoring";
+import {
+  startSession,
+  consumeSession,
+  closeSession,
+  deriveProctoringStatus,
+} from "../services/examSession";
 
 const router = Router();
+
+// POST /api/exam/start - Open a server-owned sitting.
+//
+// The returned id is what makes the exam clock and the warning count the
+// server's rather than the client's. Required by POST /submit.
+router.post("/start", async (req: Request, res: Response) => {
+  try {
+    const { candidateEmail, companyId } = req.body;
+
+    const emailCheck = validateExamineeEmail(candidateEmail);
+    if (!emailCheck.valid) {
+      return res.status(400).json({ error: emailCheck.message });
+    }
+
+    const session = await startSession(candidateEmail, companyId || "");
+    return res.status(201).json({
+      sessionId: session.id,
+      startedAt: session.startedAt.toISOString(),
+    });
+  } catch (error) {
+    console.error("Start exam session error:", error);
+    return res.status(500).json({ error: "Failed to start the exam session." });
+  }
+});
 
 // POST /api/exam/submit - Submit candidate exam & evaluate server-side
 router.post("/submit", async (req: Request, res: Response) => {
@@ -16,9 +48,10 @@ router.post("/submit", async (req: Request, res: Response) => {
       candidateEmail,
       companyId,
       answers = {},
-      timeSpentSeconds = 0,
-      tabSwitches = 0,
-      proctoringStatus = "Verified",
+      // timeSpentSeconds, tabSwitches and proctoringStatus are NOT read from
+      // the body any more — the server derives all three from the session.
+      sessionId,
+      tabSwitches: clientTabSwitches = 0,
       candidatePhoto,
       hasVideoRecording = false,
       videoFilename,
@@ -81,35 +114,49 @@ router.post("/submit", async (req: Request, res: Response) => {
       return res.status(500).json({ error: "No exam questions found in database." });
     }
 
-    let partAScore = 0;
-    let partATotal = 0;
-    let partBScore = 0;
-    let partBTotal = 0;
-
-    for (const q of questions) {
-      if (q.section === "A") {
-        partATotal++;
-        if (answers[q.id] !== undefined && Number(answers[q.id]) === q.correctAnswer) {
-          partAScore++;
-        }
-      } else {
-        partBTotal++;
-        if (answers[q.id] !== undefined && Number(answers[q.id]) === q.correctAnswer) {
-          partBScore++;
-        }
-      }
-    }
-
-    const totalQuestions = questions.length;
-    const score = partAScore + partBScore;
-    const percentage = Number(((score / totalQuestions) * 100).toFixed(1));
-
-    // 2. Fetch pass threshold from settings
+    // 2. Fetch pass threshold from settings, then score (services/scoring.ts)
     const settings = await prisma.examSetting.findFirst({
       where: { id: "default-settings" },
     });
     const passThreshold = settings?.passingPercentage ?? 70;
-    const isPassed = percentage >= passThreshold;
+
+    // 2b. Validate the sitting and take the server's own figures from it.
+    //     This is what stops a client posting `tabSwitches: 0` after alt-tabbing
+    //     twenty times, or submitting an hour after a 30-minute exam began.
+    const session = await consumeSession(
+      sessionId,
+      String(candidateEmail),
+      settings?.durationMinutes ?? 30
+    );
+    if (!session.ok) {
+      return res.status(session.status).json({
+        error: session.error,
+        message: session.message,
+      });
+    }
+
+    const timeSpentSeconds = session.timeSpentSeconds;
+    // The client count is a floor, not the truth: it can only ever raise the
+    // number, never lower what the server observed on the socket feed.
+    const tabSwitches = Math.max(
+      Number(clientTabSwitches) || 0,
+      session.serverWarnings
+    );
+    const proctoringStatus = deriveProctoringStatus(
+      tabSwitches,
+      Boolean(hasVideoRecording)
+    );
+
+    const {
+      partAScore,
+      partATotal,
+      partBScore,
+      partBTotal,
+      score,
+      totalQuestions,
+      percentage,
+      isPassed,
+    } = scoreExam(questions, answers, passThreshold);
 
     const trimmedEmail = candidateEmail.trim().toLowerCase();
     const submissionTime = new Date();
@@ -180,6 +227,9 @@ router.post("/submit", async (req: Request, res: Response) => {
         },
       });
     });
+
+    // 4b. Spend the sitting so the same session cannot be submitted twice.
+    await closeSession(session.sessionId, attempt.id);
 
     // 5. Asynchronous Email Alert (non-blocking)
     sendExamCompletionAlert({
