@@ -32,8 +32,8 @@ eligible only if `now - submittedAt >= 48h`. See
 | `frontend/src/services/api.ts` `checkCandidateCooldown`, `registerCandidate` | network + fallback |
 | `frontend/src/services/storage.ts` `checkCandidateCooldown`, `registerOrUpdateCandidate` | local mirror |
 | `backend/src/routes/candidateRoutes.ts` | `check-cooldown`, `register`, `clear-cooldown` |
+| `backend/src/services/cooldown.ts` | `findActiveCooldown` — shared by `check-cooldown` and `exam/submit` |
 
 ## Known gaps
 
-- Lockout is not re-checked at submit — `TODO.md` §Security item 2.
 - `clear-cooldown` backdates timestamps — `TODO.md` §Correctness.

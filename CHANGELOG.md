@@ -18,6 +18,14 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
   `<video src>` cannot set an `Authorization` header; the admin dashboard
   appends it for playback. `api.ts` sends the bearer header on `test-email`.
 
+- **The 48-hour lockout is enforced at submit.** `POST /api/exam/submit`
+  returns `403 COOLDOWN_ACTIVE` when an attempt by the same email or
+  company ID exists inside the window. Before this only the registration
+  screen checked, so a client that skipped it could submit. The query
+  moved to `backend/src/services/cooldown.ts` and `check-cooldown` uses the
+  same function, so the two cannot disagree. `api.ts` treats a 403 as a
+  refusal and throws instead of falling back to local scoring.
+
 ### Added
 
 - Project convention docs: `AGENTS.md`, `CLAUDE.md`, and
