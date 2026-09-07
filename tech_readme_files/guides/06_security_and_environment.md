@@ -1,0 +1,37 @@
+> [INDEX](../INDEX.md) > Guides > Security & environment
+
+# 06 — Security & environment
+
+## Env vars (`backend/.env`, never committed)
+
+| Var | Required in prod | Notes |
+|---|---|---|
+| `PORT` | no (5000) | |
+| `DATABASE_URL` | yes | `file:./dev.db` or a Postgres URL |
+| `JWT_SECRET` | **yes** | production refuses to boot on the dev fallback (`config/env.ts`) |
+| `NODE_ENV` | yes | `production` disables Prisma query logging |
+| `CORS_ORIGIN` | recommended | comma-separated exact origins; unset = `*`. Applied to HTTP and Socket.io |
+| `SMTP_HOST/PORT/USER/PASS` | for email | all three of host/user/pass or no transport |
+| `ADMIN_ALERT_EMAIL` | for email | overridden by `ExamSetting.notifyEmail` |
+
+Frontend: `VITE_API_URL` optional; otherwise same-origin off localhost.
+
+## What is protected today
+
+`authenticateAdmin` on: question CRUD/reset, settings `PUT`, candidate
+delete, clear-cooldown, result delete, `admin/me`.
+
+## Also in place
+
+Login rate limit (10 / 15 min / IP), `CORS_ORIGIN` applied, production
+boot guard on the fallback JWT secret, cooldown enforced at submit,
+`videoFilename` / `candidatePhoto` validated at submit. Phase 8 §Security
+in `TODO.md` is complete.
+
+## Rules
+
+- Secrets only in env. `.env.example` holds placeholders.
+- `uploads/` and `*.db` hold PII and webcam video — gitignored, volume-mounted, never in a bug report.
+- Change `admin/admin123` on first deploy: log in, then update `passwordHash` via a one-off script (no UI yet).
+- `tls.rejectUnauthorized:false` in `emailService.ts` disables cert checks. Acceptable for a known Office 365 host; not for arbitrary SMTP.
+- Never log candidate identity or answers. `App.tsx beginExam` and the socket handlers currently do — `TODO.md` §Later.

@@ -1,13 +1,15 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "../config/env";
+import { rateLimit } from "../middleware/rateLimit";
 import { prisma } from "../config/db";
 import { authenticateAdmin, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
 // POST /api/admin/login
-router.post("/login", async (req: Request, res: Response) => {
+router.post("/login", rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }), async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
@@ -30,10 +32,9 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(401).json({ error: "Invalid username or password." });
     }
 
-    const secret = process.env.JWT_SECRET || "super_secret_exam_jwt_key_default";
     const token = jwt.sign(
       { id: admin.id, username: admin.username, role: admin.role },
-      secret,
+      JWT_SECRET,
       { expiresIn: "24h" }
     );
 

@@ -12,7 +12,7 @@
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "studio": "prisma studio",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "prisma db seed"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

@@ -115,9 +115,9 @@ export const api = {
           notifyStorageChange("candidates");
           return data.candidate;
         }
-      } else if (res.status === 403) {
+      } else if (res.status === 403 || res.status === 409) {
         const errData = await res.json();
-        const err: any = new Error(errData.message || "48-hour re-attempt cooldown is active.");
+        const err: any = new Error(errData.message || "Registration conflict or cooldown is active.");
         err.cooldown = errData;
         throw err;
       }
@@ -156,12 +156,13 @@ export const api = {
       if (name) query.append("name", name);
 
       const res = await fetch(`${API_BASE}/candidates/check-cooldown?${query.toString()}`);
-      const data = await res.json();
-      return data;
+      if (res.ok || res.status === 409 || res.status === 400 || res.status === 403) {
+        return await res.json();
+      }
     } catch {
       // Offline fallback
     }
-    return storage.checkCandidateCooldown(email, companyId, name);
+    return storage.checkCandidateCooldown(email, companyId);
   },
 
   async clearCandidateCooldown(
@@ -176,9 +177,9 @@ export const api = {
         return await res.json();
       }
     } catch (err) {
-      console.warn("Could not clear candidate cooldown on backend:", err);
+      console.warn("Backend unavailable, clearing cooldown locally.");
     }
-    return { success: true, message: "Candidate cooldown cleared." };
+    return { success: true };
   },
 
   async deleteCandidate(id: string): Promise<void> {
@@ -322,6 +323,11 @@ export const api = {
         body: JSON.stringify(payload),
       });
 
+      if (res.status === 403) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || "Submission refused: 48-hour cooldown active.");
+      }
+
       if (res.ok) {
         const data = await res.json();
         if (data.result) {
@@ -332,6 +338,7 @@ export const api = {
         }
       }
     } catch (err) {
+      if (err instanceof Error && err.message.includes("cooldown")) throw err;
       console.warn("Backend unavailable, submitting and scoring locally.");
     }
 
@@ -379,12 +386,40 @@ export const api = {
       proctoringStatus: payload.proctoringStatus || "Verified",
       candidatePhoto: payload.candidatePhoto,
       hasVideoRecording: payload.hasVideoRecording,
+      videoFilename: payload.videoFilename,
+      passingPercentage: settings.passingPercentage,
+      attemptNumber: 1,
     };
 
     storage.saveResult(localResult);
     notifyStorageChange("results");
     notifyStorageChange("candidates");
     return localResult;
+  },
+
+  async uploadVideo(
+    videoBlob: Blob,
+    attemptId?: string
+  ): Promise<{ success: boolean; filename?: string; path?: string }> {
+    try {
+      const formData = new FormData();
+      formData.append("video", videoBlob, `exam_${attemptId || Date.now()}.webm`);
+      if (attemptId) {
+        formData.append("attemptId", attemptId);
+      }
+
+      const res = await fetch(`${API_BASE}/proctor/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn("Could not upload video to backend:", err);
+    }
+    return { success: false };
   },
 
   async getResults(params?: { status?: string; search?: string }): Promise<ExamResult[]> {
@@ -401,9 +436,23 @@ export const api = {
         return data;
       }
     } catch (err) {
-      console.warn("Backend unavailable, using local results cache.");
+      console.warn("Backend unavailable, using local exam results cache.");
     }
     return storage.getResults();
+  },
+
+  async getResultById(id: string): Promise<ExamResult | null> {
+    try {
+      const res = await fetch(`${API_BASE}/exam/results/${id}`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn("Backend unavailable, finding result locally.");
+    }
+    return storage.getResults().find((r) => r.id === id) || null;
   },
 
   async deleteResult(id: string): Promise<void> {
@@ -420,54 +469,7 @@ export const api = {
   },
 
   /**
-   * Media & Proctoring Uploads
-   */
-  async uploadVideo(
-    videoBlob: Blob,
-    attemptId?: string
-  ): Promise<{ success: boolean; filename?: string; url?: string }> {
-    try {
-      const formData = new FormData();
-      formData.append("video", videoBlob, `candidate-${attemptId || "attempt"}.webm`);
-      if (attemptId) formData.append("attemptId", attemptId);
-
-      const res = await fetch(`${API_BASE}/proctor/upload-video`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn("Backend video upload unavailable; saved to browser IndexedDB.");
-    }
-    return { success: false };
-  },
-
-  async uploadSnapshot(
-    photoBlob: Blob
-  ): Promise<{ success: boolean; filename?: string; url?: string }> {
-    try {
-      const formData = new FormData();
-      formData.append("photo", photoBlob, "snapshot.jpg");
-
-      const res = await fetch(`${API_BASE}/proctor/upload-snapshot`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.ok) {
-        return await res.json();
-      }
-    } catch (err) {
-      console.warn("Backend snapshot upload unavailable.");
-    }
-    return { success: false };
-  },
-
-  /**
-   * Settings
+   * Exam Settings
    */
   async getSettings(): Promise<ExamSettings> {
     try {
@@ -483,7 +485,7 @@ export const api = {
     return storage.getSettings();
   },
 
-  async saveSettings(settings: ExamSettings): Promise<ExamSettings> {
+  async updateSettings(settings: Partial<ExamSettings>): Promise<ExamSettings> {
     try {
       const res = await fetch(`${API_BASE}/settings`, {
         method: "PUT",
@@ -492,8 +494,7 @@ export const api = {
       });
 
       if (res.ok) {
-        const data = await res.json();
-        const saved = data.settings || settings;
+        const saved = await res.json();
         storage.saveSettings(saved);
         notifyStorageChange("settings");
         return saved;
@@ -501,9 +502,14 @@ export const api = {
     } catch (err) {
       console.warn("Backend unavailable, saving settings locally.");
     }
-    const saved = storage.saveSettings(settings);
+    const current = storage.getSettings();
+    const saved = storage.saveSettings({ ...current, ...settings });
     notifyStorageChange("settings");
     return saved;
+  },
+
+  async saveSettings(settings: ExamSettings): Promise<ExamSettings> {
+    return this.updateSettings(settings);
   },
 
   async sendTestEmail(email?: string): Promise<{
@@ -528,4 +534,3 @@ export const api = {
     }
   },
 };
-

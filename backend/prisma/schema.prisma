@@ -21,6 +21,7 @@ model Candidate {
   highestScore   Int?
   latestScore    Int?
   lastAttemptAt  DateTime?
+  cooldownClearedAt DateTime?   // admin override; attempts at or before this no longer count toward the 48-hour window
   attempts       ExamAttempt[]
 
   createdAt      DateTime      @default(now())

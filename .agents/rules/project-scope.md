@@ -1,0 +1,16 @@
+# Project Scope
+
+Web exam + webcam proctoring platform. Two packages: `backend/` (Express 4, TypeScript, Prisma 5, SQLite, Socket.io) and `frontend/` (React 19, Vite, TypeScript, no router, no state lib). One container in production.
+
+Read-only, never edit: `ref-for ui/`, `interface questions.txt`, `stakeholder questions.txt`.
+
+Canonical conventions: `AGENTS.md`. Tool rules: `CLAUDE.md`. Docs index: `tech_readme_files/INDEX.md`.
+
+## Entry points
+
+| File | Purpose |
+|---|---|
+| `backend/src/index.ts` | Express + Socket.io + static SPA + `/api` mounts |
+| `backend/prisma/schema.prisma` | data contract |
+| `frontend/src/App.tsx` | page state machine, `/admin` detection |
+| `frontend/src/services/api.ts` | every network call, with localStorage fallback |
