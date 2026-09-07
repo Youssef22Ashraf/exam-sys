@@ -8,6 +8,9 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Added
 
+- **Sentry real-time error monitoring and performance tracing.** Added `@sentry/react`
+  initialized in `frontend/src/main.tsx` with browser tracing and session replay
+  to capture candidate runtime crashes, camera failures, and exam upload errors in production.
 - **Inline SVG icons replace every emoji in the UI.**
   `components/Icon.tsx` holds 22 glyphs on a 24-grid, `currentColor`,
   sized by `font-size`, no icon-library dependency. 88 emoji and symbol
