@@ -11,5 +11,15 @@ ref-for ui
 tech_readme_files
 *.log
 *.tmp
-dev.db
-dev.db-journal
+
+# Databases and secrets, at ANY depth.
+#
+# These were `dev.db` / `dev.db-journal`, which match only a file at the
+# context root -- .dockerignore patterns are matched against the path relative
+# to the context, so `backend/prisma/dev.db` (real candidate PII and admin
+# bcrypt hashes) was copied into the image by `COPY backend/prisma ./prisma/`.
+**/*.db
+**/*.db-journal
+**/.env
+**/.env.*
+!**/.env.example

@@ -1,14 +1,20 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
+import { rateLimit } from "../middleware/rateLimit";
 import { authenticateAdmin, requireRole } from "../middleware/auth";
 import { findActiveCooldown } from "../services/cooldown";
-import { validateExamineeEmail } from "../services/validation";
+import { validateExamineeEmail, parseJsonColumn } from "../services/validation";
 import { validateCandidateIdentity } from "../services/candidateIdentity";
+import { deleteRecordings } from "../services/proctorFiles";
 
 const router = Router();
 
+// Candidate-facing and unauthenticated, so there is no token to throttle on.
+// These were entirely unlimited while doing real database and disk work.
+const publicLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 60 });
+
 // GET /api/candidates/check-cooldown - Check if candidate is within 48-hour cooldown & validate identity
-router.get("/check-cooldown", async (req: Request, res: Response) => {
+router.get("/check-cooldown", publicLimit, async (req: Request, res: Response) => {
   try {
     const name = req.query.name ? String(req.query.name).trim() : "";
     const email = req.query.email ? String(req.query.email).trim().toLowerCase() : "";
@@ -61,7 +67,7 @@ router.get("/check-cooldown", async (req: Request, res: Response) => {
 });
 
 // POST /api/candidates/register - Public (examinee registration)
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register", publicLimit, async (req: Request, res: Response) => {
   try {
     const { name, email, companyId } = req.body;
 
@@ -205,7 +211,7 @@ router.get("/:id/history", authenticateAdmin, async (req: Request, res: Response
     const formattedAttempts = candidate.attempts.map((att) => ({
       ...att,
       submittedAt: att.submittedAt.toISOString(),
-      answers: JSON.parse(att.answers || "{}"),
+      answers: parseJsonColumn(att.answers, {}),
     }));
 
     return res.json({
@@ -229,10 +235,26 @@ router.get("/:id/history", authenticateAdmin, async (req: Request, res: Response
 router.delete("/:id", authenticateAdmin, requireRole("SUPERADMIN"), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.candidate.delete({
+
+    const candidate = await prisma.candidate.findUnique({
       where: { id },
+      select: { attempts: { select: { videoFilename: true } } },
     });
-    return res.json({ success: true, message: "Candidate deleted successfully." });
+    if (!candidate) {
+      // Prisma P2025 used to surface here as a 500.
+      return res.status(404).json({ error: "Candidate not found." });
+    }
+
+    // Collect the filenames before the cascade removes the attempt rows.
+    const filenames = candidate.attempts.map((a) => a.videoFilename);
+
+    await prisma.candidate.delete({ where: { id } });
+    const removed = deleteRecordings(filenames);
+
+    return res.json({
+      success: true,
+      message: `Candidate deleted successfully. ${removed} recording(s) removed.`,
+    });
   } catch (error) {
     console.error("Delete candidate error:", error);
     return res.status(500).json({ error: "Failed to delete candidate." });

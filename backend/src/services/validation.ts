@@ -39,3 +39,20 @@ export function validateExamineeEmail(email: string): ValidationResult {
 
   return { valid: true };
 }
+
+/**
+ * Parse a JSON column, falling back instead of throwing.
+ *
+ * `Question.options` and `ExamAttempt.answers` are JSON held in TEXT columns.
+ * Every read did a bare `JSON.parse`, so a single malformed row took out the
+ * whole list endpoint with a 500 rather than degrading that one record.
+ */
+export function parseJsonColumn<T>(raw: string | null | undefined, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    console.error("Malformed JSON column, using fallback. Value starts:", raw.slice(0, 80));
+    return fallback;
+  }
+}

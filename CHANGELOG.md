@@ -8,6 +8,29 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Security
 
+- **Security headers.** `X-Content-Type-Options: nosniff` (uploads are
+  user-supplied files served back by an authenticated route),
+  `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` (the admin JWT can
+  travel in `?token=`, and must not leak in a Referer), plus HSTS in
+  production. Deliberately not `helmet`: its CSP is the reason to take that
+  dependency and this SPA's inline styles would force it off, leaving four
+  headers cheaper to set directly.
+- **Public routes are rate-limited.** `register`, `check-cooldown`,
+  `exam/start`, `exam/submit` and both uploads were unauthenticated and
+  entirely unlimited while doing real database and disk work; 60 per 15
+  minutes per IP. Verified: throttled with a `Retry-After`.
+- **Request bodies are bounded.** A 50 MB JSON limit applied to every route
+  including login, and `answers` is stringified straight into a row — one
+  public request could write ~50 MB into SQLite. Now 256 KB globally, 8 MB on
+  `exam/submit` alone for the base64 snapshot. Oversized bodies get 413.
+- **CSV formula injection.** The export escaped quotes but not a leading `=`,
+  `+`, `-` or `@`, and `candidateName` comes from the unauthenticated
+  `/register`. Cells are prefixed with an apostrophe. Verified: a candidate
+  named `=HYPERLINK(...)` exports as text.
+- **`?name=` on the download route** went into `Content-Disposition`
+  unvalidated; restricted to a plain basename.
+
+
 - **The admin password is out of the client bundle.** `api.ts` and
   `AdminLogin.tsx` each carried an offline fallback that compared the typed
   credentials against hardcoded literals and, on a match, minted a fake token
@@ -102,6 +125,46 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Fixed
 
+- **`trust proxy` was never set**, so behind Railway `req.ip` was the proxy's
+  address for every request and the login limiter was a *global* 10-per-15-
+  minutes lockout shared by all users.
+- **Video streaming could crash the process.** `file.pipe(res)` had no
+  `error` listener, and a stream failure after `writeHead` is asynchronous —
+  it escaped the surrounding try/catch and became an unhandled `error` event.
+  Range parsing used bare `parseInt` with no clamping, so `bytes=abc-` gave
+  NaN and `bytes=99999999-` a negative `Content-Length`. Both fixed, suffix
+  ranges (`bytes=-500`) now supported, and the read stream is destroyed if the
+  client disconnects. Verified across six malformed ranges with the server
+  still healthy afterwards.
+- **No process-level safety net.** Added `unhandledRejection` and
+  `uncaughtException` handlers plus graceful `SIGTERM`/`SIGINT` shutdown —
+  with `restartPolicyMaxRetries: 10`, one repeatable crashing request could
+  exhaust the restart budget and leave the service down.
+- **Deleting a record orphaned its recording forever.** `DELETE` on an attempt
+  or a candidate only removed rows, so every `.webm` stayed on the volume
+  after the record justifying it was gone. Both now remove the files;
+  `services/proctorFiles.ts`. Both also return 404 instead of a Prisma
+  P2025-driven 500 for an unknown id.
+- **Every `JSON.parse` on a JSON column was unguarded**, so one malformed row
+  returned 500 for an entire list endpoint. `parseJsonColumn` degrades that
+  record instead.
+- **The error handler leaked internals** — raw `err.message` went to the
+  client — and answered 500 for an oversized upload because multer's
+  `LIMIT_FILE_SIZE` carries no `.status`. Now 413/400 as appropriate, and only
+  deliberate 4xx messages are echoed.
+- **Both `.dockerignore` files shipped the dev database.** `dev.db` matches
+  only a context-root file, so `backend/prisma/dev.db` — real candidate PII
+  and admin bcrypt hashes — was copied into the image by
+  `COPY backend/prisma ./prisma/`. Now `**/*.db`, plus `**/.env`.
+  `backend/.dockerignore` also began with a UTF-8 BOM, so its first line never
+  matched and `node_modules` was not actually excluded.
+- **README marked the database volume "(Optional)".** Without it every Railway
+  redeploy destroys the database. Documented as required, with the correct
+  path — Prisma resolves `file:./dev.db` against the schema directory, so the
+  file is at `/app/backend/prisma/dev.db`, and `docker-compose.yml` uses
+  different paths because `backend/Dockerfile` sets a different `WORKDIR`.
+
+
 - **Video upload never worked.** `api.uploadVideo` posted to
   `/api/proctor/upload`; the route is `/api/proctor/upload-video`. Every upload
   404'd, the failure was swallowed by the surrounding catch, and the attempt
@@ -111,6 +174,22 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
   `createMany` instead of 40 sequential inserts.
 
 ### Changed
+
+- **Indexes.** The schema had no secondary index at all. Added them for the
+  columns `services/cooldown.ts` and the admin lists actually filter and order
+  on, including `ExamAttempt.candidateId` — an unindexed foreign key on the
+  largest table, since Prisma does not create one for a relation on SQLite.
+- **`validateCandidateIdentity` no longer loads both tables.** It called
+  `findMany()` with no `where` on `Candidate` and `ExamAttempt` and filtered in
+  JS — two unbounded table loads per call, on three unauthenticated endpoints.
+  Now filtered in SQL.
+- The server logs the resolved absolute database and uploads paths at boot, so
+  an operator can check them against the configured volume mounts. Container
+  `HEALTHCHECK` added to both Dockerfiles and `healthcheckPath` to
+  `railway.json`.
+- `rateLimit` sweeps expired entries; previously a key was only reclaimed when
+  hit again after expiry, so one-shot IPs accumulated for the process lifetime.
+
 
 - **A failed submit is an error, not a local pass.** `api.submitExam` caught
   every network error, scored the attempt from localStorage and returned a

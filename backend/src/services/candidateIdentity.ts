@@ -52,8 +52,27 @@ export async function validateCandidateIdentity(
   const normEmail = email.trim().toLowerCase();
   const normCompanyId = companyId.trim().toLowerCase();
 
-  // Query all candidates to check for 1-to-1 uniqueness and cross-consistency
-  const allCandidates = await prisma.candidate.findMany();
+  // Only rows that could possibly collide, not the whole table.
+  //
+  // This was `prisma.candidate.findMany()` with no `where` at all, plus the
+  // same on examAttempt below — two unbounded table loads per call, on three
+  // unauthenticated endpoints.
+  //
+  // ponytail: `lower(trim(col))` cannot use the plain column indexes, so this
+  // is still a scan — but SQLite does it, and only matching rows cross the
+  // wire and get looped over. The upgrade, if the candidate table ever grows
+  // enough to matter, is normalized lowercase columns with their own indexes.
+  // SQLite's lower() is ASCII-only, which matches JS toLowerCase() for the
+  // Latin text this compares; scripts without case are unaffected.
+  const allCandidates = await prisma.$queryRaw<
+    { id: string; name: string; email: string; companyId: string }[]
+  >`
+    SELECT id, name, email, companyId
+    FROM Candidate
+    WHERE lower(trim(companyId)) = ${normCompanyId}
+       OR lower(trim(name))      = ${normName}
+       OR lower(trim(email))     = ${normEmail}
+  `;
 
   for (const cand of allCandidates) {
     const cName = cand.name.trim().toLowerCase();
@@ -92,9 +111,15 @@ export async function validateCandidateIdentity(
   }
 
   // Also check prior exam attempts to catch any attempts submitted before
-  const allAttempts = await prisma.examAttempt.findMany({
-    select: { candidateName: true, candidateEmail: true, companyId: true },
-  });
+  const allAttempts = await prisma.$queryRaw<
+    { candidateName: string; candidateEmail: string; companyId: string }[]
+  >`
+    SELECT candidateName, candidateEmail, companyId
+    FROM ExamAttempt
+    WHERE lower(trim(companyId))      = ${normCompanyId}
+       OR lower(trim(candidateName))  = ${normName}
+       OR lower(trim(candidateEmail)) = ${normEmail}
+  `;
 
   for (const att of allAttempts) {
     const aName = att.candidateName.trim().toLowerCase();

@@ -274,11 +274,40 @@ In your Railway Service dashboard, open the **Variables** tab and set:
 - `SMTP_PASS` = `[your-smtp-app-password]`
 - `ADMIN_ALERT_EMAIL` = `[supervisor-email]`
 
-### 4. Attach Persistent Volume (Crucial for Video & DB Retention)
+### 4. Attach Persistent Volumes (REQUIRED — both of them)
+
+The container filesystem is replaced on every deploy. **Two** volumes are
+needed, and neither is optional: without them a redeploy destroys every
+candidate, result and webcam recording, silently and irreversibly.
+
 1. In your service view on Railway, click the **Volumes** tab.
-2. Click **Add Volume**:
-   - **Mount Path**: `/app/backend/uploads` (Preserves all recorded webcam videos across redeployments).
-3. *(Optional)* Add a second volume mounted to `/app/backend/prisma` if using SQLite to ensure the database file persists across container rebuilds.
+2. Add a volume with **Mount Path** `/app/backend/uploads`
+   — the webcam recordings and identity snapshots.
+3. Add a second volume with **Mount Path** `/app/backend/prisma`
+   — the SQLite database file.
+
+> The database path is **not** `/app/backend/dev.db`. Prisma resolves the
+> relative `DATABASE_URL` (`file:./dev.db`) against the directory holding
+> `schema.prisma`, so the file lives at `/app/backend/prisma/dev.db`.
+> `docker-compose.yml` uses different paths (`/app/prisma`, `/app/uploads`)
+> because `backend/Dockerfile` sets a different `WORKDIR` — do not copy the
+> compose paths into Railway.
+
+On boot the server logs the absolute paths it resolved:
+
+```
+Database:  /app/backend/prisma/dev.db
+Uploads:   /app/backend/uploads
+```
+
+Check those against your mount paths in the deploy log. **Then verify
+persistence for real**: create a candidate, redeploy, and confirm the record
+and its recording survived. This has never been confirmed on a live
+deployment (see `tech_readme_files/CURRENT_STATUS.md`).
+
+Note also that `CMD` runs `prisma db push` on every boot. That reconciles the
+live database to the schema without migrations, so a removed or renamed column
+drops its data with no prompt (ADR 007).
 
 ### 5. Generate Domain
 1. In **Settings** → **Networking**, click **Generate Domain**.

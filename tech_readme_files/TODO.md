@@ -141,6 +141,42 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
 - [x] Rate-limit `POST /api/admin/login` — 10 / 15 min / IP, in-memory (fix/login-rate-limit-and-filename-validation)
 - [x] Validate `videoFilename` / `candidatePhoto` at submit — `^[\w.-]+\.webm$` and `data:image/…;base64,`
 
+### Operations — do now
+
+- [x] **`app.set("trust proxy", 1)`** — `req.ip` was the proxy address behind
+      Railway, making the login limiter a global lockout (feat/hardening-3-ops)
+- [x] **Rate-limit the public routes** — register, check-cooldown, exam/start,
+      exam/submit, both uploads; 60 / 15 min / IP. Limiter also sweeps expired
+      entries instead of growing forever
+- [x] **Bound request bodies** — 256 KB globally (was 50 MB on every route,
+      including login), 8 MB on `exam/submit` for the base64 snapshot
+- [x] **Security headers** — nosniff, DENY, no-referrer, HSTS in production.
+      No `helmet`: its CSP would have to be disabled for this SPA
+- [x] **Indexes** — the schema had none. `ExamAttempt` candidateId (unindexed
+      FK), candidateEmail, companyId, submittedAt; `Candidate` companyId,
+      registeredAt, status. Verified created, no rows lost
+- [x] **`validateCandidateIdentity` filters in SQL** — was two unbounded
+      `findMany()` table loads per unauthenticated request
+- [x] **Crash paths** — stream `error` listeners on video pipe, Range parsing
+      clamped (416 on garbage, suffix ranges supported), `unhandledRejection` /
+      `uncaughtException` / graceful SIGTERM. Proven across six malformed ranges
+- [x] **Guard every `JSON.parse` on a JSON column** — one malformed row used to
+      500 a whole list endpoint (`parseJsonColumn`)
+- [x] **Delete recordings with their records** — deleting an attempt or
+      candidate orphaned the `.webm` permanently; both also 404 instead of 500
+      on an unknown id
+- [x] **`.dockerignore` excludes `**/*.db` and `**/.env`** — `dev.db` matched
+      only a context-root file, so `backend/prisma/dev.db` (candidate PII +
+      admin hashes) was baked into the image. `backend/.dockerignore` also had
+      a UTF-8 BOM, so its first line never matched
+- [x] **CSV formula injection** — leading `=`/`+`/`-`/`@` prefixed; proven with
+      a candidate named `=HYPERLINK(...)`
+- [x] **`?name=` on the download route** restricted to a plain basename
+- [x] Container `HEALTHCHECK` + `railway.json` `healthcheckPath`; boot logs the
+      resolved absolute database and uploads paths
+- [x] README: the database volume was marked "(Optional)" — it is required, and
+      the path is `/app/backend/prisma`, not `/app/backend`
+
 ### Correctness — do now
 
 - [x] `attemptNumber` upsert + attempt insert in one `prisma.$transaction` (fix/correctness-transactions-and-cooldown-column)
@@ -167,7 +203,9 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
 
 - [ ] Collapse the triplicated question bank to one source (`defaultQuestions.ts`) that seed and a build step both read
 - [ ] Postgres provider + `prisma migrate` instead of `db push` on boot
-- [ ] Video retention job (delete `.webm` older than N days, keep the attempt row)
+- [ ] Video retention job (delete `.webm` older than N days, keep the attempt
+      row) — **blocked on §0.2**. Deleting a record now removes its file, but
+      nothing expires recordings by age
 - [ ] Question / option shuffle per attempt, seeded and stored so the answer sheet replays correctly
 - [ ] Replace `page` string state with a real router if a third top-level area appears
 - [ ] Remove `console.log` of candidate data in `App.tsx` `beginExam` (backend socket handlers done in feat/hardening-1-integrity)

@@ -98,6 +98,36 @@ io.on("connection", (socket) => {
   });
 });
 
+// Railway (and any reverse proxy) terminates TLS and forwards the client IP in
+// X-Forwarded-For. Without this, req.ip is the proxy's address for every
+// request, so middleware/rateLimit.ts shares one bucket across all users — the
+// login limiter became a global 10-per-15-minutes lockout.
+app.set("trust proxy", 1);
+
+/**
+ * Security headers.
+ *
+ * Deliberately not `helmet`: its Content-Security-Policy is the reason to
+ * reach for it, and this SPA uses element style attributes and Vite-injected
+ * <style> blocks throughout, so the CSP would have to be disabled — leaving
+ * four headers that are cheaper to set directly than to take a dependency for.
+ * If a real CSP is ever wanted, that is the moment to add helmet.
+ */
+app.use((_req: Request, res: Response, next: NextFunction) => {
+  // The one that matters most here: uploads are user-supplied files served
+  // back by an authenticated route, and nosniff stops a mistyped one being
+  // interpreted as HTML on this origin.
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  // authenticateAdmin accepts `?token=`, so the URL can carry a JWT. Never
+  // leak it in a Referer.
+  res.setHeader("Referrer-Policy", "no-referrer");
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  next();
+});
+
 // Middleware
 app.use(
   cors({
@@ -108,8 +138,12 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+// 50mb applied to every route, including login. `answers` is unvalidated and
+// gets JSON.stringify'd straight into a row, so one public request could write
+// ~50mb into SQLite. Only the submit needs headroom, for the base64 snapshot.
+app.use("/api/exam/submit", express.json({ limit: "8mb" }));
+app.use(express.json({ limit: "256kb" }));
+app.use(express.urlencoded({ extended: true, limit: "256kb" }));
 
 // Uploaded snapshots and recordings are NOT served statically. They are
 // candidate webcam footage; every read goes through an authenticated route in
@@ -168,12 +202,31 @@ if (frontendDist) {
   });
 }
 
-// Global Error Handler
+// Global Error Handler.
+//
+// Raw err.message used to be returned to the client, leaking internals; and a
+// multer LIMIT_FILE_SIZE arrives here with no `.status`, so an oversized upload
+// answered 500 "File too large" instead of 413.
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Unhandled Error:", err);
-  res.status(err.status || 500).json({
-    error: err.message || "An internal server error occurred.",
-  });
+
+  if (err?.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ error: "The uploaded file is too large." });
+  }
+  if (err?.type === "entity.too.large") {
+    return res.status(413).json({ error: "The request body is too large." });
+  }
+  if (err?.status === 400 && err?.type === "entity.parse.failed") {
+    return res.status(400).json({ error: "Malformed JSON body." });
+  }
+
+  const status = typeof err?.status === "number" ? err.status : 500;
+  // Only a message we set deliberately (4xx) is safe to echo back.
+  const message =
+    status < 500 && typeof err?.message === "string"
+      ? err.message
+      : "An internal server error occurred.";
+  return res.status(status).json({ error: message });
 });
 
 // Start Server
@@ -185,9 +238,68 @@ httpServer.listen(PORT, async () => {
     console.log(`Public Web Application ready on http://localhost:${PORT}`);
   }
 
+  // Print where persistent state actually lives, resolved to absolute paths.
+  //
+  // Nobody has yet confirmed that a Railway redeploy preserves these (see
+  // CURRENT_STATUS.md). Both must be on a mounted volume: the container
+  // filesystem is replaced on every deploy, so if either path is not backed by
+  // one, every candidate, result and recording is destroyed on the next push.
+  // Prisma resolves a relative SQLite path against the schema directory, not
+  // the working directory -- `file:./dev.db` is prisma/dev.db, not ./dev.db.
+  // Getting this wrong is how a volume ends up mounted at the wrong path.
+  const dbUrl = process.env.DATABASE_URL || "file:./dev.db";
+  const dbPath = dbUrl.startsWith("file:")
+    ? path.resolve(__dirname, "../prisma", dbUrl.slice("file:".length))
+    : dbUrl;
+  console.log(`Database:  ${dbPath}`);
+  console.log(`Uploads:   ${uploadsDir}`);
+  console.log("Both paths must be on a persistent volume, or a redeploy wipes them.");
+
   // Automatically bootstrap database with questions, settings & admin credentials if empty
   const { bootstrapDatabase } = await import("./config/bootstrap");
   await bootstrapDatabase();
 });
+
+/**
+ * Process-level safety net.
+ *
+ * There was none. Combined with `restartPolicyMaxRetries: 10` in railway.json,
+ * a repeatable request that crashed the process would exhaust the restart
+ * budget and leave the service down. Log and keep serving; a crash loop helps
+ * nobody mid-exam.
+ */
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception:", err);
+});
+
+// Railway sends SIGTERM on redeploy. Finish in-flight requests, close sockets
+// and release the database handle instead of being killed mid-write.
+let shuttingDown = false;
+function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} received, shutting down.`);
+
+  io.close();
+  httpServer.close(async () => {
+    try {
+      const { prisma } = await import("./config/db");
+      await prisma.$disconnect();
+    } catch (err) {
+      console.error("Error closing the database connection:", err);
+    }
+    process.exit(0);
+  });
+
+  // Do not hang forever on a stuck connection.
+  setTimeout(() => process.exit(1), 10_000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
 
 export default app;
