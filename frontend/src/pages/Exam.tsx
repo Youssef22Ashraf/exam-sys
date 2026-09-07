@@ -97,6 +97,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [submitRefusal, setSubmitRefusal] = useState<string | null>(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [securityToast, setSecurityToast] = useState<string | null>(null);
   const [sessionResumed, setSessionResumed] = useState<boolean>(() => {
@@ -207,8 +208,6 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         if (videoBlob && videoBlob.size > 0) {
           await VideoStorage.saveVideo(result.id, videoBlob);
           result.hasVideoRecording = true;
-          // Upload to backend if online
-          api.uploadVideo(videoBlob, result.id).catch(() => {});
           // Upload to backend so remote admin can stream/watch it
           const uploadRes = await api.uploadVideo(videoBlob, result.id);
           if (uploadRes && uploadRes.filename) {
@@ -223,43 +222,55 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       releaseCamera();
     }
 
-    // Persist to local storage
-    ExamStorage.recordExamResult(result);
+    // The server re-scores and owns pass/fail, attempt number and the id
+    // (ADR 001). The local calculation is only what we show if the API is
+    // unreachable (api.submitExam falls back to it), never the source of truth.
+    let finalResult: ExamResult = result;
+    try {
+      const serverResult = await api.submitExam({
+        candidateId: result.candidateId,
+        candidateName: result.candidateName,
+        candidateEmail: result.candidateEmail,
+        companyId: result.companyId,
+        answers: result.answers,
+        timeSpentSeconds: result.timeSpentSeconds,
+        tabSwitches: result.tabSwitches,
+        proctoringStatus: result.proctoringStatus,
+        candidatePhoto: result.candidatePhoto,
+        hasVideoRecording: result.hasVideoRecording,
+        videoFilename: result.videoFilename,
+      });
+      finalResult = {
+        ...result,
+        ...serverResult,
+        passingPercentage: result.passingPercentage,
+      };
+    } catch (err) {
+      // A 403 cooldown refusal is the only thing api.submitExam throws.
+      setSubmitRefusal(err instanceof Error ? err.message : String(err));
+      return;
+    }
 
-    // Sync submission with backend (triggers email notification to admin)
-    api.submitExam({
-      candidateId: result.candidateId,
-      candidateName: result.candidateName,
-      candidateEmail: result.candidateEmail,
-      companyId: result.companyId,
-      answers: result.answers,
-      timeSpentSeconds: result.timeSpentSeconds,
-      tabSwitches: result.tabSwitches,
-      proctoringStatus: result.proctoringStatus,
-      candidatePhoto: result.candidatePhoto,
-      hasVideoRecording: result.hasVideoRecording,
-      videoFilename: result.videoFilename,
-    }).catch((err) => {
-      console.warn("Backend offline, result saved locally:", err);
-    });
+    // Persist to local storage
+    ExamStorage.recordExamResult(finalResult);
 
     // Broadcast real-time exam submission to remote admin dashboards via WebSocket
     socketService.emitExamSubmitted({
-      candidateName: result.candidateName,
-      candidateEmail: result.candidateEmail,
-      companyId: result.companyId,
-      score: result.score,
-      totalQuestions: result.totalQuestions,
-      percentage: result.percentage,
-      isPassed: result.isPassed,
+      candidateName: finalResult.candidateName,
+      candidateEmail: finalResult.candidateEmail,
+      companyId: finalResult.companyId,
+      score: finalResult.score,
+      totalQuestions: finalResult.totalQuestions,
+      percentage: finalResult.percentage,
+      isPassed: finalResult.isPassed,
     });
 
     if (onFinishExam) {
-      onFinishExam(result);
+      onFinishExam(finalResult);
     } else {
       alert(
-        `Exam submitted!\n\nScore: ${result.score}/${questions.length} (${result.percentage.toFixed(1)}%)\nStatus: ${
-          result.isPassed ? "PASSED" : "FAILED"
+        `Exam submitted!\n\nScore: ${finalResult.score}/${questions.length} (${finalResult.percentage.toFixed(1)}%)\nStatus: ${
+          finalResult.isPassed ? "PASSED" : "FAILED"
         }`
       );
     }
@@ -407,7 +418,17 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       : question?.sectionTitle || "Part B — Stakeholder Management";
 
   if (!question) {
+    if (submitRefusal) {
     return (
+      <div className="exam-page" style={{ maxWidth: 560, margin: "80px auto", textAlign: "center" }}>
+        <h2>Submission refused</h2>
+        <p>{submitRefusal}</p>
+        <p>Your answers were not recorded. Contact your supervisor if you believe this is an error.</p>
+      </div>
+    );
+  }
+
+  return (
       <div className="exam-page">
         <p>No questions available.</p>
       </div>

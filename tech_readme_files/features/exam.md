@@ -20,8 +20,9 @@ jump around, flag-for-review, and auto-submit when the timer hits zero.
   emits `candidate:warning` over Socket.io, and shows an in-exam warning.
 - **Submit**: builds `answers` (`questionId → optionIndex`), computes a
   local preview, calls `releaseCamera()`, grabs the snapshot from
-  `CameraProctor`, uploads the video, then `POST /api/exam/submit`.
-  Server result wins (see [results.md](results.md)).
+  `CameraProctor`, uploads the video once, then awaits
+  `POST /api/exam/submit` and renders the server's result. 403 → refusal
+  screen (see [results.md](results.md)).
 
 ## Files
 
