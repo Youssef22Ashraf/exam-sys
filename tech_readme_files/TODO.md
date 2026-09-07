@@ -120,6 +120,10 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
 - [ ] Frontend: vitest + testing-library. First two: `ExamStorage.checkCandidateCooldown`, timer auto-submit
 - [ ] CI: one GitHub Actions job running both gates + tests on push
 
+### Done outside the plan
+
+- [x] Admin dark theme + UI pass — token layer in `styles.css`, `hooks/useTheme.ts`, admin-scoped `data-theme` (feat/admin-ui-dark-theme)
+
 ### Later / nice to have
 
 - [ ] Collapse the triplicated question bank to one source (`defaultQuestions.ts`) that seed and a build step both read

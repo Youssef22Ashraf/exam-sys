@@ -6,6 +6,25 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ## [Unreleased]
 
+### Added
+
+- **Dark theme for the admin portal.** A token layer at the top of
+  `styles.css` (`--bg`, `--surface`, `--text`, `--primary`, semantic
+  soft/border pairs, shadows, focus ring) with a `[data-theme="dark"]`
+  palette. `hooks/useTheme.ts` sets the attribute on `<html>` while the
+  admin login or dashboard is mounted and removes it on unmount, so the
+  candidate portal always renders light. Toggle in the admin header;
+  choice persisted in `localStorage`, default follows
+  `prefers-color-scheme`.
+- **Admin dashboard UI pass.** Tabs are a sticky segmented control under
+  the header; stat cards carry a colour accent and tabular numerals;
+  tables get sticky headers, zebra rows, hover highlight, and a 70vh
+  scroll region; badges get a status dot and border; inputs get a visible
+  focus ring; modals and toasts animate in and respect
+  `prefers-reduced-motion`. Every hard-coded colour in
+  `AdminDashboard.css`, `AdminDashboard.tsx` (105 inline literals),
+  `AdminLogin.tsx`, and `styles.css` is now a token.
+
 ### Security
 
 - **Every read that returns candidate data now requires the admin JWT.**

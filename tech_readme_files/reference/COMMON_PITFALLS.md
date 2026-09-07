@@ -20,4 +20,5 @@
 | Say "tests pass" | Say "tsc and lint pass" | there are no tests |
 | Reuse a deleted question id | Next id = max+1 | CSV and answer sheets key on id |
 | Read-then-write across two Prisma calls | `prisma.$transaction(async tx => …)` | concurrent requests interleave |
+| Write `#2563eb` or `color: white` in admin CSS/TSX | `var(--primary)`, `var(--surface)` | dark theme breaks silently |
 | Backdate a timestamp to change behaviour | Add a state column (`cooldownClearedAt`) | timestamps are audit data |
