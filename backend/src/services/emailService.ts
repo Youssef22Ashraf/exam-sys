@@ -15,13 +15,27 @@ export interface ExamCompletionEmailData {
   attemptNumber?: number;
 }
 
+/**
+ * Escape a value for inclusion in the HTML mail body. candidateName, email and
+ * companyId reach here from the unauthenticated /register endpoint, so they
+ * are attacker-controlled text arriving in a supervisor's inbox.
+ */
+export function escapeHtml(value: string): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function parseRecipients(raw: string | undefined): string {
-  if (!raw) return process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com";
+  if (!raw) return process.env.ADMIN_ALERT_EMAIL || "";
   const list = raw
     .split(/[,;]+/)
     .map((e) => e.trim())
     .filter((e) => e.length > 0);
-  return list.length > 0 ? list.join(", ") : (process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com");
+  return list.length > 0 ? list.join(", ") : (process.env.ADMIN_ALERT_EMAIL || "");
 }
 
 // Configured nodemailer transport supporting Gmail, Outlook / Office 365, Resend, SendGrid, etc.
@@ -42,17 +56,21 @@ export const createTransporter = () => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      tls: {
-        ciphers: "SSLv3",
-        rejectUnauthorized: false,
-      },
+      // Certificate verification stays ON. This block used to set
+      // `rejectUnauthorized: false` with an SSLv3 cipher string on every
+      // provider, which exposed the SMTP credentials to anyone able to
+      // intercept the connection. SMTP_INSECURE_TLS exists only for a server
+      // with a genuinely broken certificate, and must be set deliberately.
+      ...(process.env.SMTP_INSECURE_TLS === "true"
+        ? { tls: { rejectUnauthorized: false } }
+        : {}),
     });
   }
   return null;
 };
 
 export async function sendExamCompletionAlert(data: ExamCompletionEmailData) {
-  let rawRecipient = process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com";
+  let rawRecipient = process.env.ADMIN_ALERT_EMAIL || "";
   try {
     const settings = await prisma.examSetting.findFirst({
       where: { id: "default-settings" },
@@ -129,9 +147,9 @@ Submitted:       ${new Date().toISOString()}
         }
         <p style="margin-top: 0;">An examinee has just submitted their assessment:</p>
         <table class="table">
-          <tr><td>Candidate Name</td><td><strong>${data.candidateName}</strong></td></tr>
-          <tr><td>Email Address</td><td>${data.candidateEmail}</td></tr>
-          <tr><td>Company ID</td><td>${data.companyId}</td></tr>
+          <tr><td>Candidate Name</td><td><strong>${escapeHtml(data.candidateName)}</strong></td></tr>
+          <tr><td>Email Address</td><td>${escapeHtml(data.candidateEmail)}</td></tr>
+          <tr><td>Company ID</td><td>${escapeHtml(data.companyId)}</td></tr>
           <tr><td>Attempt Number</td><td><strong>Attempt #${data.attemptNumber || 1}${isReattempt ? " (Re-attempt)" : ""}</strong></td></tr>
           <tr><td>Final Score</td><td><strong>${data.score} / ${data.totalQuestions} (${data.percentage.toFixed(1)}%)</strong></td></tr>
           <tr><td>Time Spent</td><td>${formattedTime}</td></tr>
@@ -150,6 +168,13 @@ Submitted:       ${new Date().toISOString()}
   </html>
   `;
 
+  if (!recipient) {
+    console.warn(
+      "[Email] No recipient configured. Set ExamSetting.notifyEmail or ADMIN_ALERT_EMAIL."
+    );
+    return;
+  }
+
   try {
     const transporter = createTransporter();
     if (transporter) {
@@ -160,17 +185,19 @@ Submitted:       ${new Date().toISOString()}
         text: textBody,
         html: htmlBody,
       });
-      console.log(`📧 [Email Alert Sent] Notification delivered to: ${recipient}`);
+      console.log(`[Email Alert Sent] Notification delivered to: ${recipient}`);
     } else {
-      console.log(`📧 [Email Mock Logged - No SMTP Configured to ${recipient}]:\n${textBody}`);
+      // The mock branch used to print the whole body, which carries the
+      // candidate's name, email, company ID and score.
+      console.log(`[Email] No SMTP configured; alert for ${recipient} not sent.`);
     }
   } catch (error) {
-    console.error("⚠️ Failed to send email alert:", error);
+    console.error("Failed to send email alert:", error);
   }
 }
 
 export async function sendTestEmailAlert(targetEmail?: string) {
-  let rawRecipient = targetEmail || process.env.ADMIN_ALERT_EMAIL || "admin@harbico.com";
+  let rawRecipient = targetEmail || process.env.ADMIN_ALERT_EMAIL || "";
   try {
     const settings = await prisma.examSetting.findFirst({
       where: { id: "default-settings" },

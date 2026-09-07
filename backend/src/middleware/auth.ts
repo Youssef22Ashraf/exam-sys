@@ -71,3 +71,22 @@ export const optionalAdmin = (
   }
   next();
 };
+
+/**
+ * Gate a route on the caller's role. `role` has been signed into the JWT and
+ * set on `req.user` since the start, but nothing ever read it — SUPERADMIN and
+ * ADMIN were functionally identical, so destructive routes such as
+ * `POST /api/questions/reset` were open to any admin.
+ *
+ * Must be mounted after `authenticateAdmin`.
+ */
+export const requireRole = (...roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        error: "Insufficient privileges for this action.",
+      });
+    }
+    next();
+  };
+};

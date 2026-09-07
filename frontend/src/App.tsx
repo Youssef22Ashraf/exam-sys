@@ -10,6 +10,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import { ExamStorage, type ExamResult } from "./services/storage";
 import { api } from "./services/api";
 import { releaseCamera } from "./services/camera";
+import { reconnectSocket } from "./services/socket";
 
 import "./styles.css";
 import "./App.css";
@@ -134,6 +135,9 @@ function App() {
 
   function logoutAdmin() {
     sessionStorage.removeItem("adminToken");
+    // Drop the authenticated socket so this browser stops receiving admin:*
+    // events the moment the token is gone.
+    reconnectSocket();
     window.history.pushState(null, "", "/");
     window.location.hash = "";
     setPage("home");

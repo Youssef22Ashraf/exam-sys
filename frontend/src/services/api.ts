@@ -73,17 +73,36 @@ export const api = {
         sessionStorage.setItem("adminToken", data.token);
       }
       return { success: true, token: data.token };
-    } catch (err: any) {
-      // Local fallback for offline mode
-      const u = credentials.username.trim().toLowerCase();
-      const p = credentials.password;
-      if (
-        (u === "mofarreh.admin" || u === "admin") &&
-        (p === "Mofarreh@2026" || p === "admin123")
-      ) {
-        return { success: true, token: "local-admin-token-" + Date.now() };
-      }
+    } catch {
+      // No offline fallback. This used to accept a hardcoded username and
+      // password and mint a fake token, which put the real admin password in
+      // the shipped JS bundle and let anyone who blocked the login request
+      // into the dashboard. Only the server authenticates.
       return { success: false, error: "Unable to connect to authentication server." };
+    }
+  },
+
+  /**
+   * Change the signed-in admin's own password. No local fallback: only the
+   * server can verify the current password and store the new hash.
+   */
+  async changePassword(
+    currentPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/admin/password`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        return { success: false, error: data.error || "Could not change the password." };
+      }
+      return { success: true };
+    } catch {
+      return { success: false, error: "Unable to reach the authentication server." };
     }
   },
 
@@ -406,29 +425,37 @@ export const api = {
     return data.result;
   },
 
+  /**
+   * Upload the session recording. The backend requires an open sitting: the
+   * endpoint is candidate-facing so it cannot take an admin token, but it must
+   * not accept 200 MB from anonymous callers either.
+   *
+   * The URL was `/proctor/upload`; the route is `/proctor/upload-video`, so
+   * every upload 404'd and the failure was swallowed here.
+   */
   async uploadVideo(
     videoBlob: Blob,
-    attemptId?: string
-  ): Promise<{ success: boolean; filename?: string; path?: string }> {
+    sessionId: string
+  ): Promise<{ success: boolean; filename?: string; error?: string }> {
     try {
       const formData = new FormData();
-      formData.append("video", videoBlob, `exam_${attemptId || Date.now()}.webm`);
-      if (attemptId) {
-        formData.append("attemptId", attemptId);
-      }
+      formData.append("video", videoBlob, `exam_${Date.now()}.webm`);
 
-      const res = await fetch(`${API_BASE}/proctor/upload`, {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch(
+        `${API_BASE}/proctor/upload-video?sessionId=${encodeURIComponent(sessionId)}`,
+        { method: "POST", body: formData }
+      );
 
       if (res.ok) {
         return await res.json();
       }
+      const data = await res.json().catch(() => ({}));
+      console.warn("Video upload rejected:", res.status, data.error);
+      return { success: false, error: data.error };
     } catch (err) {
       console.warn("Could not upload video to backend:", err);
+      return { success: false };
     }
-    return { success: false };
   },
 
   async getResults(params?: { status?: string; search?: string }): Promise<ExamResult[]> {

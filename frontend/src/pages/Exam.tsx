@@ -222,7 +222,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
           // Save to local IndexedDB backup
           await VideoStorage.saveVideo(submission.draftId, videoBlob);
           // Upload to backend so remote admin can stream/watch/download it
-          const uploadRes = await api.uploadVideo(videoBlob, submission.draftId);
+          const uploadRes = await api.uploadVideo(videoBlob, sessionId);
           if (uploadRes && uploadRes.filename) {
             submission.videoFilename = uploadRes.filename;
           }

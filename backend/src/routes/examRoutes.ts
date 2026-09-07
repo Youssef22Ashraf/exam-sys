@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
-import { authenticateAdmin } from "../middleware/auth";
+import { authenticateAdmin, requireRole } from "../middleware/auth";
 import { findActiveCooldown } from "../services/cooldown";
 import { sendExamCompletionAlert } from "../services/emailService";
 import { validateExamineeEmail } from "../services/validation";
@@ -76,7 +76,7 @@ router.post("/submit", async (req: Request, res: Response) => {
       companyId || "N/A"
     );
     if (idCheck.conflict) {
-      return res.status(400).json({ error: idCheck.message });
+      return res.status(400).json({ error: idCheck.publicMessage });
     }
 
     // Sanitize videoFilename & candidatePhoto
@@ -438,7 +438,7 @@ router.get("/export/csv", authenticateAdmin, async (_req: Request, res: Response
 });
 
 // DELETE /api/exam/results/:id - Delete attempt (Admin)
-router.delete("/results/:id", authenticateAdmin, async (req: Request, res: Response) => {
+router.delete("/results/:id", authenticateAdmin, requireRole("SUPERADMIN"), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.examAttempt.delete({

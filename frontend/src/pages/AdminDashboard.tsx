@@ -130,6 +130,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [tempSettings, setTempSettings] = useState<ExamSettings>(settings);
   const [settingsSavedMsg, setSettingsSavedMsg] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ success: boolean; text: string } | null>(null);
+
   const [testEmailMsg, setTestEmailMsg] = useState<{
     text: string;
     success: boolean;
@@ -432,6 +438,32 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       });
     } finally {
       setTestingEmail(false);
+    }
+  }
+
+  async function handleChangePassword() {
+    setPwMsg(null);
+
+    if (pwNew.length < 12) {
+      setPwMsg({ success: false, text: "The new password must be at least 12 characters." });
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwMsg({ success: false, text: "The two new passwords do not match." });
+      return;
+    }
+
+    setPwBusy(true);
+    const res = await api.changePassword(pwCurrent, pwNew);
+    setPwBusy(false);
+
+    if (res.success) {
+      setPwCurrent("");
+      setPwNew("");
+      setPwConfirm("");
+      setPwMsg({ success: true, text: "Password updated." });
+    } else {
+      setPwMsg({ success: false, text: res.error || "Could not change the password." });
     }
   }
 
@@ -1328,6 +1360,81 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 onClick={handleSaveSettings}
               >
                 Save Settings
+              </button>
+            </div>
+
+            <div className="settings-card">
+              <h3>Change Password</h3>
+              <p style={{ fontSize: "12px", color: "var(--text-3)", marginTop: 0 }}>
+                Changes the password of the account you are signed in as. Do this
+                on first login — both admin accounts start on the same password.
+              </p>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="pw-current">Current password</label>
+                <input
+                  id="pw-current"
+                  type="password"
+                  autoComplete="current-password"
+                  className="form-input"
+                  value={pwCurrent}
+                  onChange={(e) => setPwCurrent(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="pw-new">New password</label>
+                <input
+                  id="pw-new"
+                  type="password"
+                  autoComplete="new-password"
+                  className="form-input"
+                  value={pwNew}
+                  onChange={(e) => setPwNew(e.target.value)}
+                />
+                <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                  Minimum 12 characters.
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="pw-confirm">Confirm new password</label>
+                <input
+                  id="pw-confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  className="form-input"
+                  value={pwConfirm}
+                  onChange={(e) => setPwConfirm(e.target.value)}
+                />
+              </div>
+
+              {pwMsg && (
+                <div
+                  role="status"
+                  style={{
+                    marginTop: "8px",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    background: pwMsg.success ? "var(--success-soft)" : "var(--danger-soft)",
+                    color: pwMsg.success ? "var(--success)" : "var(--danger)",
+                    border: `1px solid ${
+                      pwMsg.success ? "var(--success-border)" : "var(--danger-border)"
+                    }`,
+                  }}
+                >
+                  {pwMsg.text}
+                </div>
+              )}
+
+              <button
+                className="primary-button"
+                style={{ width: "100%", marginTop: "10px" }}
+                onClick={handleChangePassword}
+                disabled={pwBusy || !pwCurrent || !pwNew || !pwConfirm}
+              >
+                {pwBusy ? "Updating…" : "Change Password"}
               </button>
             </div>
           </div>

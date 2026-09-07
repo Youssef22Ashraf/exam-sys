@@ -12,7 +12,8 @@ cd frontend && npm install && npm run dev                                       
 ```
 
 Then open `http://localhost:5173`, and `http://localhost:5173/admin`
-(`admin` / `admin123`) in a second window.
+(`admin` / the value of `ADMIN_INITIAL_PASSWORD`, `devadmin1234` by default in
+dev) in a second window.
 
 ## Read in order
 

@@ -8,6 +8,67 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Security
 
+- **The admin password is out of the client bundle.** `api.ts` and
+  `AdminLogin.tsx` each carried an offline fallback that compared the typed
+  credentials against hardcoded literals and, on a match, minted a fake token
+  (`dev_admin_session`) that the dashboard accepted because its only guard was
+  a non-empty `adminToken`. The real production password therefore shipped in
+  readable JavaScript, and blocking the login request was enough to get in.
+  Both fallbacks are deleted; the server is the only authority.
+- **No credentials in tracked files.** The committed admin password is gone
+  from `config/bootstrap.ts` and `prisma/seed.ts` (which also printed it to
+  stdout) in favour of `ADMIN_INITIAL_PASSWORD`; the JWT secret published in
+  `README.md` and `docker-compose.yml` is gone from both. `config/env.ts` now
+  refuses to boot production on any secret that has appeared in this
+  repository — the previous guard rejected only `..._default` while the docs
+  told operators to use `..._production_2026_x89`, which sailed through — and
+  on any secret under 32 characters, and refuses to boot without
+  `ADMIN_INITIAL_PASSWORD` (min 12). Re-seeding no longer resets a password an
+  admin has changed. The hardcoded `admin@harbico.com` alert recipient is gone
+  from four call sites.
+- **Password rotation exists.** `POST /api/admin/password` plus a form in the
+  admin settings tab. There was previously no way to change an admin password
+  at all. Verified: wrong current password, short new password and missing
+  token are each refused; a successful change invalidates the old password.
+- **Roles are enforced.** `role` had been signed into the JWT and set on
+  `req.user` since the beginning but was never read, so SUPERADMIN and ADMIN
+  were identical. A new `requireRole` guards the destructive routes —
+  `POST /api/questions/reset`, `DELETE /api/candidates/:id`,
+  `DELETE /api/exam/results/:id`. Verified: an ADMIN token gets 403 on all
+  three and 200 on ordinary reads.
+- **Candidate recordings are no longer public.** `app.use("/uploads",
+  express.static(...))` served every webcam snapshot at a guessable public URL
+  and was a second, unauthenticated door to the videos the admin-only route
+  guarded. The mount is deleted and snapshots move to
+  `GET /api/proctor/snapshot/:filename` behind `authenticateAdmin`.
+- **Upload hardening.** The snapshot filename came from
+  `path.extname(file.originalname)`, so an anonymous caller could store
+  `.html` or `.svg` and — via the old static mount — have it served executable
+  from this app's own origin; the extension is now derived from the mime type,
+  as the video path already did. Both uploads gained a mime `fileFilter` and
+  now require an open `ExamSession`, closing anonymous 200 MB writes. The
+  free-form `attemptId` that let a caller overwrite another candidate's
+  `videoFilename` is removed — it was also dead code, since the upload precedes
+  the attempt.
+- **Socket.IO is authenticated.** There was no handshake check and `io.emit`
+  delivered `admin:candidate_started` / `admin:exam_submitted` — names, emails,
+  company IDs — to every connected socket, candidates included. Sockets with a
+  valid admin JWT now join an `admins` room and `admin:*` goes only there.
+  Verified: with an anonymous, an invalid-token and an admin socket connected,
+  a candidate start event reached the admin socket alone.
+- **Unauthenticated endpoints no longer leak PII.** `check-cooldown` and
+  `register` returned identity-conflict messages quoting the matching record,
+  so guessing a company ID returned its holder's real name and email.
+  `services/candidateIdentity.ts` now returns a `publicMessage` naming only the
+  field the caller entered; the detailed message is kept for admin use.
+- **SMTP certificate verification is on.** The transport unconditionally set
+  `rejectUnauthorized: false` with an SSLv3 cipher string on every provider,
+  exposing the SMTP credentials to interception. Verification is now default;
+  `SMTP_INSECURE_TLS=true` is an explicit opt-out. Candidate-supplied values
+  are HTML-escaped before reaching a supervisor's inbox, and the no-SMTP mock
+  branch no longer prints the full alert body.
+
+
 - **The answer key no longer reaches candidates.** `GET /api/questions` ran
   with no auth and returned `correctAnswer` for all 40 questions, and
   `INITIAL_QUESTIONS` in `frontend/src/services/storage.ts` shipped the same
@@ -38,6 +99,16 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
   with the candidate's name and the word "Verified" — as the identity
   snapshot. Declining the camera now states that the attempt is filed as
   `Camera Disabled`.
+
+### Fixed
+
+- **Video upload never worked.** `api.uploadVideo` posted to
+  `/api/proctor/upload`; the route is `/api/proctor/upload-video`. Every upload
+  404'd, the failure was swallowed by the surrounding catch, and the attempt
+  was recorded with no recording. Corrected, and rejections are now logged.
+- `config/bootstrap.ts` contained invalid UTF-8 bytes in four log strings
+  (rendering as `����` and `d~s`); rewritten. Question bootstrap uses one
+  `createMany` instead of 40 sequential inserts.
 
 ### Changed
 

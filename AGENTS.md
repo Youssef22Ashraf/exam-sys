@@ -20,7 +20,7 @@ Two npm packages in one repo, one process in production.
 ```
 backend/                     Express 4 + TypeScript + Prisma 5 + Socket.io
 ├── prisma/schema.prisma     Candidate · Question · ExamAttempt · ExamSetting · AdminUser · ExamSession
-├── prisma/seed.ts           40 questions + admin/admin123 + default settings
+├── prisma/seed.ts           40 questions + admin users (ADMIN_INITIAL_PASSWORD) + default settings
 └── src/
     ├── index.ts             app + http server + Socket.io + static SPA + /api/* mounts
     ├── config/db.ts         the ONE PrismaClient (globalThis-cached)
@@ -62,6 +62,9 @@ path not under `/api`, `/uploads`, or `/socket.io`. One port (5000).
   `POST /api/exam/start` on mount and holds the id in `sessionStorage` so a
   refresh rejoins it. `POST /api/exam/submit` requires that id and scores from
   the DB questions.
+- **Sockets**: a socket presenting a valid admin JWT in `handshake.auth.token`
+  joins the `admins` room; `admin:*` events go to that room only. Candidates
+  connect without a token and can emit but not listen in.
 - **Proctoring**: `CameraProctor` records the whole session to IndexedDB,
   uploads the `.webm` via `POST /api/proctor/upload-video` (multer) on
   finish, and a snapshot via `upload-snapshot`. Tab blur/focus emits
@@ -88,11 +91,14 @@ path not under `/api`, `/uploads`, or `/socket.io`. One port (5000).
   the server's own count, never lower it (ADR 008).
 - **One PrismaClient.** Import `prisma` from `config/db.ts`. Never `new
   PrismaClient()` outside it (seed.ts is the exception).
-- **Auth on every mutation.** Any `POST/PUT/DELETE` that changes DB state
-  takes `authenticateAdmin`, except the three candidate-facing writes:
-  `candidates/register`, `exam/submit`, `proctor/upload-*`. Read endpoints
-  that expose candidate PII are currently public — a known gap, see
-  `tech_readme_files/TODO.md` §Security. Do not add more.
+- **Auth on every mutation, and on every read of candidate data.** Any
+  `POST/PUT/DELETE` takes `authenticateAdmin`, except the candidate-facing
+  writes: `candidates/register`, `exam/start`, `exam/submit`, `proctor/upload-*`
+  (the uploads require an open `ExamSession` instead). Destructive routes
+  additionally take `requireRole("SUPERADMIN")`: `questions/reset`,
+  `DELETE candidates/:id`, `DELETE exam/results/:id`. Recordings and snapshots
+  are served only by authenticated routes — there is deliberately no static
+  `/uploads` mount.
 - **JSON columns are strings.** `Question.options` and `ExamAttempt.answers`
   are `JSON.stringify`'d. Parse at the route boundary, never in the page.
 - **Offline fallback is deliberate — for reads only.** `api.ts` catches
@@ -113,6 +119,10 @@ path not under `/api`, `/uploads`, or `/socket.io`. One port (5000).
 - **Icons are `<Icon name="…" />` from `components/Icon.tsx`**, inline SVG
   on `currentColor`. No emoji in JSX, strings, or docs. A new glyph is a
   new path in that file, not a library.
+- **No credentials in tracked files.** No password, JWT secret or SMTP
+  password as a literal in code, README, or compose. `config/env.ts` refuses
+  to boot production on a secret published in this repo, and the client has no
+  offline credential check — the server is the only authority.
 - **No new dependencies** without a line in `CHANGELOG.md` saying why.
   The stack is intentionally small: no router, no state library, no ORM
   helpers, no UI kit.

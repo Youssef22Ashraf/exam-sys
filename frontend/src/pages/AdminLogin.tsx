@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Icon } from "../components/Icon";
 import { api } from "../services/api";
+import { reconnectSocket } from "../services/socket";
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -26,44 +27,22 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
 
     setLoading(true);
 
-    try {
-      const res = await api.loginAdmin({ username: cleanUsername, password });
-      if (res.success && res.token) {
-        sessionStorage.setItem("adminToken", res.token);
-        setLoading(false);
-        onLogin();
-        return;
-      } else if (!res.success && res.error && res.error !== "Authentication failed") {
-        const u = cleanUsername.toLowerCase();
-        if (
-          (u === "mofarreh.admin" || u === "admin") &&
-          (password === "Mofarreh@2026" || password === "admin123")
-        ) {
-          sessionStorage.setItem("adminToken", "dev_admin_session");
-          setLoading(false);
-          onLogin();
-          return;
-        }
-        setErrorMsg(res.error);
-        setLoading(false);
-        return;
-      }
-    } catch {
-      // Offline fallback
+    // The server is the only authority. There is deliberately no local
+    // credential check here: the previous one hardcoded the real admin
+    // password into the bundle and minted a "dev_admin_session" token that
+    // the dashboard accepted.
+    const res = await api.loginAdmin({ username: cleanUsername, password });
+    setLoading(false);
+
+    if (res.success && res.token) {
+      sessionStorage.setItem("adminToken", res.token);
+      // Re-handshake so this socket joins the server's `admins` room.
+      reconnectSocket();
+      onLogin();
+      return;
     }
 
-    const u = cleanUsername.toLowerCase();
-    if (
-      (u === "mofarreh.admin" || u === "admin") &&
-      (password === "Mofarreh@2026" || password === "admin123")
-    ) {
-      sessionStorage.setItem("adminToken", "dev_admin_session");
-      setLoading(false);
-      onLogin();
-    } else {
-      setErrorMsg("Invalid administrator credentials. Access denied.");
-      setLoading(false);
-    }
+    setErrorMsg(res.error || "Invalid administrator credentials. Access denied.");
   }
 
   return (
