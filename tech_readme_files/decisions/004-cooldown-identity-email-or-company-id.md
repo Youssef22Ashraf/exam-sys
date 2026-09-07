@@ -20,5 +20,5 @@ where `candidateEmail = email OR companyId = companyId` and applies a
 - Changing either identifier alone does not evade the lockout.
 - A typo in company ID at first registration creates a candidate row
   that a later correct ID will not match — admin must merge by hand.
-- The check is only at registration. Enforcing it inside
-  `POST /api/exam/submit` is `TODO.md` Phase 8, item 2.
+- Enforced at registration (`check-cooldown`) and at `POST /api/exam/submit`
+  (403) through one shared function, `services/cooldown.ts`.

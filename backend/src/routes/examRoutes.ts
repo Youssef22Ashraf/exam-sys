@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
 import { authenticateAdmin } from "../middleware/auth";
+import { findActiveCooldown } from "../services/cooldown";
 import { sendExamCompletionAlert } from "../services/emailService";
 
 const router = Router();
@@ -26,6 +27,20 @@ router.post("/submit", async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({ error: "Candidate name and email are required." });
+    }
+
+    // 0. The registration screen checks this too, but a client that skips
+    //    it must not be able to submit inside the 48-hour window.
+    const cooldown = await findActiveCooldown(
+      String(candidateEmail).trim().toLowerCase(),
+      String(companyId || "").trim()
+    );
+    if (cooldown) {
+      return res.status(403).json({
+        error: "COOLDOWN_ACTIVE",
+        message: `A submission for this candidate exists within the last 48 hours. Next attempt allowed at ${cooldown.nextAttemptAvailableAt}.`,
+        ...cooldown,
+      });
     }
 
     // 1. Fetch questions to evaluate score on the server

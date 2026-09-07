@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
 import { authenticateAdmin } from "../middleware/auth";
+import { findActiveCooldown } from "../services/cooldown";
 
 const router = Router();
 
@@ -14,35 +15,14 @@ router.get("/check-cooldown", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Email or Company ID is required." });
     }
 
-    const whereConditions: any[] = [];
-    if (email) whereConditions.push({ candidateEmail: email });
-    if (companyId) whereConditions.push({ companyId: companyId });
-
-    const lastAttempt = await prisma.examAttempt.findFirst({
-      where: { OR: whereConditions },
-      orderBy: { submittedAt: "desc" },
-    });
-
-    if (lastAttempt) {
-      const now = new Date();
-      const elapsedMs = now.getTime() - new Date(lastAttempt.submittedAt).getTime();
-      const cooldownMs = 48 * 60 * 60 * 1000; // 48 hours
-
-      if (elapsedMs < cooldownMs) {
-        const remainingMs = cooldownMs - elapsedMs;
-        const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
-        const availableAt = new Date(new Date(lastAttempt.submittedAt).getTime() + cooldownMs);
-
-        return res.json({
-          eligible: false,
-          error: "COOLDOWN_ACTIVE",
-          message: `You completed an assessment on ${new Date(lastAttempt.submittedAt).toLocaleString()}. You are eligible to re-attempt after 48 hours.`,
-          lastAttemptAt: lastAttempt.submittedAt.toISOString(),
-          nextAttemptAvailableAt: availableAt.toISOString(),
-          remainingHours,
-          attemptNumber: (lastAttempt.attemptNumber || 1) + 1,
-        });
-      }
+    const cooldown = await findActiveCooldown(email, companyId);
+    if (cooldown) {
+      return res.json({
+        eligible: false,
+        error: "COOLDOWN_ACTIVE",
+        message: `You completed an assessment on ${new Date(cooldown.lastAttemptAt).toLocaleString()}. You are eligible to re-attempt after 48 hours.`,
+        ...cooldown,
+      });
     }
 
     return res.json({ eligible: true });

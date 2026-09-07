@@ -54,8 +54,8 @@ Listed in priority order; all are `TODO.md` Phase 8.
 
 1. ~~**Results are public.**~~ Closed on `fix/auth-on-read-endpoints`:
    every candidate-data read and `test-email` now require the admin JWT.
-2. **Lockout is bypassable.** `POST /api/exam/submit` does not check the
-   48-hour window; only the registration screen does.
+2. ~~**Lockout is bypassable.**~~ Closed on `fix/cooldown-at-submit`:
+   submit returns 403 inside the window, shared query with `check-cooldown`.
 3. **`CORS_ORIGIN` is decorative.** The env var is read and ignored;
    `origin: "*"` is applied for HTTP and sockets.
 4. **No tests, no CI.** A regression in scoring or camera release would
