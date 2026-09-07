@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useTheme } from "../hooks/useTheme";
 import { api } from "../services/api";
 
 interface AdminLoginProps {
@@ -8,7 +7,6 @@ interface AdminLoginProps {
 }
 
 function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
-  useTheme(); // same admin theme as the dashboard; removed on unmount
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

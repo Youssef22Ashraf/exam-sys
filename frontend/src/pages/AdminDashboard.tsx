@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from "react";
-import { useTheme } from "../hooks/useTheme";
 import {
   ExamStorage,
   onStorageSync,
@@ -21,7 +20,6 @@ type TabType = "overview" | "candidates" | "results" | "exams";
 
 function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
-  const [theme, toggleTheme] = useTheme();
 
   // Enforce administrator authentication on dashboard mount
   useEffect(() => {
@@ -457,15 +455,6 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <span className="powered-by-name">Eng. Youssef Ashraf</span>
           </div>
 
-          <button
-            className="theme-toggle"
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-            title={theme === "dark" ? "Light theme" : "Dark theme"}
-          >
-            {theme === "dark" ? "☀" : "☾"}
-          </button>
           <button className="secondary-button" onClick={onLogout}>
             Logout
           </button>
@@ -740,7 +729,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       </td>
                     </tr>
                   ) : (
-                    filteredCandidates.map((c) => (
+                    filteredCandidates.map((c: Candidate) => (
                       <tr key={c.id}>
                         <td>
                           <strong>{c.name}</strong>
@@ -871,7 +860,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       </td>
                     </tr>
                   ) : (
-                    filteredResults.map((r) => {
+                    filteredResults.map((r: ExamResult) => {
                       const mins = Math.floor(r.timeSpentSeconds / 60);
                       const secs = r.timeSpentSeconds % 60;
                       return (
@@ -1138,7 +1127,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     No questions found matching your filter.
                   </p>
                 ) : (
-                  filteredQuestions.map((q) => (
+                  filteredQuestions.map((q: Question) => (
                     <div key={q.id} className="q-item-card">
                       <div className="q-item-header">
                         <span className="badge badge-section">
@@ -1166,7 +1155,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       </h4>
 
                       <div className="q-options-list">
-                        {q.options.map((opt, i) => (
+                        {q.options.map((opt: string, i: number) => (
                           <div
                             key={i}
                             className={`q-option-pill ${

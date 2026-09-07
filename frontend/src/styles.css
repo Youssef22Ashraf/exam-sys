@@ -33,36 +33,6 @@
   color-scheme: light;
 }
 
-[data-theme="dark"] {
-  --bg: #0b1220;
-  --surface: #111a2b;
-  --surface-2: #172236;
-  --border: #243044;
-  --border-strong: #33415a;
-  --text: #e6ecf5;
-  --text-2: #c3cddc;
-  --text-3: #8b98ad;
-  --primary: #5b8def;
-  --primary-hover: #7ba3f5;
-  --primary-soft: #16233d;
-  --primary-border: #2c4a80;
-  --success: #4ade80;
-  --success-soft: #0f2a1c;
-  --success-border: #1f5a37;
-  --danger: #f87171;
-  --danger-soft: #2f1416;
-  --danger-border: #6b2326;
-  --warning: #fbbf24;
-  --warning-soft: #2e2205;
-  --warning-border: #6b4e07;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.6);
-  --overlay: rgba(2, 6, 16, 0.7);
-  --ring: 0 0 0 3px rgba(91, 141, 239, 0.35);
-  color-scheme: dark;
-}
-
 * {
   box-sizing: border-box;
 }
