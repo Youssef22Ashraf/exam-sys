@@ -863,8 +863,10 @@ export const ExamStorage = {
     }
   },
 
-  checkCandidateCooldown(email: string, companyId: string): {
+  checkCandidateCooldown(email: string, companyId: string, name?: string): {
     eligible: boolean;
+    error?: string;
+    message?: string;
     lastAttemptAt?: string;
     nextAttemptAvailableAt?: string;
     remainingHours?: number;
@@ -872,6 +874,77 @@ export const ExamStorage = {
   } {
     const cleanEmail = (email || "").trim().toLowerCase();
     const cleanCompId = (companyId || "").trim().toLowerCase();
+    const cleanName = (name || "").trim().toLowerCase();
+
+    // Check email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (cleanEmail && !emailRegex.test(cleanEmail)) {
+      return {
+        eligible: false,
+        error: "INVALID_EMAIL",
+        message: "Please enter a valid email address (e.g. employee@gmail.com, candidate@outlook.com, or company email).",
+      };
+    }
+
+    // Check identity consistency against cached candidates
+    const candidates = this.getCandidates();
+    for (const c of candidates) {
+      const cName = c.name.trim().toLowerCase();
+      const cEmail = c.email.trim().toLowerCase();
+      const cCompId = c.companyId.trim().toLowerCase();
+
+      if (cleanCompId && cCompId === cleanCompId) {
+        if (cleanName && cName !== cleanName) {
+          return {
+            eligible: false,
+            error: "IDENTITY_CONFLICT",
+            message: `Company ID '${companyId.trim()}' is already registered to candidate '${c.name}'. The entered name does not match.`,
+          };
+        }
+        if (cleanEmail && cEmail !== cleanEmail) {
+          return {
+            eligible: false,
+            error: "IDENTITY_CONFLICT",
+            message: `Company ID '${companyId.trim()}' is already registered with email '${c.email}'. The entered email does not match.`,
+          };
+        }
+      }
+
+      if (cleanName && cName === cleanName) {
+        if (cleanCompId && cCompId !== cleanCompId) {
+          return {
+            eligible: false,
+            error: "IDENTITY_CONFLICT",
+            message: `Candidate '${name?.trim()}' is already registered under Company ID '${c.companyId}'. Please use your registered Company ID.`,
+          };
+        }
+        if (cleanEmail && cEmail !== cleanEmail) {
+          return {
+            eligible: false,
+            error: "IDENTITY_CONFLICT",
+            message: `Candidate '${name?.trim()}' is already registered with email '${c.email}'. Please use your registered email address.`,
+          };
+        }
+      }
+
+      if (cleanEmail && cEmail === cleanEmail) {
+        if (cleanCompId && cCompId !== cleanCompId) {
+          return {
+            eligible: false,
+            error: "IDENTITY_CONFLICT",
+            message: `Email '${email.trim()}' is already registered under Company ID '${c.companyId}'. The entered Company ID does not match.`,
+          };
+        }
+        if (cleanName && cName !== cleanName) {
+          return {
+            eligible: false,
+            error: "IDENTITY_CONFLICT",
+            message: `Email '${email.trim()}' is already registered to candidate '${c.name}'. The entered name does not match.`,
+          };
+        }
+      }
+    }
+
     const results = this.getResults();
 
     const matchingAttempts = results
@@ -895,6 +968,8 @@ export const ExamStorage = {
         const availableAt = new Date(lastTime + cooldownMs);
         return {
           eligible: false,
+          error: "COOLDOWN_ACTIVE",
+          message: `You completed an assessment on ${new Date(latest.submittedAt).toLocaleString()}. You are eligible to re-attempt after 48 hours.`,
           lastAttemptAt: latest.submittedAt,
           nextAttemptAvailableAt: availableAt.toISOString(),
           remainingHours,

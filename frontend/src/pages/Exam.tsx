@@ -205,18 +205,17 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         const videoBlob = await stopRecordingRef.current();
         releaseCamera();
         if (videoBlob && videoBlob.size > 0) {
-          await VideoStorage.saveVideo(result.id, videoBlob);
           result.hasVideoRecording = true;
-          // Upload to backend if online
-          api.uploadVideo(videoBlob, result.id).catch(() => {});
-          // Upload to backend so remote admin can stream/watch it
+          // Save to local IndexedDB backup
+          await VideoStorage.saveVideo(result.id, videoBlob);
+          // Upload to backend server for admin playback and download
           const uploadRes = await api.uploadVideo(videoBlob, result.id);
           if (uploadRes && uploadRes.filename) {
             result.videoFilename = uploadRes.filename;
           }
         }
       } catch (err) {
-        console.warn("Could not save video recording:", err);
+        console.warn("Could not save or upload video recording:", err);
         releaseCamera();
       }
     } else {
@@ -227,21 +226,31 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     ExamStorage.recordExamResult(result);
 
     // Sync submission with backend (triggers email notification to admin)
-    api.submitExam({
-      candidateId: result.candidateId,
-      candidateName: result.candidateName,
-      candidateEmail: result.candidateEmail,
-      companyId: result.companyId,
-      answers: result.answers,
-      timeSpentSeconds: result.timeSpentSeconds,
-      tabSwitches: result.tabSwitches,
-      proctoringStatus: result.proctoringStatus,
-      candidatePhoto: result.candidatePhoto,
-      hasVideoRecording: result.hasVideoRecording,
-      videoFilename: result.videoFilename,
-    }).catch((err) => {
+    try {
+      const serverAttempt = await api.submitExam({
+        candidateId: result.candidateId,
+        candidateName: result.candidateName,
+        candidateEmail: result.candidateEmail,
+        companyId: result.companyId,
+        answers: result.answers,
+        timeSpentSeconds: result.timeSpentSeconds,
+        tabSwitches: result.tabSwitches,
+        proctoringStatus: result.proctoringStatus,
+        candidatePhoto: result.candidatePhoto,
+        hasVideoRecording: result.hasVideoRecording,
+        videoFilename: result.videoFilename,
+      });
+      if (serverAttempt && serverAttempt.id) {
+        // Also map video in IndexedDB to server attempt ID if different
+        if (stopRecordingRef.current && result.id !== serverAttempt.id) {
+          VideoStorage.getVideo(result.id).then((blob) => {
+            if (blob) VideoStorage.saveVideo(serverAttempt.id, blob);
+          });
+        }
+      }
+    } catch (err) {
       console.warn("Backend offline, result saved locally:", err);
-    });
+    }
 
     // Broadcast real-time exam submission to remote admin dashboards via WebSocket
     socketService.emitExamSubmitted({

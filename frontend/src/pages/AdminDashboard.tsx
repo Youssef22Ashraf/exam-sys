@@ -52,45 +52,48 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   );
   const [loadedVideoUrl, setLoadedVideoUrl] = useState<string | null>(null);
 
-  // Load video recording from IndexedDB when an attempt is opened
   // Load video recording from backend streaming endpoint or IndexedDB fallback
   useEffect(() => {
+    let isMounted = true;
     let currentObjectUrl: string | null = null;
-    if (selectedResult) {
-      VideoStorage.getVideo(selectedResult.id).then((blob) => {
-        if (blob && blob.size > 0) {
-          currentObjectUrl = URL.createObjectURL(blob);
-          setLoadedVideoUrl(currentObjectUrl);
-        } else {
-          setLoadedVideoUrl(null);
-        }
-      });
-      if (selectedResult.videoFilename) {
-        const videoBase =
-          import.meta.env.VITE_API_URL ||
-          (typeof window !== "undefined" &&
-          window.location.hostname !== "localhost" &&
-          window.location.hostname !== "127.0.0.1"
-            ? `${window.location.origin}/api`
-            : "http://localhost:5000/api");
-        setLoadedVideoUrl(
-          `${videoBase}/proctor/video/${selectedResult.videoFilename}`
-        );
-      } else {
-        VideoStorage.getVideo(selectedResult.id).then((blob) => {
+
+    if (!selectedResult) {
+      setLoadedVideoUrl(null);
+      return;
+    }
+
+    const videoBase =
+      import.meta.env.VITE_API_URL ||
+      (typeof window !== "undefined" &&
+      window.location.hostname !== "localhost" &&
+      window.location.hostname !== "127.0.0.1"
+        ? `${window.location.origin}/api`
+        : "http://localhost:5000/api");
+
+    if (selectedResult.videoFilename) {
+      // Backend streaming URL
+      setLoadedVideoUrl(
+        `${videoBase}/proctor/video/${selectedResult.videoFilename}`
+      );
+    } else {
+      // IndexedDB local fallback
+      VideoStorage.getVideo(selectedResult.id)
+        .then((blob) => {
+          if (!isMounted) return;
           if (blob && blob.size > 0) {
             currentObjectUrl = URL.createObjectURL(blob);
             setLoadedVideoUrl(currentObjectUrl);
           } else {
             setLoadedVideoUrl(null);
           }
+        })
+        .catch(() => {
+          if (isMounted) setLoadedVideoUrl(null);
         });
-      }
-    } else {
-      setLoadedVideoUrl(null);
     }
 
     return () => {
+      isMounted = false;
       if (currentObjectUrl) {
         URL.revokeObjectURL(currentObjectUrl);
       }
@@ -1440,7 +1443,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
               </div>
 
               {/* Proctor Video Recording if available */}
-              {loadedVideoUrl ? (
+              {(loadedVideoUrl || selectedResult.hasVideoRecording || selectedResult.videoFilename) ? (
                 <div
                   style={{
                     marginBottom: "22px",
@@ -1477,47 +1480,85 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       </span>
                     </div>
 
-                    <a
-                      href={loadedVideoUrl}
-                      download={`proctor_recording_${selectedResult.candidateName.replace(
-                        /\s+/g,
-                        "_"
-                      )}_${selectedResult.id}.webm`}
-                      className="btn-sm"
-                      style={{
-                        textDecoration: "none",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        color: "#2563eb",
-                        borderColor: "#93c5fd",
-                      }}
-                    >
-                      ⬇ Download Video (.webm)
-                    </a>
+                    {(() => {
+                      const videoBase =
+                        import.meta.env.VITE_API_URL ||
+                        (typeof window !== "undefined" &&
+                        window.location.hostname !== "localhost" &&
+                        window.location.hostname !== "127.0.0.1"
+                          ? `${window.location.origin}/api`
+                          : "http://localhost:5000/api");
+                      const dlUrl = selectedResult.videoFilename
+                        ? `${videoBase}/proctor/download/${selectedResult.videoFilename}?name=${encodeURIComponent(
+                            `proctor_${selectedResult.candidateName.replace(/\s+/g, "_")}_${selectedResult.id}.webm`
+                          )}`
+                        : loadedVideoUrl || "#";
+
+                      return (
+                        <a
+                          href={dlUrl}
+                          download={`proctor_recording_${selectedResult.candidateName.replace(
+                            /\s+/g,
+                            "_"
+                          )}_${selectedResult.id}.webm`}
+                          className="btn-sm"
+                          style={{
+                            textDecoration: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            color: "#ffffff",
+                            background: "#2563eb",
+                            borderColor: "#1d4ed8",
+                            fontWeight: 650,
+                            padding: "6px 14px",
+                            borderRadius: "6px",
+                          }}
+                          title="Directly download full video recording"
+                        >
+                          📥 Download Full Video (.webm)
+                        </a>
+                      );
+                    })()}
                   </div>
 
-                  <div
-                    style={{
-                      background: "#0f172a",
-                      borderRadius: "8px",
-                      overflow: "hidden",
-                      maxHeight: "320px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <video
-                      src={loadedVideoUrl}
-                      controls
+                  {loadedVideoUrl ? (
+                    <div
                       style={{
-                        width: "100%",
-                        maxHeight: "320px",
-                        objectFit: "contain",
+                        background: "#0f172a",
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                        maxHeight: "340px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                       }}
-                    />
-                  </div>
+                    >
+                      <video
+                        src={loadedVideoUrl}
+                        controls
+                        playsInline
+                        style={{
+                          width: "100%",
+                          maxHeight: "340px",
+                          objectFit: "contain",
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        padding: "20px",
+                        background: "#0f172a",
+                        borderRadius: "8px",
+                        textAlign: "center",
+                        color: "#94a3b8",
+                        fontSize: "13px",
+                      }}
+                    >
+                      ⏳ Loading video recording stream...
+                    </div>
+                  )}
                 </div>
               ) : selectedResult.candidatePhoto ? (
                 <div

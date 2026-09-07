@@ -136,7 +136,8 @@ export const api = {
 
   async checkCandidateCooldown(
     email: string,
-    companyId: string
+    companyId: string,
+    name?: string
   ): Promise<{
     eligible: boolean;
     error?: string;
@@ -150,15 +151,15 @@ export const api = {
       const query = new URLSearchParams();
       if (email) query.append("email", email);
       if (companyId) query.append("companyId", companyId);
+      if (name) query.append("name", name);
 
       const res = await fetch(`${API_BASE}/candidates/check-cooldown?${query.toString()}`);
-      if (res.ok) {
-        return await res.json();
-      }
+      const data = await res.json();
+      return data;
     } catch {
       // Offline fallback
     }
-    return storage.checkCandidateCooldown(email, companyId);
+    return storage.checkCandidateCooldown(email, companyId, name);
   },
 
   async clearCandidateCooldown(

@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
 import { authenticateAdmin } from "../middleware/auth";
 import { sendExamCompletionAlert } from "../services/emailService";
+import { validateExamineeEmail, validateCandidateIdentity } from "./candidateRoutes";
 
 const router = Router();
 
@@ -26,6 +27,22 @@ router.post("/submit", async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({ error: "Candidate name and email are required." });
+    }
+
+    // Strict Email Format Check
+    const emailCheck = validateExamineeEmail(candidateEmail);
+    if (!emailCheck.valid) {
+      return res.status(400).json({ error: emailCheck.message });
+    }
+
+    // Strict 1-to-1 Candidate Identity Check
+    const idCheck = await validateCandidateIdentity(
+      candidateName,
+      candidateEmail,
+      companyId || "N/A"
+    );
+    if (idCheck.conflict) {
+      return res.status(400).json({ error: idCheck.message });
     }
 
     // 1. Fetch questions to evaluate score on the server
