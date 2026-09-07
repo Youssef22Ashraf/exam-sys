@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Icon } from "../components/Icon";
 import { api } from "../services/api";
 
 interface ExamRegistrationProps {
@@ -135,7 +136,7 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
               textAlign: "left",
             }}
           >
-            <span style={{ fontSize: "18px" }}>⚠️</span>
+            <span style={{ fontSize: "18px" }}><Icon name="alert-triangle" /></span>
             <div>
               <strong style={{ display: "block", marginBottom: "2px" }}>
                 Identity & Registration Notice:
@@ -167,7 +168,7 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
                 marginBottom: "6px",
               }}
             >
-              <span style={{ fontSize: "18px" }}>⛔</span> 48-Hour Re-attempt Cooldown Active
+              <span style={{ fontSize: "18px" }}><Icon name="ban" /></span> 48-Hour Re-attempt Cooldown Active
             </div>
             <p style={{ margin: "0 0 10px 0", fontSize: "13px", lineHeight: "1.5" }}>
               {cooldownInfo.message ||
@@ -182,12 +183,12 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
               }}
             >
               <div>
-                ⏱️ <strong>Remaining lockout:</strong> Approx.{" "}
+                <Icon name="clock" /> <strong>Remaining lockout:</strong> Approx.{" "}
                 {cooldownInfo.remainingHours ?? 48} hour(s)
               </div>
               {cooldownInfo.nextAttemptAvailableAt && (
                 <div style={{ marginTop: "4px" }}>
-                  📅 <strong>Next eligible attempt:</strong>{" "}
+                  <Icon name="calendar" /> <strong>Next eligible attempt:</strong>{" "}
                   {new Date(cooldownInfo.nextAttemptAvailableAt).toLocaleString()}
                 </div>
               )}
@@ -227,7 +228,7 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
           />
           {emailFormatError ? (
             <span style={{ fontSize: "12px", color: "#dc2626", marginTop: "4px", display: "block" }}>
-              ⚠️ {emailFormatError}
+              <Icon name="alert-triangle" /> {emailFormatError}
             </span>
           ) : (
             <span style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", display: "block" }}>
@@ -260,7 +261,7 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
           {isChecking
             ? "Verifying Cooldown & Identity..."
             : cooldownInfo && !cooldownInfo.eligible
-            ? "⛔ Re-attempt Locked (48h Policy)"
+            ? <><Icon name="ban" /> Re-attempt Locked (48h Policy)</>
             : "Continue to Instructions →"}
         </button>
       </div>

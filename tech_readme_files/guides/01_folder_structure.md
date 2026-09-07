@@ -27,6 +27,7 @@ exam-sys/
 │   ├── src/
 │   │   ├── main.tsx · App.tsx   entry + page state machine
 │   │   ├── pages/               ExamRegistration · ExamInstructions · Exam · ExamResults · AdminLogin · AdminDashboard (+ .css each)
+│   │   ├── components/Icon.tsx  inline SVG icon set, the only icon source
 │   │   ├── components/CameraProctor.tsx
 │   │   ├── hooks/useTheme.ts    admin-only dark/light, data-theme on <html>
 │   │   ├── services/            api · storage · socket · camera · videoStorage

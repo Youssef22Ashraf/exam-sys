@@ -27,7 +27,7 @@ export function getSocket(): Socket | null {
     });
 
     socket.on("connect", () => {
-      console.log("🌐 [Socket.io Client Connected]:", socket?.id);
+      console.log("[Socket.io Client Connected]:", socket?.id);
     });
 
     socket.on("connect_error", (err) => {

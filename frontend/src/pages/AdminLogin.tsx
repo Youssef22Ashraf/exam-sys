@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Icon } from "../components/Icon";
 import { api } from "../services/api";
 
 interface AdminLoginProps {
@@ -85,7 +86,7 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
           />
         </div>
         <h1 className="page-title" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-          <span>🛡️</span> Administrator Portal
+          <Icon name="shield" /> Administrator Portal
         </h1>
         <p className="page-description">
           Mofarreh Group Management • Restricted authorized access only.
@@ -108,7 +109,7 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
               gap: "8px",
             }}
           >
-            <span>⚠️</span>
+            <Icon name="alert-triangle" />
             <span>{errorMsg}</span>
           </div>
         )}
@@ -153,7 +154,7 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
                 }}
                 title={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? "🙈" : "👁️"}
+                {showPassword ? <Icon name="eye-off" label="Hide password" /> : <Icon name="eye" label="Show password" />}
               </button>
             </div>
           </div>
@@ -170,7 +171,7 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
             }}
             disabled={loading}
           >
-            {loading ? "Verifying Credentials..." : "🔐 Secure Sign In →"}
+            {loading ? "Verifying Credentials..." : <><Icon name="lock" /> Secure Sign In →</>}
           </button>
         </form>
 
