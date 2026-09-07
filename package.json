@@ -1,6 +1,6 @@
 {
   "name": "exam-system",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Workplace Assessment and Remote Examination System",
   "scripts": {

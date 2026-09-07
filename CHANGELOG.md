@@ -6,6 +6,8 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-09-08
+
 ### Added
 
 - **Sentry real-time error monitoring and performance tracing.** Added `@sentry/react`
@@ -111,15 +113,26 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 - Project convention docs: `AGENTS.md`, `CLAUDE.md`, and
   `tech_readme_files/` (`plan.md`, `TODO.md`, `CURRENT_STATUS.md`).
 
-### Known issues (not yet fixed — tracked in `tech_readme_files/TODO.md`)
+### Known issues at this tag — fixed on `feat/refactor-6-ui`, not yet merged
 
-- Frontend `npm run lint` reports 43 pre-existing errors (unused `err`
-  in catch blocks, `any`, empty blocks). It has never been green; the
-  documented gate said otherwise until this entry. `tsc -b` is clean.
-- The 48-hour lockout is enforced at `check-cooldown` and in the browser,
-  but `POST /api/exam/submit` does not re-check it. A candidate who skips
-  the registration screen can submit inside the window.
-- No automated tests exist for either package.
+- **A committed admin password.** `prisma/seed.ts` and
+  `config/bootstrap.ts` both create `mofarreh.admin` and `admin` with a
+  hard-coded password. Rotate it immediately after deploy via Prisma
+  Studio until the branch that reads it from `ADMIN_INITIAL_PASSWORD`
+  lands.
+- **Webcam recordings are publicly served.** `app.use("/uploads",
+  express.static(...))` in `index.ts` serves every `.webm` and snapshot
+  to anyone who knows or guesses the filename, bypassing the token the
+  `/api/proctor/*` routes require. Filenames carry a timestamp and a
+  random suffix, which is obscurity, not access control.
+- **Sentry session replay records candidate screens unmasked.**
+  `replayIntegration({ maskAllText: false, blockAllMedia: false })` in
+  `main.tsx` sends exam text and the webcam preview to Sentry on error.
+- **No automated tests; frontend lint has 43 pre-existing errors.** The
+  gate at this tag is `tsc` in both packages.
+- The 48-hour lockout was already enforced at submit in this release;
+  the earlier Unreleased note saying otherwise was stale.
+
 
 ## [1.0.0] — 2026-09-07
 
@@ -211,5 +224,6 @@ and 2026-09-07.
 - Question wording synchronised across seed, `defaultQuestions.ts`, and
   the frontend `INITIAL_QUESTIONS` (2026-09-06 "question synchronization").
 
-[Unreleased]: https://github.com/Youssef22Ashraf/exam-sys/compare/8f29a52...HEAD
+[Unreleased]: https://github.com/Youssef22Ashraf/exam-sys/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Youssef22Ashraf/exam-sys/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Youssef22Ashraf/exam-sys/commits/8f29a52
