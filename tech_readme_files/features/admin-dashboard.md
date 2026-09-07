@@ -23,9 +23,18 @@ and returns to `/`.
 | `results` | filter PASSED/FAILED + search, answer sheet, snapshot, inline video, delete, CSV | `GET /exam/results?status&search`, `GET /exam/results/:id`, `DELETE /exam/results/:id`, `GET /exam/export/csv` |
 | `exams` | question bank CRUD by section, settings form, test email | see [question-bank-and-settings.md](question-bank-and-settings.md) |
 
+## Theme
+
+`hooks/useTheme.ts` sets `data-theme="dark"` on `<html>` while
+`AdminLogin` or `AdminDashboard` is mounted and removes it on unmount.
+Tokens live at the top of `styles.css`; the dark palette is the
+`[data-theme="dark"]` block. Toggle in the header, persisted under
+`exam_admin_theme`, default from `prefers-color-scheme`. Candidate pages
+never see the attribute.
+
 ## Files
 
-`frontend/src/pages/AdminLogin.tsx`, `AdminDashboard.tsx` (~2000 lines,
+`frontend/src/hooks/useTheme.ts`, `frontend/src/pages/AdminLogin.tsx`, `AdminDashboard.tsx` (~2000 lines,
 single component), `AdminDashboard.css`, `backend/src/routes/authRoutes.ts`,
 `backend/src/middleware/auth.ts`.
 

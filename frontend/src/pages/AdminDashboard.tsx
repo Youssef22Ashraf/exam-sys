@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { useTheme } from "../hooks/useTheme";
 import {
   ExamStorage,
   onStorageSync,
@@ -20,6 +21,7 @@ type TabType = "overview" | "candidates" | "results" | "exams";
 
 function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [theme, toggleTheme] = useTheme();
 
   // Storage states
   const [candidates, setCandidates] = useState<Candidate[]>(() =>
@@ -436,9 +438,20 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </div>
         </div>
 
-        <button className="secondary-button" onClick={onLogout}>
-          Logout
-        </button>
+        <div className="admin-header-actions">
+          <button
+            className="theme-toggle"
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+            title={theme === "dark" ? "Light theme" : "Dark theme"}
+          >
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
+          <button className="secondary-button" onClick={onLogout}>
+            Logout
+          </button>
+        </div>
       </header>
 
       {/* Live Remote Proctoring Alert Toast via WebSockets */}
@@ -570,14 +583,14 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           <tr key={r.id}>
                             <td>
                               <strong>{r.candidateName}</strong>
-                              <div style={{ fontSize: "11px", color: "#64748b" }}>
+                              <div style={{ fontSize: "11px", color: "var(--text-3)" }}>
                                 {r.candidateEmail}
                               </div>
                             </td>
                             <td>{r.companyId}</td>
                             <td>
                               <strong>{r.score}/{r.totalQuestions}</strong>{" "}
-                              <span style={{ color: "#64748b", fontSize: "12px" }}>
+                              <span style={{ color: "var(--text-3)", fontSize: "12px" }}>
                                 ({r.percentage.toFixed(1)}%)
                               </span>
                             </td>
@@ -590,7 +603,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 {r.isPassed ? "Passed" : "Failed"}
                               </span>
                             </td>
-                            <td style={{ fontSize: "12px", color: "#64748b" }}>
+                            <td style={{ fontSize: "12px", color: "var(--text-3)" }}>
                               {new Date(r.submittedAt).toLocaleDateString()}
                             </td>
                             <td>
@@ -671,7 +684,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
               />
 
               <div className="filter-group">
-                <label style={{ fontSize: "13px", color: "#64748b", fontWeight: 600 }}>
+                <label style={{ fontSize: "13px", color: "var(--text-3)", fontWeight: 600 }}>
                   Status:
                 </label>
                 <select
@@ -715,7 +728,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           <strong>{c.name}</strong>
                         </td>
                         <td>{c.companyId}</td>
-                        <td style={{ color: "#64748b" }}>{c.email}</td>
+                        <td style={{ color: "var(--text-3)" }}>{c.email}</td>
                         <td>
                           <span
                             className={`badge ${
@@ -733,9 +746,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             <span
                               className="badge"
                               style={{
-                                background: "#fef3c7",
-                                color: "#92400e",
-                                border: "1px solid #f59e0b",
+                                background: "var(--warning-soft)",
+                                color: "var(--warning)",
+                                border: "1px solid var(--warning)",
                                 fontWeight: 700,
                                 fontSize: "11px",
                               }}
@@ -752,7 +765,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             "—"
                           )}
                         </td>
-                        <td style={{ fontSize: "12px", color: "#64748b" }}>
+                        <td style={{ fontSize: "12px", color: "var(--text-3)" }}>
                           {new Date(c.registeredAt).toLocaleDateString()}
                         </td>
                         <td>
@@ -852,9 +865,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 <span
                                   className="badge"
                                   style={{
-                                    background: "#fef3c7",
-                                    color: "#92400e",
-                                    border: "1px solid #f59e0b",
+                                    background: "var(--warning-soft)",
+                                    color: "var(--warning)",
+                                    border: "1px solid var(--warning)",
                                     fontSize: "11px",
                                     fontWeight: 700,
                                     padding: "2px 6px",
@@ -867,8 +880,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 <span
                                   className="badge"
                                   style={{
-                                    background: "#f1f5f9",
-                                    color: "#64748b",
+                                    background: "var(--surface-2)",
+                                    color: "var(--text-3)",
                                     fontSize: "10px",
                                     padding: "2px 6px",
                                   }}
@@ -877,12 +890,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontSize: "11px", color: "#64748b" }}>
+                            <div style={{ fontSize: "11px", color: "var(--text-3)" }}>
                               {r.candidateEmail}
                             </div>
                           </td>
                           <td>{r.companyId}</td>
-                          <td style={{ fontSize: "12px", color: "#64748b" }}>
+                          <td style={{ fontSize: "12px", color: "var(--text-3)" }}>
                             {new Date(r.submittedAt).toLocaleString()}
                           </td>
                           <td>
@@ -893,7 +906,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           <td>
                             <strong
                               style={{
-                                color: r.isPassed ? "#16a34a" : "#dc2626",
+                                color: r.isPassed ? "var(--success)" : "var(--danger)",
                               }}
                             >
                               {r.percentage.toFixed(1)}%
@@ -925,7 +938,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 <span
                                   style={{
                                     fontSize: "11px",
-                                    color: "#2563eb",
+                                    color: "var(--primary)",
                                     fontWeight: 650,
                                     display: "inline-flex",
                                     alignItems: "center",
@@ -943,7 +956,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           <td>
                             {r.partBScore} / {r.partBTotal}
                           </td>
-                          <td style={{ fontSize: "12px", color: "#64748b" }}>
+                          <td style={{ fontSize: "12px", color: "var(--text-3)" }}>
                             {mins}m {secs < 10 ? "0" : ""}{secs}s
                           </td>
                           <td>
@@ -956,7 +969,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                               </button>
                               <button
                                 className="btn-sm"
-                                style={{ background: "#f8fafc", color: "#334155", borderColor: "#cbd5e1" }}
+                                style={{ background: "var(--surface-2)", color: "var(--text-2)", borderColor: "var(--border-strong)" }}
                                 onClick={() => {
                                   const cand = candidates.find(
                                     (c) =>
@@ -983,9 +996,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 <button
                                   className="btn-sm"
                                   style={{
-                                    borderColor: "#93c5fd",
-                                    color: "#2563eb",
-                                    background: "#eff6ff",
+                                    borderColor: "var(--primary-border)",
+                                    color: "var(--primary)",
+                                    background: "var(--primary-soft)",
                                     fontWeight: 600,
                                   }}
                                   onClick={() => setSelectedResult(r)}
@@ -1060,9 +1073,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     }`}
                     style={{
                       background:
-                        questionSectionFilter === "All" ? "#2563eb" : "white",
+                        questionSectionFilter === "All" ? "var(--primary)" : "white",
                       color:
-                        questionSectionFilter === "All" ? "white" : "#334155",
+                        questionSectionFilter === "All" ? "white" : "var(--text-2)",
                     }}
                     onClick={() => setQuestionSectionFilter("All")}
                   >
@@ -1075,9 +1088,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     }`}
                     style={{
                       background:
-                        questionSectionFilter === "A" ? "#2563eb" : "white",
+                        questionSectionFilter === "A" ? "var(--primary)" : "white",
                       color:
-                        questionSectionFilter === "A" ? "white" : "#334155",
+                        questionSectionFilter === "A" ? "white" : "var(--text-2)",
                     }}
                     onClick={() => setQuestionSectionFilter("A")}
                   >
@@ -1090,9 +1103,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     }`}
                     style={{
                       background:
-                        questionSectionFilter === "B" ? "#2563eb" : "white",
+                        questionSectionFilter === "B" ? "var(--primary)" : "white",
                       color:
-                        questionSectionFilter === "B" ? "white" : "#334155",
+                        questionSectionFilter === "B" ? "white" : "var(--text-2)",
                     }}
                     onClick={() => setQuestionSectionFilter("B")}
                   >
@@ -1103,7 +1116,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
               <div style={{ padding: "20px 22px" }}>
                 {filteredQuestions.length === 0 ? (
-                  <p style={{ color: "#64748b", textAlign: "center" }}>
+                  <p style={{ color: "var(--text-3)", textAlign: "center" }}>
                     No questions found matching your filter.
                   </p>
                 ) : (
@@ -1160,8 +1173,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 <div
                   style={{
                     padding: "10px 14px",
-                    background: "#dcfce7",
-                    color: "#15803d",
+                    background: "var(--success-soft)",
+                    color: "var(--success)",
                     borderRadius: "8px",
                     fontSize: "12px",
                     marginBottom: "14px",
@@ -1272,7 +1285,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 <span
                   style={{
                     fontSize: "11px",
-                    color: "#64748b",
+                    color: "var(--text-3)",
                     marginTop: "4px",
                     display: "block",
                   }}
@@ -1288,10 +1301,10 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       borderRadius: "6px",
                       fontSize: "12px",
                       lineHeight: "1.4",
-                      background: testEmailMsg.success ? "#f0fdf4" : "#fef2f2",
-                      color: testEmailMsg.success ? "#15803d" : "#b91c1c",
+                      background: testEmailMsg.success ? "var(--success-soft)" : "var(--danger-soft)",
+                      color: testEmailMsg.success ? "var(--success)" : "var(--danger)",
                       border: `1px solid ${
-                        testEmailMsg.success ? "#bbf7d0" : "#fecaca"
+                        testEmailMsg.success ? "var(--success-border)" : "var(--danger-border)"
                       }`,
                     }}
                   >
@@ -1324,7 +1337,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <div className="modal-header">
               <div>
                 <h2>Exam Attempt Details</h2>
-                <span style={{ fontSize: "12px", color: "#64748b" }}>
+                <span style={{ fontSize: "12px", color: "var(--text-3)" }}>
                   {selectedResult.candidateName} • {selectedResult.companyId}
                 </span>
               </div>
@@ -1349,12 +1362,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
               >
                 <div
                   style={{
-                    background: "#f8fafc",
+                    background: "var(--surface-2)",
                     padding: "12px",
                     borderRadius: "8px",
                   }}
                 >
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  <div style={{ fontSize: "12px", color: "var(--text-3)" }}>
                     Final Score
                   </div>
                   <strong style={{ fontSize: "20px" }}>
@@ -1364,18 +1377,18 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
                 <div
                   style={{
-                    background: "#f8fafc",
+                    background: "var(--surface-2)",
                     padding: "12px",
                     borderRadius: "8px",
                   }}
                 >
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  <div style={{ fontSize: "12px", color: "var(--text-3)" }}>
                     Percentage
                   </div>
                   <strong
                     style={{
                       fontSize: "20px",
-                      color: selectedResult.isPassed ? "#16a34a" : "#dc2626",
+                      color: selectedResult.isPassed ? "var(--success)" : "var(--danger)",
                     }}
                   >
                     {selectedResult.percentage.toFixed(1)}%
@@ -1384,12 +1397,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
                 <div
                   style={{
-                    background: "#f8fafc",
+                    background: "var(--surface-2)",
                     padding: "12px",
                     borderRadius: "8px",
                   }}
                 >
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  <div style={{ fontSize: "12px", color: "var(--text-3)" }}>
                     Status
                   </div>
                   <span
@@ -1404,12 +1417,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
                 <div
                   style={{
-                    background: "#f8fafc",
+                    background: "var(--surface-2)",
                     padding: "12px",
                     borderRadius: "8px",
                   }}
                 >
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>
+                  <div style={{ fontSize: "12px", color: "var(--text-3)" }}>
                     Proctoring Integrity
                   </div>
                   <strong
@@ -1419,8 +1432,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       marginTop: "6px",
                       color:
                         selectedResult.proctoringStatus === "Warnings"
-                          ? "#dc2626"
-                          : "#16a34a",
+                          ? "var(--danger)"
+                          : "var(--success)",
                     }}
                   >
                     {selectedResult.proctoringStatus === "Warnings"
@@ -1436,8 +1449,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   style={{
                     marginBottom: "22px",
                     padding: "16px",
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--border)",
                     borderRadius: "10px",
                   }}
                 >
@@ -1455,7 +1468,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <strong
                         style={{
                           fontSize: "14px",
-                          color: "#1e293b",
+                          color: "var(--text)",
                           display: "flex",
                           alignItems: "center",
                           gap: "6px",
@@ -1463,7 +1476,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       >
                         🎥 Recorded Proctoring Video
                       </strong>
-                      <span style={{ fontSize: "12px", color: "#64748b" }}>
+                      <span style={{ fontSize: "12px", color: "var(--text-3)" }}>
                         Complete camera feed captured during candidate examination
                       </span>
                     </div>
@@ -1480,8 +1493,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
-                        color: "#2563eb",
-                        borderColor: "#93c5fd",
+                        color: "var(--primary)",
+                        borderColor: "var(--primary-border)",
                       }}
                     >
                       ⬇ Download Video (.webm)
@@ -1490,7 +1503,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
                   <div
                     style={{
-                      background: "#0f172a",
+                      background: "var(--text)",
                       borderRadius: "8px",
                       overflow: "hidden",
                       maxHeight: "320px",
@@ -1515,8 +1528,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   style={{
                     marginBottom: "20px",
                     padding: "14px",
-                    background: "#f8fafc",
-                    border: "1px solid #e2e8f0",
+                    background: "var(--surface-2)",
+                    border: "1px solid var(--border)",
                     borderRadius: "10px",
                     display: "flex",
                     alignItems: "center",
@@ -1531,17 +1544,17 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       height: "82px",
                       borderRadius: "8px",
                       objectFit: "cover",
-                      border: "2px solid #cbd5e1",
+                      border: "2px solid var(--border-strong)",
                     }}
                   />
                   <div>
-                    <strong style={{ fontSize: "13px", color: "#1e293b", display: "block" }}>
+                    <strong style={{ fontSize: "13px", color: "var(--text)", display: "block" }}>
                       Identity Verification Snapshot
                     </strong>
-                    <span style={{ fontSize: "12px", color: "#64748b", display: "block", marginTop: "2px" }}>
+                    <span style={{ fontSize: "12px", color: "var(--text-3)", display: "block", marginTop: "2px" }}>
                       Captured during assessment submission via candidate webcam.
                     </span>
-                    <span style={{ fontSize: "11px", color: "#16a34a", fontWeight: 650, marginTop: "4px", display: "inline-block" }}>
+                    <span style={{ fontSize: "11px", color: "var(--success)", fontWeight: 650, marginTop: "4px", display: "inline-block" }}>
                       ● Stamped: {new Date(selectedResult.submittedAt).toLocaleTimeString()}
                     </span>
                   </div>
@@ -1565,13 +1578,13 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     <div
                       key={q.id}
                       style={{
-                        border: "1px solid #e2e8f0",
+                        border: "1px solid var(--border)",
                         borderRadius: "8px",
                         padding: "14px",
-                        background: "#ffffff",
+                        background: "var(--surface)",
                         borderLeft: isCorrect
-                          ? "4px solid #16a34a"
-                          : "4px solid #dc2626",
+                          ? "4px solid var(--success)"
+                          : "4px solid var(--danger)",
                       }}
                     >
                       <div
@@ -1580,7 +1593,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           justifyContent: "space-between",
                           marginBottom: "6px",
                           fontSize: "12px",
-                          color: "#64748b",
+                          color: "var(--text-3)",
                         }}
                       >
                         <span>
@@ -1589,7 +1602,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         <span
                           style={{
                             fontWeight: 700,
-                            color: isCorrect ? "#16a34a" : "#dc2626",
+                            color: isCorrect ? "var(--success)" : "var(--danger)",
                           }}
                         >
                           {isCorrect ? "✓ Correct" : "✗ Incorrect"}
@@ -1609,7 +1622,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <div
                         style={{
                           fontSize: "12px",
-                          background: "#f8fafc",
+                          background: "var(--surface-2)",
                           padding: "8px 10px",
                           borderRadius: "6px",
                           display: "flex",
@@ -1622,10 +1635,10 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           <span
                             style={{
                               color: isCorrect
-                                ? "#16a34a"
+                                ? "var(--success)"
                                 : isAnswered
-                                ? "#dc2626"
-                                : "#94a3b8",
+                                ? "var(--danger)"
+                                : "var(--text-3)",
                             }}
                           >
                             {isAnswered
@@ -1637,7 +1650,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         {!isCorrect && (
                           <div>
                             <strong>Correct answer: </strong>
-                            <span style={{ color: "#16a34a" }}>
+                            <span style={{ color: "var(--success)" }}>
                               {q.options[q.correctAnswer]}
                             </span>
                           </div>
@@ -1673,7 +1686,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <div className="modal-header">
               <div>
                 <h2>Candidate History</h2>
-                <span style={{ fontSize: "12px", color: "#64748b" }}>
+                <span style={{ fontSize: "12px", color: "var(--text-3)" }}>
                   {selectedCandidate.name} ({selectedCandidate.companyId})
                 </span>
               </div>
@@ -1710,7 +1723,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   <>
                     <div
                       style={{
-                        background: "#f8fafc",
+                        background: "var(--surface-2)",
                         padding: "16px",
                         borderRadius: "10px",
                         marginBottom: "16px",
@@ -1735,8 +1748,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         <span
                           className="badge"
                           style={{
-                            background: candAttempts.length > 1 ? "#fef3c7" : "#f1f5f9",
-                            color: candAttempts.length > 1 ? "#92400e" : "#475569",
+                            background: candAttempts.length > 1 ? "var(--warning-soft)" : "var(--surface-2)",
+                            color: candAttempts.length > 1 ? "var(--warning)" : "var(--text-2)",
                             fontWeight: 700,
                             marginLeft: "6px",
                           }}
@@ -1750,8 +1763,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     {isCooldownActive ? (
                       <div
                         style={{
-                          background: "#fffbeb",
-                          border: "1px solid #f59e0b",
+                          background: "var(--warning-soft)",
+                          border: "1px solid var(--warning)",
                           padding: "14px 16px",
                           borderRadius: "8px",
                           marginBottom: "20px",
@@ -1763,18 +1776,18 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         }}
                       >
                         <div>
-                          <div style={{ fontWeight: 700, color: "#92400e", fontSize: "13px" }}>
+                          <div style={{ fontWeight: 700, color: "var(--warning)", fontSize: "13px" }}>
                             ⛔ 48-Hour Re-attempt Cooldown Active
                           </div>
-                          <div style={{ fontSize: "12px", color: "#b45309", marginTop: "2px" }}>
+                          <div style={{ fontSize: "12px", color: "var(--warning)", marginTop: "2px" }}>
                             Candidate locked until: <strong>{unlockTime.toLocaleString()}</strong> (~{remainingHours}h remaining)
                           </div>
                         </div>
                         <button
                           className="btn-sm"
                           style={{
-                            background: "#f59e0b",
-                            color: "#ffffff",
+                            background: "var(--warning)",
+                            color: "var(--surface)",
                             border: "none",
                             fontWeight: 600,
                             padding: "7px 14px",
@@ -1790,13 +1803,13 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     ) : (
                       <div
                         style={{
-                          background: "#f0fdf4",
-                          border: "1px solid #86efac",
+                          background: "var(--success-soft)",
+                          border: "1px solid var(--success-border)",
                           padding: "10px 14px",
                           borderRadius: "8px",
                           marginBottom: "20px",
                           fontSize: "12px",
-                          color: "#166534",
+                          color: "var(--success)",
                           display: "flex",
                           alignItems: "center",
                           gap: "8px",
@@ -1814,7 +1827,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     </h3>
 
                     {candAttempts.length === 0 ? (
-                      <p style={{ color: "#64748b", fontSize: "13px" }}>
+                      <p style={{ color: "var(--text-3)", fontSize: "13px" }}>
                         No exam attempts recorded yet for this candidate.
                       </p>
                     ) : (
@@ -1838,9 +1851,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                   <span
                                     className="badge"
                                     style={{
-                                      background: attemptNum > 1 ? "#fef3c7" : "#f1f5f9",
-                                      color: attemptNum > 1 ? "#92400e" : "#475569",
-                                      border: attemptNum > 1 ? "1px solid #f59e0b" : "1px solid #cbd5e1",
+                                      background: attemptNum > 1 ? "var(--warning-soft)" : "var(--surface-2)",
+                                      color: attemptNum > 1 ? "var(--warning)" : "var(--text-2)",
+                                      border: attemptNum > 1 ? "1px solid var(--warning)" : "1px solid var(--border-strong)",
                                       fontWeight: 700,
                                       fontSize: "11px",
                                     }}
@@ -1848,7 +1861,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                     {attemptNum > 1 ? `🔁 Attempt #${attemptNum}` : `Attempt #${attemptNum}`}
                                   </span>
                                 </td>
-                                <td style={{ fontSize: "12px", color: "#64748b" }}>
+                                <td style={{ fontSize: "12px", color: "var(--text-3)" }}>
                                   {new Date(r.submittedAt).toLocaleString()}
                                 </td>
                                 <td>
@@ -1859,7 +1872,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 <td>
                                   <strong
                                     style={{
-                                      color: r.isPassed ? "#16a34a" : "#dc2626",
+                                      color: r.isPassed ? "var(--success)" : "var(--danger)",
                                     }}
                                   >
                                     {r.percentage.toFixed(1)}%
