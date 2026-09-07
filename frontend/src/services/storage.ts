@@ -480,108 +480,6 @@ export const INITIAL_QUESTIONS: Question[] = [
   },
 ];
 
-const SEED_CANDIDATES: Candidate[] = [
-  {
-    id: "cand-1",
-    name: "Ahmed Ashraf Youssef",
-    email: "ahmed.youssef@harbico.com",
-    companyId: "9353",
-    registeredAt: "2026-09-02T11:20:00.000Z",
-    status: "Completed",
-    totalAttempts: 1,
-    highestScore: 36,
-    latestScore: 36,
-  },
-  {
-    id: "cand-2",
-    name: "Sarah M. Jenkins",
-    email: "sarah.jenkins@al-bayan.com",
-    companyId: "8412",
-    registeredAt: "2026-09-03T09:15:00.000Z",
-    status: "Completed",
-    totalAttempts: 1,
-    highestScore: 31,
-    latestScore: 31,
-  },
-  {
-    id: "cand-3",
-    name: "Omar Tariq Al-Mansoor",
-    email: "omar.mansoor@harbico.com",
-    companyId: "9104",
-    registeredAt: "2026-09-03T14:40:00.000Z",
-    status: "Completed",
-    totalAttempts: 1,
-    highestScore: 24,
-    latestScore: 24,
-  },
-  {
-    id: "cand-4",
-    name: "Khaled Nasser",
-    email: "khaled.nasser@apexbuild.com",
-    companyId: "7720",
-    registeredAt: "2026-09-04T08:30:00.000Z",
-    status: "Registered",
-    totalAttempts: 0,
-  },
-];
-
-const SEED_RESULTS: ExamResult[] = [
-  {
-    id: "res-1",
-    candidateId: "cand-1",
-    candidateName: "Ahmed Ashraf Youssef",
-    candidateEmail: "ahmed.youssef@harbico.com",
-    companyId: "9353",
-    submittedAt: "2026-09-02T11:48:30.000Z",
-    score: 36,
-    totalQuestions: 40,
-    percentage: 90.0,
-    isPassed: true,
-    timeSpentSeconds: 1710,
-    partAScore: 21,
-    partATotal: 23,
-    partBScore: 15,
-    partBTotal: 17,
-    answers: { 1: 0, 2: 1, 3: 2, 4: 3, 5: 0, 6: 1, 7: 2, 8: 3, 9: 1, 10: 0 },
-  },
-  {
-    id: "res-2",
-    candidateId: "cand-2",
-    candidateName: "Sarah M. Jenkins",
-    candidateEmail: "sarah.jenkins@al-bayan.com",
-    companyId: "8412",
-    submittedAt: "2026-09-03T09:43:10.000Z",
-    score: 31,
-    totalQuestions: 40,
-    percentage: 77.5,
-    isPassed: true,
-    timeSpentSeconds: 1692,
-    partAScore: 18,
-    partATotal: 23,
-    partBScore: 13,
-    partBTotal: 17,
-    answers: { 1: 0, 2: 1, 3: 2 },
-  },
-  {
-    id: "res-3",
-    candidateId: "cand-3",
-    candidateName: "Omar Tariq Al-Mansoor",
-    candidateEmail: "omar.mansoor@harbico.com",
-    companyId: "9104",
-    submittedAt: "2026-09-03T15:10:00.000Z",
-    score: 24,
-    totalQuestions: 40,
-    percentage: 60.0,
-    isPassed: false,
-    timeSpentSeconds: 1800,
-    partAScore: 14,
-    partATotal: 23,
-    partBScore: 10,
-    partBTotal: 17,
-    answers: { 1: 1, 2: 1, 3: 0 },
-  },
-];
-
 const STORAGE_KEYS = {
   SETTINGS: "exam_system_settings",
   QUESTIONS: "exam_system_questions",
@@ -710,6 +608,14 @@ export const ExamStorage = {
   },
 
   // Candidates
+  /**
+   * An empty cache means empty, not "show demo data".
+   *
+   * This used to WRITE a set of fictional candidates into localStorage on the
+   * first read and return them, so a cold cache made the admin dashboard show
+   * invented people as real records — and `checkCandidateCooldown` below then
+   * evaluated genuine candidates against those fake rows.
+   */
   getCandidates(): Candidate[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.CANDIDATES);
@@ -717,10 +623,10 @@ export const ExamStorage = {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
       }
-      this.saveCandidates(SEED_CANDIDATES);
-      return SEED_CANDIDATES;
-    } catch {
-      return SEED_CANDIDATES;
+      return [];
+    } catch (err) {
+      console.warn("Could not read the candidate cache:", err);
+      return [];
     }
   },
 
@@ -771,6 +677,7 @@ export const ExamStorage = {
   },
 
   // Exam Results
+  /** Empty cache means empty. See getCandidates. */
   getResults(): ExamResult[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.RESULTS);
@@ -778,10 +685,10 @@ export const ExamStorage = {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
       }
-      this.saveResults(SEED_RESULTS);
-      return SEED_RESULTS;
-    } catch {
-      return SEED_RESULTS;
+      return [];
+    } catch (err) {
+      console.warn("Could not read the results cache:", err);
+      return [];
     }
   },
 

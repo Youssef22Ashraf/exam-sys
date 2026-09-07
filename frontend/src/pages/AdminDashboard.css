@@ -714,3 +714,31 @@
   .table-controls { flex-direction: column; align-items: stretch; }
   .search-input { width: 100%; }
 }
+
+/* An admin action the server refused. These used to fail silently while the
+   local cache was updated as if they had succeeded. */
+.admin-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--danger-border, #fca5a5);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: var(--danger-soft, #fef2f2);
+  color: var(--danger, #dc2626);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.admin-error-banner span { flex: 1; }
+
+.admin-error-dismiss {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px;
+  display: inline-flex;
+}
