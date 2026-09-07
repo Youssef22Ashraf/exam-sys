@@ -748,6 +748,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           >
                             {c.status}
                           </span>
+                        </td>
                         <td>
                           {c.totalAttempts > 1 ? (
                             <span
@@ -766,6 +767,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             <span>{c.totalAttempts}</span>
                           )}
                         </td>
+                        <td>
                           {c.highestScore !== undefined ? (
                             <strong>{c.highestScore} / {questions.length}</strong>
                           ) : (
