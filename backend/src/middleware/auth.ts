@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "../config/env";
 
 export interface AuthRequest extends Request {
   user?: {
@@ -28,8 +29,7 @@ export const authenticateAdmin = (
   }
 
   try {
-    const secret = process.env.JWT_SECRET || "super_secret_exam_jwt_key_default";
-    const decoded = jwt.verify(token, secret) as {
+    const decoded = jwt.verify(token, JWT_SECRET) as {
       id: string;
       username: string;
       role: string;

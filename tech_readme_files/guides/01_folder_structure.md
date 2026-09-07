@@ -13,6 +13,7 @@ exam-sys/
 │   │   ├── index.ts             Express app, Socket.io, static SPA, /api mounts, error handler
 │   │   ├── config/
 │   │   │   ├── db.ts            the single PrismaClient
+│   │   ├── env.ts           JWT_SECRET (prod boot guard) and CORS_ORIGIN parsing
 │   │   │   └── defaultQuestions.ts   bank used by POST /api/questions/reset
 │   │   ├── middleware/auth.ts   authenticateAdmin (Bearer JWT)
 │   │   ├── routes/              authRoutes · candidateRoutes · questionRoutes · examRoutes · proctorRoutes · settingRoutes

@@ -97,8 +97,8 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
 - [x] **Enforce cooldown in `POST /api/exam/submit`** — shared `services/cooldown.ts`,
       403 `COOLDOWN_ACTIVE`. Proven live: 2nd submit same email 403, same company ID 403,
       unrelated 201. (fix/cooldown-at-submit)
-- [ ] Apply `CORS_ORIGIN` to both `cors()` and the Socket.io `cors.origin`; keep `*` only when unset
-- [ ] Refuse to boot in production when `JWT_SECRET` is the fallback string
+- [x] Apply `CORS_ORIGIN` to both `cors()` and the Socket.io `cors.origin`; keep `*` only when unset (fix/cors-and-jwt-boot-guard)
+- [x] Refuse to boot in production when `JWT_SECRET` is the fallback string (`config/env.ts`)
 - [ ] Rate-limit `POST /api/admin/login`
 - [ ] Validate `videoFilename` / `candidatePhoto` at submit are basenames (no `../`)
 
