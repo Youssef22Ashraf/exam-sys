@@ -441,18 +441,31 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
       {/* Header */}
       <header className="exam-header">
-        <div>
-          <h1>{settings.examTitle || "Examination"}</h1>
-          <p>
-            {userData
-              ? `${userData.name} | ID: ${userData.companyId} | ${userData.email}`
-              : "Workplace Assessment System"}
-          </p>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div className="company-logo-badge" style={{ height: "46px", padding: "4px 12px" }} title="Combined Group Contracting Company">
+            <img src="/Group-252.webp" alt="Combined Group Logo" style={{ height: "34px", width: "auto" }} />
+          </div>
+          <div>
+            <h1>{settings.examTitle || "Examination"}</h1>
+            <p>
+              {userData
+                ? `${userData.name} | ID: ${userData.companyId} | ${userData.email}`
+                : "Workplace Assessment System"}
+            </p>
+          </div>
         </div>
 
-        <div className={`timer ${isLowTime ? "timer-warning" : ""}`}>
-          <span>Time Remaining</span>
-          <strong>{formatTime(timeLeft)}</strong>
+        <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+          <div className="powered-by-tag">
+            <span className="powered-by-icon">⚡</span>
+            <span className="powered-by-prefix">Powered by</span>
+            <span className="powered-by-name">Eng. Youssef Ashraf</span>
+          </div>
+
+          <div className={`timer ${isLowTime ? "timer-warning" : ""}`}>
+            <span>Time Remaining</span>
+            <strong>{formatTime(timeLeft)}</strong>
+          </div>
         </div>
       </header>
 
@@ -720,6 +733,34 @@ function Exam({ userData, onFinishExam }: ExamProps) {
           </div>
         </div>
       )}
+
+      {/* Platform Attribution Bar */}
+      <footer
+        style={{
+          marginTop: "40px",
+          padding: "16px 24px",
+          borderTop: "1px solid #e2e8f0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "12px",
+          fontSize: "12px",
+          color: "#64748b",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="company-logo-badge" style={{ height: "30px", padding: "2px 8px" }}>
+            <img src="/Group-252.webp" alt="Company Logo" style={{ height: "20px" }} />
+          </div>
+          <span>Combined Group Contracting • Proctored Assessment</span>
+        </div>
+        <div className="powered-by-tag">
+          <span className="powered-by-icon">⚡</span>
+          <span className="powered-by-prefix">Powered by</span>
+          <span className="powered-by-name">Eng. Youssef Ashraf</span>
+        </div>
+      </footer>
     </div>
   );
 }

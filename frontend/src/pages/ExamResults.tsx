@@ -40,16 +40,26 @@ function ExamResults({
     <div className="results-page">
       <header className="app-header">
         <div className="brand">
-          <div className="brand-icon">E</div>
+          <div className="company-logo-badge" title="Combined Group Contracting Company">
+            <img src="/Group-252.webp" alt="Combined Group Logo" className="company-logo" />
+          </div>
           <div className="brand-text">
             <span className="brand-title">EXAM SYSTEM</span>
             <span className="brand-subtitle">Workplace Assessment Portal</span>
           </div>
         </div>
 
-        <button className="secondary-button" onClick={onReturnHome}>
-          Exit Assessment
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div className="powered-by-tag">
+            <span className="powered-by-icon">⚡</span>
+            <span className="powered-by-prefix">Powered by</span>
+            <span className="powered-by-name">Eng. Youssef Ashraf</span>
+          </div>
+
+          <button className="secondary-button" onClick={onReturnHome}>
+            Exit Assessment
+          </button>
+        </div>
       </header>
 
       <main className="results-container">
@@ -333,7 +343,21 @@ function ExamResults({
         </div>
       </main>
 
-      <footer className="app-footer">Workplace Assessment System</footer>
+      <footer className="app-footer">
+        <div className="footer-left">
+          <div className="company-logo-badge" style={{ height: "36px", padding: "3px 8px" }}>
+            <img src="/Group-252.webp" alt="Combined Group Logo" style={{ height: "24px" }} />
+          </div>
+          <span>Combined Group Contracting • Workplace Assessment Portal</span>
+        </div>
+        <div className="footer-right">
+          <div className="powered-by-tag">
+            <span className="powered-by-icon">⚡</span>
+            <span className="powered-by-prefix">System Engineered & Powered by</span>
+            <span className="powered-by-name">Eng. Youssef Ashraf</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

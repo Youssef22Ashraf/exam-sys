@@ -51,9 +51,27 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
 
   return (
     <main className="page-container">
-      <div style={{ textAlign: "center" }}>
+      <div style={{ textAlign: "center", marginBottom: "24px" }}>
+        <div
+          className="company-logo-badge"
+          style={{
+            height: "56px",
+            padding: "8px 18px",
+            margin: "0 auto 16px auto",
+            borderRadius: "12px",
+          }}
+          title="Combined Group Contracting Company"
+        >
+          <img
+            src="/Group-252.webp"
+            alt="Combined Group Logo"
+            style={{ height: "40px", width: "auto" }}
+          />
+        </div>
         <h1 className="page-title">Admin Portal</h1>
-        <p className="page-description">Authorized personnel only.</p>
+        <p className="page-description">
+          Combined Group Assessment • Authorized personnel only.
+        </p>
       </div>
 
       <div className="card form-card">

@@ -428,16 +428,26 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       {/* Header */}
       <header className="admin-header">
         <div className="brand">
-          <div className="brand-icon">E</div>
+          <div className="company-logo-badge" title="Combined Group Contracting Company">
+            <img src="/Group-252.webp" alt="Combined Group Logo" className="company-logo" />
+          </div>
           <div className="brand-text">
-            <span className="brand-title">EXAM SYSTEM</span>
-            <span className="brand-subtitle">Administration Portal</span>
+            <span className="brand-title">EXAM ADMIN</span>
+            <span className="brand-subtitle">Workplace Assessment Command Center</span>
           </div>
         </div>
 
-        <button className="secondary-button" onClick={onLogout}>
-          Logout
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div className="powered-by-tag">
+            <span className="powered-by-icon">⚡</span>
+            <span className="powered-by-prefix">Powered by</span>
+            <span className="powered-by-name">Eng. Youssef Ashraf</span>
+          </div>
+
+          <button className="secondary-button" onClick={onLogout}>
+            Logout
+          </button>
+        </div>
       </header>
 
       {/* Live Remote Proctoring Alert Toast via WebSockets */}
@@ -2002,6 +2012,35 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </div>
         </div>
       )}
+
+      {/* Admin Dashboard Attribution Footer */}
+      <footer
+        style={{
+          marginTop: "60px",
+          padding: "20px 36px",
+          borderTop: "1px solid #e2e8f0",
+          background: "#ffffff",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "14px",
+          fontSize: "13px",
+          color: "#64748b",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="company-logo-badge" style={{ height: "36px", padding: "3px 8px" }}>
+            <img src="/Group-252.webp" alt="Company Logo" style={{ height: "24px" }} />
+          </div>
+          <span>Combined Group Contracting • Assessment Management Command</span>
+        </div>
+        <div className="powered-by-tag">
+          <span className="powered-by-icon">⚡</span>
+          <span className="powered-by-prefix">Architected & Powered by</span>
+          <span className="powered-by-name">Eng. Youssef Ashraf</span>
+        </div>
+      </footer>
     </div>
   );
 }

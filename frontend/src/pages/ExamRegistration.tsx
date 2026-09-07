@@ -61,10 +61,26 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
 
   return (
     <main className="page-container">
-      <div style={{ textAlign: "center" }}>
+      <div style={{ textAlign: "center", marginBottom: "20px" }}>
+        <div
+          className="company-logo-badge"
+          style={{
+            height: "52px",
+            padding: "6px 16px",
+            margin: "0 auto 14px auto",
+            borderRadius: "10px",
+          }}
+          title="Combined Group Contracting Company"
+        >
+          <img
+            src="/Group-252.webp"
+            alt="Combined Group Logo"
+            style={{ height: "38px", width: "auto" }}
+          />
+        </div>
         <h1 className="page-title">Candidate Registration</h1>
         <p className="page-description">
-          Enter your employee information before starting the examination.
+          Combined Group Assessment • Enter your employee details before starting.
         </p>
       </div>
 

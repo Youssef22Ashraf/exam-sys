@@ -11,10 +11,26 @@ function ExamInstructions({ onStart }: ExamInstructionsProps) {
   return (
     <main className="page-container">
       <div style={{ textAlign: "center" }}>
+        <div
+          className="company-logo-badge"
+          style={{
+            height: "52px",
+            padding: "6px 16px",
+            margin: "0 auto 14px auto",
+            borderRadius: "10px",
+          }}
+          title="Combined Group Contracting Company"
+        >
+          <img
+            src="/Group-252.webp"
+            alt="Combined Group Logo"
+            style={{ height: "38px", width: "auto" }}
+          />
+        </div>
         <h1 className="page-title">Examination Instructions</h1>
 
         <p className="page-description">
-          Please read the following information carefully before starting.
+          Combined Group Assessment • Please read the following information carefully before starting.
         </p>
       </div>
 
