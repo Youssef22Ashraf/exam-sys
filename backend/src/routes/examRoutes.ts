@@ -182,7 +182,7 @@ router.post("/submit", async (req: Request, res: Response) => {
 });
 
 // GET /api/exam/results - List results for Admin Dashboard
-router.get("/results", async (req: Request, res: Response) => {
+router.get("/results", authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { status, search } = req.query;
 
@@ -239,7 +239,7 @@ router.get("/results", async (req: Request, res: Response) => {
 });
 
 // GET /api/exam/results/:id - Single attempt details
-router.get("/results/:id", async (req: Request, res: Response) => {
+router.get("/results/:id", authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const a = await prisma.examAttempt.findUnique({
@@ -281,7 +281,7 @@ router.get("/results/:id", async (req: Request, res: Response) => {
 });
 
 // GET /api/exam/results/export/csv - Export CSV file for Excel
-router.get("/export/csv", async (_req: Request, res: Response) => {
+router.get("/export/csv", authenticateAdmin, async (_req: Request, res: Response) => {
   try {
     const attempts = await prisma.examAttempt.findMany({
       orderBy: { submittedAt: "desc" },

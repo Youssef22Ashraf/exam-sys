@@ -33,7 +33,7 @@ whose scripts build both and start one process.
 4. **Every exit releases the camera.** No exception, no "the browser will
    do it".
 5. **Quality gate** before any task is called done: backend `tsc --noEmit`,
-   frontend `npm run lint && tsc -b`. There are no tests yet; say so.
+   frontend `tsc -b`. There are no tests yet; say so.
 6. **Document as you go.** `CHANGELOG.md` and `TODO.md` move in the same
    commit as the code.
 

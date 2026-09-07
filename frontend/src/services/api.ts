@@ -512,7 +512,7 @@ export const api = {
     try {
       const res = await fetch(`${API_BASE}/settings/test-email`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ email }),
       });
       return await res.json();

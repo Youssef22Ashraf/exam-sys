@@ -73,8 +73,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           window.location.hostname !== "127.0.0.1"
             ? `${window.location.origin}/api`
             : "http://localhost:5000/api");
+        const adminToken = sessionStorage.getItem("adminToken") || "";
         setLoadedVideoUrl(
-          `${videoBase}/proctor/video/${selectedResult.videoFilename}`
+          `${videoBase}/proctor/video/${selectedResult.videoFilename}?token=${encodeURIComponent(adminToken)}`
         );
       } else {
         VideoStorage.getVideo(selectedResult.id).then((blob) => {

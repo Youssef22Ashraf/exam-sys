@@ -6,6 +6,18 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ## [Unreleased]
 
+### Security
+
+- **Every read that returns candidate data now requires the admin JWT.**
+  `GET /api/candidates`, `/candidates/:id/history`, `/exam/results`,
+  `/exam/results/:id`, `/exam/export/csv`, `/proctor/video/:filename`,
+  `/proctor/download/:filename`, and `POST /settings/test-email` all take
+  `authenticateAdmin`. Before this, anyone with the domain could pull every
+  candidate's name, email, company ID, score, and webcam recording.
+  `authenticateAdmin` also accepts the same JWT as `?token=` because a
+  `<video src>` cannot set an `Authorization` header; the admin dashboard
+  appends it for playback. `api.ts` sends the bearer header on `test-email`.
+
 ### Added
 
 - Project convention docs: `AGENTS.md`, `CLAUDE.md`, and
@@ -13,9 +25,9 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Known issues (not yet fixed — tracked in `tech_readme_files/TODO.md`)
 
-- Candidate PII is readable without a token: `GET /api/candidates`,
-  `GET /api/candidates/:id/history`, `GET /api/exam/results`,
-  `GET /api/exam/export/csv`, and proctor video streaming take no auth.
+- Frontend `npm run lint` reports 43 pre-existing errors (unused `err`
+  in catch blocks, `any`, empty blocks). It has never been green; the
+  documented gate said otherwise until this entry. `tsc -b` is clean.
 - The 48-hour lockout is enforced at `check-cooldown` and in the browser,
   but `POST /api/exam/submit` does not re-check it. A candidate who skips
   the registration screen can submit inside the window.

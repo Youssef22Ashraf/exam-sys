@@ -134,7 +134,7 @@ router.post("/register", async (req: Request, res: Response) => {
 });
 
 // GET /api/candidates - Admin candidate directory
-router.get("/", async (req: Request, res: Response) => {
+router.get("/", authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { search, status } = req.query;
 
@@ -182,7 +182,7 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 // GET /api/candidates/:id/history - Retrieve all attempts of a candidate
-router.get("/:id/history", async (req: Request, res: Response) => {
+router.get("/:id/history", authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const candidate = await prisma.candidate.findUnique({

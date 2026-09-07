@@ -15,11 +15,18 @@ export const authenticateAdmin = (
   next: NextFunction
 ) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  // Bearer header is the normal path. `?token=` exists only because <video src>
+  // and download links cannot set headers; the token is the same JWT.
+  const queryToken =
+    typeof req.query.token === "string" ? req.query.token : undefined;
+  const token =
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.split(" ")[1]
+      : queryToken;
+  if (!token) {
     return res.status(401).json({ error: "Access denied. No token provided." });
   }
 
-  const token = authHeader.split(" ")[1];
   try {
     const secret = process.env.JWT_SECRET || "super_secret_exam_jwt_key_default";
     const decoded = jwt.verify(token, secret) as {

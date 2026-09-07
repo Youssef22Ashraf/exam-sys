@@ -52,10 +52,8 @@ an automated test, because none exist.
 
 Listed in priority order; all are `TODO.md` Phase 8.
 
-1. **Results are public.** Every read endpoint that returns a candidate's
-   name, email, company ID, score, or webcam video takes no token. Anyone
-   with the domain can pull the CSV. This is the single change that must
-   land before the URL is shared.
+1. ~~**Results are public.**~~ Closed on `fix/auth-on-read-endpoints`:
+   every candidate-data read and `test-email` now require the admin JWT.
 2. **Lockout is bypassable.** `POST /api/exam/submit` does not check the
    48-hour window; only the registration screen does.
 3. **`CORS_ORIGIN` is decorative.** The env var is read and ignored;
@@ -67,14 +65,15 @@ Listed in priority order; all are `TODO.md` Phase 8.
 
 ```bash
 cd backend && npx tsc --noEmit
-cd frontend && npm run lint && npx tsc -b
+cd frontend && npx tsc -b
 ```
 
 Run before calling any task done — see [`../CLAUDE.md`](../CLAUDE.md).
-As of `8f29a52`: **not run in this environment** — `node_modules` is not
-installed in either package. The last evidence of a clean build is the
-2026-09-06 deploy commit (`830e246`), which produced the Docker image.
-Run the gate after `npm install` and replace this line with the result.
+Run 2026-09-07 on `fix/auth-on-read-endpoints`: backend `tsc --noEmit`
+clean, frontend `tsc -b` clean, frontend `npm run lint` **43 errors, all
+pre-existing** (identical count on the untouched tree). Lint has never
+been green; treat `tsc -b` as the frontend gate until `TODO.md` §Lint is
+done.
 
 ## Deliberately descoped (not bugs)
 

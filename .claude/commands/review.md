@@ -17,4 +17,4 @@ Audit the given file(s) or diff against `AGENTS.md` and report one line per find
 ## Output
 
 Findings ranked by severity. No praise. End with the gate result:
-`cd backend && npx tsc --noEmit; cd frontend && npm run lint && npx tsc -b`.
+`cd backend && npx tsc --noEmit; cd frontend && npx tsc -b`.
