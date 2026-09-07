@@ -21,10 +21,12 @@ Frontend: `VITE_API_URL` optional; otherwise same-origin off localhost.
 `authenticateAdmin` on: question CRUD/reset, settings `PUT`, candidate
 delete, clear-cooldown, result delete, `admin/me`.
 
-## What is not (fix before sharing the URL)
+## Also in place
 
-All candidate/result/video reads, CSV export, `test-email`. Listed in
-`TODO.md` Phase 8 §Security with the exact endpoints.
+Login rate limit (10 / 15 min / IP), `CORS_ORIGIN` applied, production
+boot guard on the fallback JWT secret, cooldown enforced at submit,
+`videoFilename` / `candidatePhoto` validated at submit. Phase 8 §Security
+in `TODO.md` is complete.
 
 ## Rules
 

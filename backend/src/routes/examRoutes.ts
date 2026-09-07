@@ -29,6 +29,20 @@ router.post("/submit", async (req: Request, res: Response) => {
         .json({ error: "Candidate name and email are required." });
     }
 
+    // videoFilename must be a bare file the proctor upload produced; the
+    // photo is a data URL from the canvas. Anything else is rejected so a
+    // crafted body cannot store a path for the admin UI to fetch later.
+    if (videoFilename !== undefined && videoFilename !== null) {
+      if (typeof videoFilename !== "string" || !/^[\w.-]+\.webm$/.test(videoFilename)) {
+        return res.status(400).json({ error: "Invalid videoFilename." });
+      }
+    }
+    if (candidatePhoto !== undefined && candidatePhoto !== null) {
+      if (typeof candidatePhoto !== "string" || !/^data:image\/(jpeg|png|webp);base64,/.test(candidatePhoto)) {
+        return res.status(400).json({ error: "Invalid candidatePhoto." });
+      }
+    }
+
     // 0. The registration screen checks this too, but a client that skips
     //    it must not be able to submit inside the 48-hour window.
     const cooldown = await findActiveCooldown(

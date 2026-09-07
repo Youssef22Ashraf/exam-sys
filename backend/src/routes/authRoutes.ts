@@ -2,13 +2,14 @@ import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env";
+import { rateLimit } from "../middleware/rateLimit";
 import { prisma } from "../config/db";
 import { authenticateAdmin, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
 // POST /api/admin/login
-router.post("/login", async (req: Request, res: Response) => {
+router.post("/login", rateLimit({ windowMs: 15 * 60 * 1000, max: 10 }), async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 

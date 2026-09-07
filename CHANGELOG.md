@@ -34,6 +34,15 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
   `config/env.ts` throws at import when `NODE_ENV=production` and the
   secret is unset or still the dev string that is in git.
 
+- **`POST /api/admin/login` is rate-limited**: 10 attempts per IP per
+  15 minutes, then `429` with `Retry-After`. In-memory, single process
+  (`middleware/rateLimit.ts`).
+- **`videoFilename` and `candidatePhoto` are validated at submit.** The
+  filename must be a bare `*.webm` basename; the photo must be an image
+  data URL. A crafted body can no longer store a path for the admin UI to
+  fetch. The video upload also ignores the client's extension and always
+  writes `.webm`.
+
 ### Fixed
 
 - **The results screen now shows the server's verdict.** `Exam.tsx`

@@ -22,7 +22,7 @@ const videoStorage = multer.diskStorage({
     cb(null, videosDir);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".webm";
+    const ext = ".webm"; // the frontend only ever records webm; never trust originalname
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(null, `proctor-video-${uniqueSuffix}${ext}`);
   },
