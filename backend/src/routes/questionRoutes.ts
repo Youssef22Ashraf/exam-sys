@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
+import { parseJsonColumn } from "../services/validation";
 import { authenticateAdmin, optionalAdmin, requireRole, AuthRequest } from "../middleware/auth";
 import { QUESTIONS } from "../config/defaultQuestions";
 
@@ -22,7 +23,7 @@ router.get("/", optionalAdmin, async (req: AuthRequest, res: Response) => {
       section: q.section,
       sectionTitle: q.sectionTitle,
       question: q.question,
-      options: JSON.parse(q.options),
+      options: parseJsonColumn<string[]>(q.options, []),
       ...(isAdmin ? { correctAnswer: q.correctAnswer } : {}),
     }));
 
@@ -70,7 +71,7 @@ router.post("/", authenticateAdmin, async (req: Request, res: Response) => {
       section: created.section,
       sectionTitle: created.sectionTitle,
       question: created.question,
-      options: JSON.parse(created.options),
+      options: parseJsonColumn<string[]>(created.options, []),
       correctAnswer: created.correctAnswer,
     });
   } catch (error) {
@@ -101,7 +102,7 @@ router.put("/:id", authenticateAdmin, async (req: Request, res: Response) => {
       section: updated.section,
       sectionTitle: updated.sectionTitle,
       question: updated.question,
-      options: JSON.parse(updated.options),
+      options: parseJsonColumn<string[]>(updated.options, []),
       correctAnswer: updated.correctAnswer,
     });
   } catch (error) {
@@ -148,7 +149,7 @@ router.post("/reset", authenticateAdmin, requireRole("SUPERADMIN"), async (_req:
       section: q.section,
       sectionTitle: q.sectionTitle,
       question: q.question,
-      options: JSON.parse(q.options),
+      options: parseJsonColumn<string[]>(q.options, []),
       correctAnswer: q.correctAnswer,
     }));
     return res.json(formatted);

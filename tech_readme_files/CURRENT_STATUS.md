@@ -59,7 +59,21 @@ Listed in priority order; all are `TODO.md` Phase 8.
 3. ~~**`CORS_ORIGIN` is decorative.**~~ Closed on `fix/cors-and-jwt-boot-guard`:
    applied to HTTP and sockets; production boot fails on the fallback JWT secret.
 4. **No tests, no CI.** A regression in scoring or camera release would
-   only be caught by a human.
+   only be caught by a human. Still open — `TODO.md` §Tests, Phase 5 of the
+   hardening branch.
+5. ~~**The answer key was public.**~~ Closed on `feat/hardening-1-integrity`
+   (ADR 008): `correctAnswer` is withheld from any caller without an admin JWT
+   and no longer ships in the client bundle.
+6. ~~**Proctoring was self-reported.**~~ Closed on the same branch: the server
+   owns the exam clock and the warning count via `ExamSession`.
+7. ~~**The admin password shipped in the client bundle.**~~ Closed on
+   `feat/hardening-2-access`, along with the public `/uploads` mount,
+   unauthenticated Socket.IO PII broadcast, and the committed JWT secret.
+
+> **Unverified and consequential**: nobody has confirmed that a Railway
+> redeploy preserves `/app/backend/prisma/dev.db` and `/app/backend/uploads`.
+> The README previously called the database volume optional. Until a redeploy
+> is done and checked, treat production data as at risk on every deploy.
 
 ## Quality gate
 

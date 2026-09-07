@@ -19,7 +19,7 @@ Two npm packages in one repo, one process in production.
 
 ```
 backend/                     Express 4 + TypeScript + Prisma 5 + Socket.io
-├── prisma/schema.prisma     Candidate · Question · ExamAttempt · ExamSetting · AdminUser · ExamSession
+├── prisma/schema.prisma     Candidate · Question · ExamAttempt · ExamSetting · AdminUser · ExamSession (all indexed)
 ├── prisma/seed.ts           40 questions + admin users (ADMIN_INITIAL_PASSWORD) + default settings
 └── src/
     ├── index.ts             app + http server + Socket.io + static SPA + /api/* mounts
@@ -32,7 +32,9 @@ backend/                     Express 4 + TypeScript + Prisma 5 + Socket.io
         ├── scoring.ts       pure (questions, answers, passMark) -> ScoreResult
         ├── examSession.ts   server-owned sitting: clock, warning count, derived proctoring status
         ├── cooldown.ts      shared by check-cooldown and submit
-        ├── candidateIdentity.ts / validation.ts   shared by candidateRoutes and examRoutes
+        ├── proctorFiles.ts  deleteRecordings() — unlink a .webm when its row goes
+        ├── validation.ts    email format + parseJsonColumn (never bare JSON.parse)
+        ├── candidateIdentity.ts   shared by candidateRoutes and examRoutes
         └── emailService.ts  nodemailer; recipients = ExamSetting.notifyEmail || ADMIN_ALERT_EMAIL
 
 frontend/                    React 19 + Vite + TypeScript, no router lib, no state lib
@@ -119,6 +121,12 @@ path not under `/api`, `/uploads`, or `/socket.io`. One port (5000).
 - **Icons are `<Icon name="…" />` from `components/Icon.tsx`**, inline SVG
   on `currentColor`. No emoji in JSX, strings, or docs. A new glyph is a
   new path in that file, not a library.
+- **Persistent state lives in two places** and both must be on a mounted
+  volume in production: `backend/prisma/dev.db` (Prisma resolves a relative
+  `DATABASE_URL` against the schema directory, *not* cwd) and
+  `backend/uploads/`. The server logs both resolved paths at boot — check them
+  against the deploy's mounts. `docker-compose.yml` uses different container
+  paths because `backend/Dockerfile` sets a different `WORKDIR`.
 - **No credentials in tracked files.** No password, JWT secret or SMTP
   password as a literal in code, README, or compose. `config/env.ts` refuses
   to boot production on a secret published in this repo, and the client has no

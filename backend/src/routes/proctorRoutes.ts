@@ -3,9 +3,14 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { prisma } from "../config/db";
+import { rateLimit } from "../middleware/rateLimit";
 import { authenticateAdmin } from "../middleware/auth";
 
 const router = Router();
+
+// Candidate-facing and unauthenticated, so there is no token to throttle on.
+// These were entirely unlimited while doing real database and disk work.
+const publicLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 60 });
 
 // Ensure upload directories exist
 const uploadBaseDir = path.resolve(__dirname, "../../uploads");
@@ -85,7 +90,7 @@ async function requireOpenSession(req: Request, res: Response, next: NextFunctio
 }
 
 // POST /api/proctor/upload-video
-router.post("/upload-video", requireOpenSession, videoUpload.single("video"), async (req: Request, res: Response) => {
+router.post("/upload-video", publicLimit, requireOpenSession, videoUpload.single("video"), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No video file provided." });
@@ -111,7 +116,7 @@ router.post("/upload-video", requireOpenSession, videoUpload.single("video"), as
 });
 
 // POST /api/proctor/upload-snapshot
-router.post("/upload-snapshot", requireOpenSession, snapshotUpload.single("photo"), async (req: Request, res: Response) => {
+router.post("/upload-snapshot", publicLimit, requireOpenSession, snapshotUpload.single("photo"), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: "No image file provided." });
@@ -148,6 +153,28 @@ router.get("/snapshot/:filename", authenticateAdmin, (req: Request, res: Respons
   }
 });
 
+/**
+ * Pipe a file to the response with an error listener attached.
+ *
+ * A read stream that fails after writeHead emits `error` asynchronously, so it
+ * escapes the surrounding try/catch and, with no listener, becomes an
+ * unhandled `error` event — which takes the process down. Headers are already
+ * sent by then, so the only thing left to do is log and destroy the response.
+ */
+function pipeWithErrorHandling(
+  stream: fs.ReadStream,
+  res: Response,
+  label: string
+): void {
+  stream.on("error", (err) => {
+    console.error(`Stream error while sending ${path.basename(label)}:`, err);
+    res.destroy();
+  });
+  // Stop reading if the client goes away mid-download.
+  res.on("close", () => stream.destroy());
+  stream.pipe(res);
+}
+
 // GET /api/proctor/video/:filename - Stream video with HTTP 206 Range headers
 router.get("/video/:filename", authenticateAdmin, (req: Request, res: Response) => {
   try {
@@ -163,9 +190,39 @@ router.get("/video/:filename", authenticateAdmin, (req: Request, res: Response) 
     const range = req.headers.range;
 
     if (range) {
+      // `parseInt` on the raw header gave NaN for `bytes=abc-`, and `end` was
+      // never clamped, so `bytes=99999999-` produced a negative chunk size and
+      // an invalid Content-Length. Anything unparseable is refused with a 416.
       const parts = range.replace(/bytes=/, "").split("-");
-      const start = parseInt(parts[0], 10);
-      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      let start: number;
+      let requestedEnd: number;
+
+      if (parts[0] === "" && parts[1]) {
+        // Suffix range: `bytes=-500` means the last 500 bytes.
+        const suffix = Number.parseInt(parts[1], 10);
+        start = Number.isNaN(suffix) ? NaN : Math.max(0, fileSize - suffix);
+        requestedEnd = fileSize - 1;
+      } else {
+        start = Number.parseInt(parts[0], 10);
+        requestedEnd = parts[1] ? Number.parseInt(parts[1], 10) : fileSize - 1;
+      }
+
+      if (
+        Number.isNaN(start) ||
+        start < 0 ||
+        start >= fileSize ||
+        Number.isNaN(requestedEnd)
+      ) {
+        res.setHeader("Content-Range", `bytes */${fileSize}`);
+        return res.status(416).json({ error: "Requested range not satisfiable." });
+      }
+
+      const end = Math.min(requestedEnd, fileSize - 1);
+      if (end < start) {
+        res.setHeader("Content-Range", `bytes */${fileSize}`);
+        return res.status(416).json({ error: "Requested range not satisfiable." });
+      }
+
       const chunkSize = end - start + 1;
       const file = fs.createReadStream(videoPath, { start, end });
 
@@ -175,13 +232,13 @@ router.get("/video/:filename", authenticateAdmin, (req: Request, res: Response) 
         "Content-Length": chunkSize,
         "Content-Type": "video/webm",
       });
-      return file.pipe(res);
+      return pipeWithErrorHandling(file, res, videoPath);
     } else {
       res.writeHead(200, {
         "Content-Length": fileSize,
         "Content-Type": "video/webm",
       });
-      return fs.createReadStream(videoPath).pipe(res);
+      return pipeWithErrorHandling(fs.createReadStream(videoPath), res, videoPath);
     }
   } catch (error) {
     console.error("Video streaming error:", error);
@@ -199,7 +256,10 @@ router.get("/download/:filename", authenticateAdmin, (req: Request, res: Respons
       return res.status(404).json({ error: "Video file not found." });
     }
 
-    const downloadName = (req.query.name as string) || filename;
+    // `?name=` landed in Content-Disposition unvalidated. Keep it to a plain
+    // basename so it cannot inject header syntax.
+    const requested = typeof req.query.name === "string" ? path.basename(req.query.name) : "";
+    const downloadName = /^[\w.\- ]{1,120}$/.test(requested) ? requested : filename;
     return res.download(videoPath, downloadName);
   } catch (error) {
     console.error("Video download error:", error);

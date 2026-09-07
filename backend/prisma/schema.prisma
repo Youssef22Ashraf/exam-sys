@@ -26,6 +26,10 @@ model Candidate {
 
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([registeredAt])
+  @@index([status])
 }
 
 model Question {
@@ -66,6 +70,16 @@ model ExamAttempt {
   attemptNumber     Int       @default(1)
 
   createdAt         DateTime  @default(now())
+
+  // Prisma does not create an index for a relation field on SQLite, so
+  // candidateId was an unindexed foreign key on the largest table -- used by
+  // every history lookup and every cascade delete.
+  @@index([candidateId])
+  // services/cooldown.ts filters on candidateEmail OR companyId and orders by
+  // submittedAt, on every register, check-cooldown and submit.
+  @@index([candidateEmail])
+  @@index([companyId])
+  @@index([submittedAt])
 }
 
 model ExamSetting {

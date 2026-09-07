@@ -47,5 +47,9 @@ RUN mkdir -p /app/uploads/videos /app/uploads/snapshots
 
 EXPOSE 5000
 
+# /api/health is unauthenticated and does no database work.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||5000)+'/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+
 # Entrypoint: sync schema if needed and launch server
 CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
