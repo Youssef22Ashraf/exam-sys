@@ -15,7 +15,8 @@ exam-sys/
 │   │   │   ├── db.ts            the single PrismaClient
 │   │   ├── env.ts           JWT_SECRET (prod boot guard) and CORS_ORIGIN parsing
 │   │   │   └── defaultQuestions.ts   bank used by POST /api/questions/reset
-│   │   ├── middleware/auth.ts   authenticateAdmin (Bearer JWT)
+│   │   ├── middleware/auth.ts   authenticateAdmin (Bearer JWT or ?token=)
+│   │   ├── middleware/rateLimit.ts   in-memory per-IP limiter, login only
 │   │   ├── routes/              authRoutes · candidateRoutes · questionRoutes · examRoutes · proctorRoutes · settingRoutes
 │   │   └── services/emailService.ts
 │   ├── uploads/{videos,snapshots}/   gitignored, mounted as a volume in prod

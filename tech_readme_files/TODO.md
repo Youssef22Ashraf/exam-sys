@@ -99,8 +99,8 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
       unrelated 201. (fix/cooldown-at-submit)
 - [x] Apply `CORS_ORIGIN` to both `cors()` and the Socket.io `cors.origin`; keep `*` only when unset (fix/cors-and-jwt-boot-guard)
 - [x] Refuse to boot in production when `JWT_SECRET` is the fallback string (`config/env.ts`)
-- [ ] Rate-limit `POST /api/admin/login`
-- [ ] Validate `videoFilename` / `candidatePhoto` at submit are basenames (no `../`)
+- [x] Rate-limit `POST /api/admin/login` — 10 / 15 min / IP, in-memory (fix/login-rate-limit-and-filename-validation)
+- [x] Validate `videoFilename` / `candidatePhoto` at submit — `^[\w.-]+\.webm$` and `data:image/…;base64,`
 
 ### Correctness — do now
 
