@@ -23,9 +23,10 @@ No git tag yet.
 
 ## What is verified
 
-Verified means: the commit that landed it was built and walked by hand
-in a browser against the local backend. Nothing below has been driven by
-an automated test, because none exist.
+Verified means: the commit that landed it was built and walked by hand in a
+browser against the local backend. Since `feat/hardening-5-tests` the scoring,
+cooldown, auth, session and answer-key behaviours are also covered by 72
+automated tests.
 
 - Full candidate flow, register → results, with webcam on.
 - Server-side scoring matches the client preview.
@@ -58,9 +59,9 @@ Listed in priority order; all are `TODO.md` Phase 8.
    submit returns 403 inside the window, shared query with `check-cooldown`.
 3. ~~**`CORS_ORIGIN` is decorative.**~~ Closed on `fix/cors-and-jwt-boot-guard`:
    applied to HTTP and sockets; production boot fails on the fallback JWT secret.
-4. **No tests, no CI.** A regression in scoring or camera release would
-   only be caught by a human. Still open — `TODO.md` §Tests, Phase 5 of the
-   hardening branch.
+4. ~~**No tests, no CI.**~~ Closed on `feat/hardening-5-tests`: 72 tests
+   (54 backend, 18 frontend) and a GitHub Actions job running both `tsc`
+   gates, lint, both suites and the production build on every push.
 5. ~~**The answer key was public.**~~ Closed on `feat/hardening-1-integrity`
    (ADR 008): `correctAnswer` is withheld from any caller without an admin JWT
    and no longer ships in the client bundle.
@@ -78,8 +79,8 @@ Listed in priority order; all are `TODO.md` Phase 8.
 ## Quality gate
 
 ```bash
-cd backend && npx tsc --noEmit
-cd frontend && npx tsc -b
+cd backend  && npx tsc --noEmit && npm test
+cd frontend && npx tsc -b && npm run lint && npm test
 ```
 
 Run before calling any task done — see [`../CLAUDE.md`](../CLAUDE.md).

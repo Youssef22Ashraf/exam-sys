@@ -229,36 +229,47 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   return res.status(status).json({ error: message });
 });
 
-// Start Server
-httpServer.listen(PORT, async () => {
-  console.log(`Exam System Backend Server listening on port ${PORT}`);
-  console.log(`API Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`WebSocket Server: ws://localhost:${PORT}`);
-  if (frontendDist) {
-    console.log(`Public Web Application ready on http://localhost:${PORT}`);
-  }
+// Start Server.
+//
+// Guarded so `import app from "./index"` in a test does not bind a port. The
+// production entry (`node dist/index.js`) and `ts-node-dev src/index.ts` are
+// both the main module, so this is unchanged for them.
+function startServer() {
+  httpServer.listen(PORT, async () => {
+    console.log(`Exam System Backend Server listening on port ${PORT}`);
+    console.log(`API Health Check: http://localhost:${PORT}/api/health`);
+    console.log(`WebSocket Server: ws://localhost:${PORT}`);
+    if (frontendDist) {
+      console.log(`Public Web Application ready on http://localhost:${PORT}`);
+    }
 
-  // Print where persistent state actually lives, resolved to absolute paths.
-  //
-  // Nobody has yet confirmed that a Railway redeploy preserves these (see
-  // CURRENT_STATUS.md). Both must be on a mounted volume: the container
-  // filesystem is replaced on every deploy, so if either path is not backed by
-  // one, every candidate, result and recording is destroyed on the next push.
-  // Prisma resolves a relative SQLite path against the schema directory, not
-  // the working directory -- `file:./dev.db` is prisma/dev.db, not ./dev.db.
-  // Getting this wrong is how a volume ends up mounted at the wrong path.
-  const dbUrl = process.env.DATABASE_URL || "file:./dev.db";
-  const dbPath = dbUrl.startsWith("file:")
-    ? path.resolve(__dirname, "../prisma", dbUrl.slice("file:".length))
-    : dbUrl;
-  console.log(`Database:  ${dbPath}`);
-  console.log(`Uploads:   ${uploadsDir}`);
-  console.log("Both paths must be on a persistent volume, or a redeploy wipes them.");
+    // Print where persistent state actually lives, resolved to absolute paths.
+    //
+    // Nobody has yet confirmed that a Railway redeploy preserves these (see
+    // CURRENT_STATUS.md). Both must be on a mounted volume: the container
+    // filesystem is replaced on every deploy, so if either path is not backed
+    // by one, every candidate, result and recording is destroyed on the next
+    // push. Prisma resolves a relative SQLite path against the schema
+    // directory, not the working directory -- `file:./dev.db` is
+    // prisma/dev.db. Getting this wrong is how a volume ends up mounted at
+    // the wrong path.
+    const dbUrl = process.env.DATABASE_URL || "file:./dev.db";
+    const dbPath = dbUrl.startsWith("file:")
+      ? path.resolve(__dirname, "../prisma", dbUrl.slice("file:".length))
+      : dbUrl;
+    console.log(`Database:  ${dbPath}`);
+    console.log(`Uploads:   ${uploadsDir}`);
+    console.log("Both paths must be on a persistent volume, or a redeploy wipes them.");
 
-  // Automatically bootstrap database with questions, settings & admin credentials if empty
-  const { bootstrapDatabase } = await import("./config/bootstrap");
-  await bootstrapDatabase();
-});
+    // Bootstrap the database with questions, settings and admin accounts if empty
+    const { bootstrapDatabase } = await import("./config/bootstrap");
+    await bootstrapDatabase();
+  });
+}
+
+if (require.main === module) {
+  startServer();
+}
 
 /**
  * Process-level safety net.

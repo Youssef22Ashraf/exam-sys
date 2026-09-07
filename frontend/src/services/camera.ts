@@ -17,9 +17,14 @@ export function releaseCamera() {
         try {
           track.stop();
           track.enabled = false;
-        } catch {}
+        } catch {
+          // Best effort per track: one uncooperative track must not stop us
+          // releasing the rest. A missed stop leaves the webcam light on.
+        }
       });
-    } catch {}
+    } catch {
+      // Same: releasing the reference below matters more than this throw.
+    }
     activeCameraStream = null;
   }
 }

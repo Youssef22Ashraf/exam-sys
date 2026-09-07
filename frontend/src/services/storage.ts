@@ -496,7 +496,9 @@ export function notifyStorageChange(action: string): void {
   if (syncChannel) {
     try {
       syncChannel.postMessage({ action, timestamp: Date.now() });
-    } catch {}
+    } catch {
+      // Cross-tab sync is a convenience; a closed channel is not an error.
+    }
   }
   if (typeof window !== "undefined") {
     window.dispatchEvent(
