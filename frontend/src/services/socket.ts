@@ -10,8 +10,11 @@ export function getSocket(): Socket | null {
   if (typeof window === "undefined") return null;
 
   if (!socket) {
-    const SOCKET_URL =
-      window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
+    // Same host as the API: VITE_API_URL's origin in dev, the page origin in prod.
+    const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
+    const SOCKET_URL = apiUrl
+      ? new URL(apiUrl).origin
+      : window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
         ? window.location.origin
         : "http://localhost:5000";
 
