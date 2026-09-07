@@ -6,7 +6,8 @@ Section references (§) point at `plan.md`.
 
 **Rules**: one phase at a time, finished completely. A phase is done only
 when every box under it is ticked, backend `tsc --noEmit` is clean,
-frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
+frontend `tsc -b` is clean, `npm run lint` is clean, `npm test` passes in
+both packages, and `CHANGELOG.md` is updated.
 
 ---
 
@@ -212,15 +213,30 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
       dashboard; bundle 353 KB to 312 KB
 - [x] Dashboard refreshes from the API, not a 2-second localStorage re-read
 
-### Lint — never been green
+### Lint — green
 
-- [ ] Frontend `npm run lint`: 43 errors. Mostly `catch (err)` unused → `catch {}`, `any` in socket/api, empty blocks → add a comment. Until then the frontend gate is `tsc -b` only.
+- [x] Frontend `npm run lint`: **0 errors, 0 warnings** (was 43 errors). Two
+      thirds were the swallowed-error pattern removed in phases 1-4; the rest
+      were typed socket payloads, documented best-effort `catch {}` in the
+      camera teardown, an impure `Date.now()` in an admin render, and the
+      exam restore moved to lazy state. Lint is now part of the gate
+      (feat/hardening-5-tests)
 
-### Tests — none exist
+### Tests — 72 passing
 
-- [ ] Backend: vitest + supertest. First three: scoring in `submit`, cooldown boundary at exactly 48 h, `authenticateAdmin` rejects missing/expired token
-- [ ] Frontend: vitest + testing-library. First two: `ExamStorage.checkCandidateCooldown`, timer auto-submit
-- [ ] CI: one GitHub Actions job running both gates + tests on push
+- [x] Backend: vitest + supertest, 54 tests. Scoring; the 48-hour cooldown
+      boundary (clock frozen across write and read so "exactly 48 h" is exact);
+      `authenticateAdmin` against missing / malformed / expired /
+      foreign-signed tokens; `optionalAdmin`; `requireRole`; plus HTTP-level
+      regression guards for every hole closed on this branch
+- [x] Frontend: vitest + testing-library, 18 tests.
+      `ExamStorage.checkCandidateCooldown`, the cold-cache empty result, and
+      the exam timer (opens a sitting, persists a deadline not a countdown,
+      resumes it, auto-submits once passed)
+- [x] CI: `.github/workflows/ci.yml` runs both `tsc` gates, lint, both suites
+      and the production build on push and pull request, plus two artefact
+      assertions: no answer key in the built bundle, no known credential in a
+      tracked file
 
 ### Done outside the plan
 

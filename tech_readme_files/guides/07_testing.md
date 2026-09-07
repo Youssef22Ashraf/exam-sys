@@ -2,14 +2,49 @@
 
 # 07 — Testing
 
-**There are no automated tests.** The gate is compile + lint:
+The gate is compile, lint and test — all four commands:
 
 ```bash
-cd backend && npx tsc --noEmit
-cd frontend && npx tsc -b
+cd backend  && npx tsc --noEmit && npm test
+cd frontend && npx tsc -b && npm run lint && npm test
 ```
 
-## Manual smoke (do this before every deploy)
+`.github/workflows/ci.yml` runs exactly this on every push and pull request,
+plus the production build and two artefact assertions (no answer key in the
+built bundle, no known credential in a tracked file).
+
+## Automated tests
+
+72 tests, vitest in both packages. `npm test` runs once; `npm run test:watch`
+watches.
+
+**Backend** — `backend/tests/`, config in `backend/vitest.config.ts`.
+Integration tests use supertest against the Express app; `src/index.ts` only
+calls `listen()` when it is the main module, so importing it in a test binds
+no port. `tests/globalSetup.ts` builds a throwaway `prisma/test.db` and
+deletes it afterwards — the suite never touches `dev.db`.
+
+| File | Covers |
+| --- | --- |
+| `scoring.test.ts` | `scoreExam`: threshold, section split, string indexes, empty bank |
+| `cooldown.test.ts` | the 48-hour boundary, email-or-company matching (ADR 004), admin clears |
+| `auth.test.ts` | `authenticateAdmin`, `optionalAdmin`, `requireRole` |
+| `api.test.ts` | HTTP-level regression guards for the hardening work (ADR 008) |
+
+**Frontend** — colocated `*.test.ts(x)`, config in `frontend/vitest.config.ts`,
+jsdom plus testing-library. `src/test/setup.ts` stubs `mediaDevices` and
+`MediaRecorder`, which jsdom does not provide.
+
+| File | Covers |
+| --- | --- |
+| `services/storage.test.ts` | `checkCandidateCooldown`, and that a cold cache returns empty |
+| `pages/Exam.test.tsx` | the timer: opens a sitting, stores a deadline, resumes it, auto-submits |
+
+Writing a new one: prefer a pure function in `services/` over a route handler
+— that is why `scoring.ts`, `cooldown.ts` and `examSession.ts` exist as
+services rather than inline route code.
+
+## Manual smoke (still do this before every deploy)
 
 1. Fresh DB: `rm backend/prisma/dev.db && cd backend && npx prisma db push && npm run seed`.
 2. Register with a new email + ID → instructions → exam. Confirm webcam light on.

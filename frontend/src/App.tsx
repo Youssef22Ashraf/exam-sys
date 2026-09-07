@@ -38,9 +38,40 @@ interface UserData {
 /** Marks an exam the candidate has actually started, so a refresh can resume it. */
 const ACTIVE_EXAM_KEY = "exam_active_candidate";
 
+/**
+ * The candidate of an exam still in progress, or null.
+ *
+ * `page` and `userData` are component state, so a mid-exam refresh used to
+ * drop the candidate on the marketing hero: the answer draft survived but was
+ * only reachable by re-registering with the identical email, which the
+ * cooldown check could refuse outright. The sitting id is the marker --
+ * Exam.tsx clears it on a successful submit, so a restored exam is always one
+ * that was genuinely still running.
+ */
+function readExamInProgress(): UserData | null {
+  try {
+    const raw = sessionStorage.getItem(ACTIVE_EXAM_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as UserData;
+    if (!saved?.email) return null;
+    if (!sessionStorage.getItem(`exam_sid_${saved.email}`)) {
+      // The sitting was submitted; nothing to resume.
+      sessionStorage.removeItem(ACTIVE_EXAM_KEY);
+      return null;
+    }
+    return saved;
+  } catch (err) {
+    console.warn("Could not restore the exam in progress:", err);
+    return null;
+  }
+}
+
 function App() {
-  const [page, setPage] = useState("home");
-  const [userData, setUserData] = useState<UserData | null>(null);
+  // Restored once, during the first render, rather than by a mount effect
+  // that immediately calls setState.
+  const [restoredExam] = useState(readExamInProgress);
+  const [page, setPage] = useState(restoredExam ? "exam" : "home");
+  const [userData, setUserData] = useState<UserData | null>(restoredExam);
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
 
   // Synchronize latest exam settings & questions from backend on launch
@@ -60,32 +91,6 @@ function App() {
         }
       })
       .catch((err) => console.warn("Could not sync the question bank:", err));
-  }, []);
-
-  // Restore an exam that is still in progress.
-  //
-  // `page` and `userData` are component state, so a mid-exam refresh dropped
-  // the candidate on the marketing hero. The answer draft survived in
-  // sessionStorage but was only reachable by re-registering with the identical
-  // email, which the cooldown check could refuse outright. The sitting id is
-  // the marker: `Exam.tsx` clears it on a successful submit, so a restored
-  // exam is always one that was genuinely still running.
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(ACTIVE_EXAM_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw) as UserData;
-      if (!saved?.email) return;
-      if (!sessionStorage.getItem(`exam_sid_${saved.email}`)) {
-        // The sitting was submitted; nothing to resume.
-        sessionStorage.removeItem(ACTIVE_EXAM_KEY);
-        return;
-      }
-      setUserData(saved);
-      setPage("exam");
-    } catch (err) {
-      console.warn("Could not restore the exam in progress:", err);
-    }
   }, []);
 
   // Dedicated route listener for Admin Portal:

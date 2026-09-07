@@ -57,6 +57,17 @@ function handleUnauthorized(): void {
 }
 
 /** An admin mutation the server refused. Never silently applied locally. */
+/** A registration the server refused: a cooldown or an identity conflict. */
+export class RegistrationRefusedError extends Error {
+  readonly detail: unknown;
+  constructor(message: string, detail: unknown) {
+    super(message);
+    this.name = "RegistrationRefusedError";
+    this.detail = detail;
+  }
+}
+
+/** An admin mutation the server refused. Never silently applied locally. */
 export class AdminActionError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {
@@ -166,7 +177,7 @@ export const api = {
         storage.saveCandidates(data);
         return data;
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, using local candidates cache.");
     }
     return storage.getCandidates();
@@ -193,12 +204,15 @@ export const api = {
         }
       } else if (res.status === 403 || res.status === 409) {
         const errData = await res.json();
-        const err: any = new Error(errData.message || "Registration conflict or cooldown is active.");
-        err.cooldown = errData;
-        throw err;
+        throw new RegistrationRefusedError(
+          errData.message || "Registration conflict or cooldown is active.",
+          errData
+        );
       }
-    } catch (err: any) {
-      if (err.cooldown) throw err;
+    } catch (err) {
+      // A refusal is the server's decision and must reach the page; only a
+      // transport failure falls back to the local cache.
+      if (err instanceof RegistrationRefusedError) throw err;
       console.warn("Backend unavailable, registering candidate locally.");
     }
     const local = storage.saveCandidate({
@@ -252,7 +266,7 @@ export const api = {
       if (res.ok) {
         return await res.json();
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, clearing cooldown locally.");
     }
     return { success: true };
@@ -281,7 +295,7 @@ export const api = {
       if (res.ok) {
         return await res.json();
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, computing history locally.");
     }
     const candidate = storage.getCandidates().find((c) => c.id === id) || null;
@@ -303,7 +317,7 @@ export const api = {
         storage.saveQuestions(data);
         return data;
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, using local questions cache.");
     }
     return storage.getQuestions();
@@ -327,7 +341,7 @@ export const api = {
         notifyStorageChange("questions");
         return saved;
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, saving question locally.");
     }
     const saved = storage.saveQuestion(q);
@@ -369,7 +383,7 @@ export const api = {
           return data;
         }
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, resetting questions locally.");
     }
     const defaults = storage.resetQuestions();
@@ -512,7 +526,7 @@ export const api = {
         storage.saveResults(data);
         return data;
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, using local exam results cache.");
     }
     return storage.getResults();
@@ -526,7 +540,7 @@ export const api = {
       if (res.ok) {
         return await res.json();
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, finding result locally.");
     }
     return storage.getResults().find((r) => r.id === id) || null;
@@ -555,7 +569,7 @@ export const api = {
         storage.saveSettings(data);
         return data;
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, using local settings cache.");
     }
     return storage.getSettings();
@@ -575,7 +589,7 @@ export const api = {
         notifyStorageChange("settings");
         return saved;
       }
-    } catch (err) {
+    } catch {
       console.warn("Backend unavailable, saving settings locally.");
     }
     const current = storage.getSettings();
@@ -601,7 +615,7 @@ export const api = {
         body: JSON.stringify({ email }),
       });
       return await res.json();
-    } catch (err: any) {
+    } catch {
       return {
         success: false,
         error: "Backend server is unavailable to test email delivery.",

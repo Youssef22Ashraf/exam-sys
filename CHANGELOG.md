@@ -211,6 +211,26 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 - `config/bootstrap.ts` contained invalid UTF-8 bytes in four log strings
   (rendering as `����` and `d~s`); rewritten. Question bootstrap uses one
   `createMany` instead of 40 sequential inserts.
+- **Letting the exam clock lapse and reloading granted a fresh 30 minutes.**
+  The deadline was only restored from `sessionStorage` if it was still in the
+  future, so an expired one fell through to a new full-length deadline. Found
+  by the auto-submit test. A lapsed deadline now means the exam is over.
+- **Auto-submit could fire before the sitting existed**, producing a request
+  the server was always going to refuse with `SESSION_REQUIRED`. It now waits
+  for `POST /api/exam/start` to land.
+- **Frontend lint is green for the first time**: 43 errors to 0, and 0
+  warnings. Roughly two thirds were the swallowed-error pattern removed in
+  earlier phases. The rest: `registerCandidate` no longer builds an
+  `any`-typed error with an ad-hoc property (a typed `RegistrationRefusedError`
+  instead), socket payloads are typed once rather than `any` at seven call
+  sites, deliberate best-effort `catch {}` blocks in the camera teardown paths
+  say why they are empty, `Date.now()` is no longer called during an admin
+  render (the cooldown countdown only refreshed when something unrelated
+  re-rendered), and the exam-in-progress restore is a lazy initial state
+  rather than a mount effect that immediately calls `setState`. Four
+  `set-state-in-effect` exceptions remain, each with its reason.
+- Removed the abandoned empty `test/` scaffolding at the repo root; tests live
+  in each package.
 
 ### Changed
 
@@ -293,6 +313,35 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
   `prefers-reduced-motion`. Every hard-coded colour in
   `AdminDashboard.css`, `AdminDashboard.tsx` (105 inline literals),
   `AdminLogin.tsx`, and `styles.css` is now a token.
+- **A test suite and CI, where there were none.** 72 tests: 54 backend
+  (vitest + supertest) and 18 frontend (vitest + testing-library + jsdom).
+  `.github/workflows/ci.yml` runs both `tsc` gates, lint, both suites and the
+  production build on every push and pull request.
+  - Backend: `scoreExam` (pass threshold, section split, string indexes from a
+    JSON body, empty bank); the 48-hour cooldown boundary with the clock
+    frozen across the write and the read, so "exactly 48 hours" is exact;
+    `authenticateAdmin` against a missing, malformed, expired and
+    foreign-signed token; `optionalAdmin`; `requireRole`.
+  - Regression guards for the holes closed on this branch:
+    `GET /api/questions` withholds `correctAnswer` from an anonymous caller and
+    from a bad token but returns it to an admin; submit refuses a missing,
+    unknown, mismatched and replayed session; the server's score overrides a
+    client-supplied one; `proctoringStatus` is derived, not trusted;
+    `timeSpentSeconds` comes from the server clock; role enforcement on the
+    destructive routes; uploads require an open sitting; `/uploads` is not
+    served statically; a public identity conflict does not name the matching
+    record; CSV formula injection is neutralised.
+  - Frontend: `ExamStorage.checkCandidateCooldown` (boundary, email-or-company
+    matching, identity conflicts) and that a cold cache returns empty rather
+    than inventing records; the exam timer opens a sitting, persists a
+    deadline rather than a countdown, resumes a saved deadline, and
+    auto-submits once it has passed.
+  - Two CI assertions at the artefact level: no `correctAnswer` values in the
+    built bundle, and no known credential in a tracked file.
+- New dev dependencies, per the AGENTS.md rule: `vitest` in both packages
+  (pinned to 2.x in the backend, whose `@types/node` matches its Node 20
+  runtime), `supertest` and `@types/supertest`, and `jsdom` plus
+  `@testing-library/react`, `/dom` and `/jest-dom`. `npm test` in each package.
 
 ### Security
 

@@ -164,9 +164,9 @@ path not under `/api`, `/uploads`, or `/socket.io`. One port (5000).
 cd backend && npm install && npx prisma db push && npm run seed && npm run dev   # :5000
 # frontend
 cd frontend && npm install && npm run dev                                       # :5173, proxies nothing — api.ts targets :5000 directly
-# quality gate (no tests yet)
-cd backend && npx tsc --noEmit
-cd frontend && npx tsc -b        # lint has 42 pre-existing errors, see TODO.md §Lint
+# quality gate
+cd backend && npx tsc --noEmit && npm test
+cd frontend && npx tsc -b && npm run lint && npm test
 # production image
 docker build -t exam-sys . && docker run -p 5000:5000 --env-file backend/.env exam-sys
 ```

@@ -21,10 +21,11 @@ export function getSocket(): Socket | null {
     // An admin token, when present, puts this socket in the server's `admins`
     // room — the only place admin:* events are delivered. A candidate connects
     // without one and can emit but not listen in.
-    let token: string | null = null;
+    let token: string | null;
     try {
       token = sessionStorage.getItem("adminToken");
     } catch {
+      // Private-mode storage can throw on read.
       token = null;
     }
 
@@ -64,8 +65,38 @@ export function reconnectSocket(): void {
   getSocket();
 }
 
+/**
+ * Socket payloads, typed once. These were `any` at seven call sites, so a
+ * field rename on the server surfaced as undefined in a toast rather than a
+ * compile error. The server stamps `timestamp` on every admin:* event.
+ */
+export interface CandidateIdentityPayload {
+  candidateName: string;
+  candidateEmail: string;
+  companyId: string;
+  timestamp?: string;
+}
+
+/** A start carries identity only. */
+export type AdminCandidateStartedPayload = CandidateIdentityPayload;
+
+export interface AdminCandidateWarningPayload extends CandidateIdentityPayload {
+  warningType: string;
+  totalWarnings: number;
+}
+
+export interface AdminExamSubmittedPayload extends CandidateIdentityPayload {
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  isPassed: boolean;
+}
+
+/** Anything this client emits. */
+type EmitPayload = Record<string, unknown>;
+
 export const socketService = {
-  emit(type: string, data: any) {
+  emit(type: string, data: EmitPayload) {
     try {
       const s = getSocket();
       if (s && s.connected) {
@@ -115,9 +146,9 @@ export const socketService = {
     this.emit("candidate:submitted", data);
   },
 
-  onAdminExamSubmitted(callback: (data: any) => void) {
+  onAdminExamSubmitted(callback: (data: AdminExamSubmittedPayload) => void) {
     const s = getSocket();
-    const handleEvent = (data: any) => callback(data);
+    const handleEvent = (data: AdminExamSubmittedPayload) => callback(data);
 
     if (s) {
       s.on("admin:exam_submitted", handleEvent);
@@ -142,9 +173,9 @@ export const socketService = {
     };
   },
 
-  onAdminCandidateWarning(callback: (data: any) => void) {
+  onAdminCandidateWarning(callback: (data: AdminCandidateWarningPayload) => void) {
     const s = getSocket();
-    const handleEvent = (data: any) => callback(data);
+    const handleEvent = (data: AdminCandidateWarningPayload) => callback(data);
 
     if (s) {
       s.on("admin:candidate_warning", handleEvent);
@@ -169,9 +200,9 @@ export const socketService = {
     };
   },
 
-  onAdminCandidateStarted(callback: (data: any) => void) {
+  onAdminCandidateStarted(callback: (data: AdminCandidateStartedPayload) => void) {
     const s = getSocket();
-    const handleEvent = (data: any) => callback(data);
+    const handleEvent = (data: AdminCandidateStartedPayload) => callback(data);
 
     if (s) {
       s.on("admin:candidate_started", handleEvent);

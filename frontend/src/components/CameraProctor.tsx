@@ -110,7 +110,10 @@ export function CameraProctor({
     ) {
       try {
         mediaRecorderRef.current.stop();
-      } catch {}
+      } catch {
+        // Already stopping or in a bad state; the track teardown below is
+        // what actually turns the camera off.
+      }
     }
     // 2. Stop all camera media tracks immediately
     if (streamRef.current) {
@@ -119,7 +122,9 @@ export function CameraProctor({
           track.stop();
           track.enabled = false;
         });
-      } catch {}
+      } catch {
+        // releaseCamera() below is the global safety net.
+      }
       streamRef.current = null;
     }
     // 3. Clear video element source
@@ -132,6 +137,9 @@ export function CameraProctor({
   }, []);
 
   useEffect(() => {
+    // startCamera awaits getUserMedia before setting any state. Acquiring
+    // hardware is a side effect and belongs in an effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     startCamera();
 
     const handleWindowUnload = () => {
@@ -150,7 +158,9 @@ export function CameraProctor({
       ) {
         try {
           mediaRecorderRef.current.stop();
-        } catch {}
+        } catch {
+          // Unmount path; nothing useful to do if the recorder is already gone.
+        }
       }
       // Clean up media tracks
       if (streamRef.current) {

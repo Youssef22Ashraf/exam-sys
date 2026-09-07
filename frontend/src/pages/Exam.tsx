@@ -73,7 +73,9 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.currentQuestion === "number") return parsed.currentQuestion;
       }
-    } catch {}
+    } catch {
+      // A corrupt draft falls back to the default below.
+    }
     return 0;
   });
 
@@ -84,7 +86,9 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         const parsed = JSON.parse(saved);
         if (parsed.selectedAnswers) return parsed.selectedAnswers;
       }
-    } catch {}
+    } catch {
+      // A corrupt draft falls back to no answers.
+    }
     return {};
   });
 
@@ -102,7 +106,11 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       const saved = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (typeof parsed.deadline === "number" && parsed.deadline > Date.now()) {
+        // Accepted even if it has already passed: a lapsed deadline means the
+        // exam is over and must auto-submit. Requiring it to be in the future
+        // handed a candidate a fresh 30 minutes for letting the clock run out
+        // and reloading.
+        if (typeof parsed.deadline === "number") {
           return parsed.deadline;
         }
         // A session saved by the old countdown format: convert once.
@@ -127,7 +135,10 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.tabSwitches === "number") return parsed.tabSwitches;
       }
-    } catch {}
+    } catch {
+      // A corrupt draft falls back to zero warnings; the server keeps its own
+      // count either way (services/examSession.ts).
+    }
     return 0;
   });
 
@@ -349,7 +360,8 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     return () => {
       releaseCamera();
     };
-  }, []);
+    // Announced once per candidate; userData does not change mid-exam.
+  }, [userData]);
 
   function confirmSubmit() {
     setShowSubmitModal(true);
@@ -361,7 +373,15 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     }
 
     if (timeLeft <= 0) {
-      submitExam();
+      // Without a sitting the server refuses the submit outright, so wait for
+      // POST /api/exam/start to land rather than firing a doomed request. A
+      // failure to open one already surfaces its own retry banner.
+      if (sessionId) {
+        // The timer reaching zero must submit -- that is the auto-submit
+        // requirement -- and `submitted` guards re-entry.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        submitExam();
+      }
       return;
     }
 
@@ -372,14 +392,20 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, submitted, deadline]);
+    // submitExam is re-created every render; listing it would tear down and
+    // rebuild the interval each tick. `submitted` and `sessionId` are what
+    // actually gate the call above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft, submitted, deadline, sessionId]);
 
   // Continuously persist active session to sessionStorage
   useEffect(() => {
     if (submitted) {
       try {
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
-      } catch {}
+      } catch {
+        // Private-mode storage can refuse; the draft is stale, not harmful.
+      }
       return;
     }
 

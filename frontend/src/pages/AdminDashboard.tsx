@@ -66,6 +66,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     let isMounted = true;
     let currentObjectUrl: string | null = null;
     if (!selectedResult) {
+      // Releasing the object URL when the modal closes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadedVideoUrl(null);
       return;
     }
@@ -145,6 +147,10 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   // so a 401 or 403 still looked like success and the row came back on the
   // next sync.
   const [adminError, setAdminError] = useState<string | null>(null);
+  // Calling Date.now() during render is impure: the cooldown countdown only
+  // refreshed when something unrelated re-rendered. Ticked alongside the
+  // periodic server refresh below.
+  const [now, setNow] = useState(() => Date.now());
   const [liveSocketToast, setLiveSocketToast] = useState<{
     message: string;
     type: "info" | "warning" | "success";
@@ -179,6 +185,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   }, []);
 
   useEffect(() => {
+    // refreshFromServer is async and only sets state once the requests
+    // resolve, so this cannot cascade renders; fetching on mount is the point.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshFromServer();
   }, [refreshFromServer]);
 
@@ -218,6 +227,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     // component and recomputed every filter. Sockets already push the events
     // that matter; this is just a slow safety net.
     const interval = setInterval(() => {
+      setNow(Date.now());
       refreshFromServer();
     }, 30000);
 
@@ -1973,7 +1983,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   : latestAttempt
                   ? new Date(latestAttempt.submittedAt).getTime()
                   : 0;
-                const timeSince = Date.now() - lastAttemptTime;
+                const timeSince = now - lastAttemptTime;
                 const isCooldownActive = lastAttemptTime > 0 && timeSince < 48 * 60 * 60 * 1000;
                 const remainingHours = Math.ceil((48 * 60 * 60 * 1000 - timeSince) / (1000 * 60 * 60));
                 const unlockTime = new Date(lastAttemptTime + 48 * 60 * 60 * 1000);
