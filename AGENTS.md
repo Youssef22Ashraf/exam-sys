@@ -89,6 +89,9 @@ path not under `/api`, `/uploads`, or `/socket.io`. One port (5000).
   stays on.
 - **Question bank is triplicated** (seed, defaultQuestions, storage
   INITIAL_QUESTIONS). Change all three or none. See `CLAUDE.md`.
+- **Icons are `<Icon name="…" />` from `components/Icon.tsx`**, inline SVG
+  on `currentColor`. No emoji in JSX, strings, or docs. A new glyph is a
+  new path in that file, not a library.
 - **No new dependencies** without a line in `CHANGELOG.md` saying why.
   The stack is intentionally small: no router, no state library, no ORM
   helpers, no UI kit.

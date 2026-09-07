@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from "react";
+import { Icon } from "../components/Icon";
 import {
   ExamStorage,
   type ExamResult,
@@ -371,7 +372,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      setSecurityToast("⚠️ Right-click context menu is restricted during this assessment.");
+      setSecurityToast("Right-click context menu is restricted during this assessment.");
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -381,13 +382,13 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         e.key === "F12"
       ) {
         e.preventDefault();
-        setSecurityToast("⚠️ Copying, source viewing, and developer tools are prohibited.");
+        setSecurityToast("Copying, source viewing, and developer tools are prohibited.");
       }
     };
 
     const handleCopy = (e: ClipboardEvent) => {
       e.preventDefault();
-      setSecurityToast("⚠️ Copying question text is prohibited.");
+      setSecurityToast("Copying question text is prohibited.");
     };
 
     window.addEventListener("contextmenu", handleContextMenu);
@@ -449,14 +450,14 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       {sessionResumed && (
         <div className="exam-session-resumed-banner">
           <span>
-            ✓ Active exam session restored. Your answers and remaining time are preserved.
+            <Icon name="check" /> Active exam session restored. Your answers and remaining time are preserved.
           </span>
           <button
             type="button"
             className="dismiss-banner-btn"
             onClick={() => setSessionResumed(false)}
           >
-            ✕
+            <Icon name="x" label="Dismiss" />
           </button>
         </div>
       )}
@@ -486,7 +487,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
           <div className="powered-by-tag">
-            <span className="powered-by-icon">⚡</span>
+            <span className="powered-by-icon"><Icon name="zap" /></span>
             <span className="powered-by-prefix">Powered by</span>
             <span className="powered-by-name">Eng. Youssef Ashraf</span>
           </div>
@@ -607,7 +608,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
               <span>Question {question.id}</span>
 
               {selectedAnswers[question.id] !== undefined && (
-                <span className="answered-label">✓ Answered</span>
+                <span className="answered-label"><Icon name="check" /> Answered</span>
               )}
             </div>
 
@@ -677,7 +678,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
                   questions.length - answeredCount > 0 ? "warning" : "success"
                 }`}
               >
-                {questions.length - answeredCount > 0 ? "⚠️" : "✓"}
+                {questions.length - answeredCount > 0 ? <Icon name="alert-triangle" size={28} /> : <Icon name="check" size={28} />}
               </div>
               <div>
                 <h3>
@@ -720,7 +721,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
             {questions.length - answeredCount > 0 ? (
               <div className="submit-notice-box warning">
-                <span className="notice-icon">⚠️</span>
+                <span className="notice-icon"><Icon name="alert-triangle" /></span>
                 <span>
                   You have <strong>{questions.length - answeredCount}</strong>{" "}
                   unanswered question
@@ -731,7 +732,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
               </div>
             ) : (
               <div className="submit-notice-box success">
-                <span className="notice-icon">✓</span>
+                <span className="notice-icon"><Icon name="check" /></span>
                 <span>
                   All <strong>{questions.length}</strong> questions answered!
                   Your exam will be graded immediately and your official results
@@ -756,7 +757,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
                   submitExam();
                 }}
               >
-                Submit Exam Now ✓
+                Submit Exam Now <Icon name="check" />
               </button>
             </div>
           </div>
@@ -785,7 +786,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
           <span>Mofarreh Group • Engineering & Construction Proctored Assessment</span>
         </div>
         <div className="powered-by-tag">
-          <span className="powered-by-icon">⚡</span>
+          <span className="powered-by-icon"><Icon name="zap" /></span>
           <span className="powered-by-prefix">Powered by</span>
           <span className="powered-by-name">Eng. Youssef Ashraf</span>
         </div>

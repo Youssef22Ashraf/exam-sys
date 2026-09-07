@@ -8,14 +8,19 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Added
 
-- **Dark theme for the admin portal.** A token layer at the top of
+- **Inline SVG icons replace every emoji in the UI.**
+  `components/Icon.tsx` holds 22 glyphs on a 24-grid, `currentColor`,
+  sized by `font-size`, no icon-library dependency. 88 emoji and symbol
+  glyphs across the admin dashboard, login, exam, results, registration,
+  camera panel, and hero were swapped for `<Icon name="…" />`. Emoji
+  inside plain strings (toasts, console lines) were removed rather than
+  replaced. Icon-only buttons carry `aria-label`.
+- **Design tokens for the admin portal.** A token layer at the top of
   `styles.css` (`--bg`, `--surface`, `--text`, `--primary`, semantic
-  soft/border pairs, shadows, focus ring) with a `[data-theme="dark"]`
-  palette. `hooks/useTheme.ts` sets the attribute on `<html>` while the
-  admin login or dashboard is mounted and removes it on unmount, so the
-  candidate portal always renders light. Toggle in the admin header;
-  choice persisted in `localStorage`, default follows
-  `prefers-color-scheme`.
+  soft/border pairs, shadows, focus ring). The dark palette and header
+  toggle that shipped with it in PR #10 were removed on `dev` the same
+  day in favour of a single light corporate theme; `hooks/useTheme.ts`
+  now only guarantees the attribute is absent.
 - **Admin dashboard UI pass.** Tabs are a sticky segmented control under
   the header; stat cards carry a colour accent and tabular numerals;
   tables get sticky headers, zebra rows, hover highlight, and a 70vh

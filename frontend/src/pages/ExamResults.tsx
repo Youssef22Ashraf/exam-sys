@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Icon } from "../components/Icon";
 import { ExamStorage, type ExamResult } from "../services/storage";
 import { releaseCamera } from "../services/camera";
 import "./ExamResults.css";
@@ -51,7 +52,7 @@ function ExamResults({
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           <div className="powered-by-tag">
-            <span className="powered-by-icon">⚡</span>
+            <span className="powered-by-icon"><Icon name="zap" /></span>
             <span className="powered-by-prefix">Powered by</span>
             <span className="powered-by-name">Eng. Youssef Ashraf</span>
           </div>
@@ -68,7 +69,7 @@ function ExamResults({
           className={`result-hero-card ${result.isPassed ? "passed" : "failed"}`}
         >
           <div className="status-icon-circle">
-            {result.isPassed ? "✓" : "!"}
+            {result.isPassed ? <Icon name="check" size={36} strokeWidth={2.5} /> : <Icon name="alert-triangle" size={36} strokeWidth={2.5} />}
           </div>
 
           <h1>
@@ -154,7 +155,7 @@ function ExamResults({
                 <span>
                   {result.attemptNumber && result.attemptNumber > 1 ? (
                     <strong style={{ color: "#d97706" }}>
-                      🔁 Attempt #{result.attemptNumber} (Re-attempt)
+                      <Icon name="repeat" /> Attempt #{result.attemptNumber} (Re-attempt)
                     </strong>
                   ) : (
                     <span>Attempt #1</span>
@@ -179,8 +180,8 @@ function ExamResults({
                   }}
                 >
                   {result.proctoringStatus === "Warnings"
-                    ? `⚠️ ${result.tabSwitches || 0} Tab Switch Warning(s)`
-                    : "✓ Verified & Monitored"}
+                    ? <><Icon name="alert-triangle" /> {result.tabSwitches || 0} Tab Switch Warning(s)</>
+                      : <><Icon name="check" /> Verified & Monitored</>}
                 </span>
               </div>
               {result.candidatePhoto && (
@@ -286,12 +287,12 @@ function ExamResults({
         >
           {result.isPassed ? (
             <div>
-              <strong>✓ Verification Recorded:</strong> Your assessment submission
+              <strong><Icon name="check" /> Verification Recorded:</strong> Your assessment submission
               has been recorded and securely transmitted to administration. Your site supervisor or proctor will review your assessment record.
             </div>
           ) : (
             <div>
-              <strong>⚠️ Retest Notice:</strong> Candidates who score below {passingScore}%
+              <strong><Icon name="alert-triangle" /> Retest Notice:</strong> Candidates who score below {passingScore}%
               must complete an orientation review before re-attempting the
               assessment. Please consult your supervisor.
             </div>
@@ -314,7 +315,7 @@ function ExamResults({
             alignItems: "flex-start",
           }}
         >
-          <span style={{ fontSize: "22px" }}>⏱️</span>
+          <span style={{ fontSize: "22px" }}><Icon name="clock" /></span>
           <div>
             <strong style={{ display: "block", fontSize: "14px", marginBottom: "4px", color: "#1e3a8a" }}>
               48-Hour Re-attempt Policy Notice
@@ -352,7 +353,7 @@ function ExamResults({
         </div>
         <div className="footer-right">
           <div className="powered-by-tag">
-            <span className="powered-by-icon">⚡</span>
+            <span className="powered-by-icon"><Icon name="zap" /></span>
             <span className="powered-by-prefix">System Engineered & Powered by</span>
             <span className="powered-by-name">Eng. Youssef Ashraf</span>
           </div>

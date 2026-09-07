@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { Icon } from "./Icon";
 import { socketService } from "../services/socket";
 import { registerActiveCameraStream, releaseCamera } from "../services/camera";
 import "./CameraProctor.css";
@@ -204,7 +205,7 @@ export function CameraProctor({
         return newCount;
       });
 
-      setActiveAlert(`⚠️ Proctor Alert: ${reason}! Event recorded.`);
+      setActiveAlert(`Proctor Alert: ${reason}! Event recorded.`);
       setTimeout(() => {
         setActiveAlert(null);
       }, 4000);
@@ -379,7 +380,7 @@ export function CameraProctor({
                   fontSize: "24px",
                 }}
               >
-                👤
+                
               </div>
               <span style={{ fontSize: "11px", color: "#cbd5e1" }}>
                 Proctoring Verified (Simulation)
@@ -389,7 +390,7 @@ export function CameraProctor({
 
           {!hasPermission && (
             <div className="proctor-fallback-box">
-              <span className="fallback-icon">📷</span>
+              <span className="fallback-icon"><Icon name="camera" size={36} /></span>
               <p>Camera feed is not connected or permission was not granted.</p>
               <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                 <button
@@ -412,15 +413,15 @@ export function CameraProctor({
         </div>
 
         <div className="proctor-footer">
-          <span>{isRecording ? "🎥 Video Recorded" : "Integrity Guard: ON"}</span>
+          <span>{isRecording ? <><Icon name="video" /> Video Recorded</> : "Integrity Guard: ON"}</span>
           <span
             className={`warning-counter ${
               warningsCount > 0 ? "has-warnings" : ""
             }`}
           >
             {warningsCount === 0
-              ? "✓ 0 Warnings"
-              : `⚠️ ${warningsCount} Tab Switch${warningsCount === 1 ? "" : "es"}`}
+              ? <><Icon name="check" /> 0 Warnings</>
+                : <><Icon name="alert-triangle" /> {warningsCount} Tab Switch{warningsCount === 1 ? "" : "es"}</>}
           </span>
         </div>
       </div>
