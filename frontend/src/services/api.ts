@@ -37,6 +37,49 @@ export class SubmitFailedError extends Error {
   }
 }
 
+/**
+ * The admin token expired or was revoked.
+ *
+ * Nothing used to notice a 401: every call fell through to the localStorage
+ * cache, so the dashboard stayed rendered and showed stale data as if it were
+ * live. App.tsx listens for this and signs the admin out.
+ */
+export const ADMIN_SESSION_EXPIRED_EVENT = "admin-session-expired";
+
+function handleUnauthorized(): void {
+  try {
+    if (!sessionStorage.getItem("adminToken")) return;
+    sessionStorage.removeItem("adminToken");
+  } catch (err) {
+    console.warn("Could not clear the expired admin token:", err);
+  }
+  window.dispatchEvent(new Event(ADMIN_SESSION_EXPIRED_EVENT));
+}
+
+/** An admin mutation the server refused. Never silently applied locally. */
+export class AdminActionError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "AdminActionError";
+    this.status = status;
+  }
+}
+
+/**
+ * Check a mutation response and throw on refusal.
+ *
+ * Deletes used to `await fetch(...)` without inspecting the result, then
+ * delete locally regardless — so a 401 or 403 still removed the row from the
+ * admin's view and it reappeared on the next sync.
+ */
+async function assertMutationOk(res: Response, action: string): Promise<void> {
+  if (res.ok) return;
+  if (res.status === 401) handleUnauthorized();
+  const data = await res.json().catch(() => ({}));
+  throw new AdminActionError(data.error || `Could not ${action}.`, res.status);
+}
+
 export const api = {
   /**
    * Ping backend health endpoint to check connection
@@ -216,14 +259,13 @@ export const api = {
   },
 
   async deleteCandidate(id: string): Promise<void> {
-    try {
-      await fetch(`${API_BASE}/candidates/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-    } catch (err) {
-      console.warn("Backend unavailable, deleting candidate locally.");
-    }
+    const res = await fetch(`${API_BASE}/candidates/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    // Throws on refusal: the local cache must not diverge from the server.
+    await assertMutationOk(res, "delete this candidate");
+
     storage.deleteCandidate(id);
     notifyStorageChange("candidates");
   },
@@ -294,14 +336,13 @@ export const api = {
   },
 
   async deleteQuestion(id: number): Promise<void> {
-    try {
-      await fetch(`${API_BASE}/questions/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-    } catch (err) {
-      console.warn("Backend unavailable, deleting question locally.");
-    }
+    const res = await fetch(`${API_BASE}/questions/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    // Throws on refusal: the local cache must not diverge from the server.
+    await assertMutationOk(res, "delete this question");
+
     storage.deleteQuestion(id);
     notifyStorageChange("questions");
   },
@@ -492,14 +533,13 @@ export const api = {
   },
 
   async deleteResult(id: string): Promise<void> {
-    try {
-      await fetch(`${API_BASE}/exam/results/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-    } catch (err) {
-      console.warn("Backend unavailable, deleting result locally.");
-    }
+    const res = await fetch(`${API_BASE}/exam/results/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    // Throws on refusal: the local cache must not diverge from the server.
+    await assertMutationOk(res, "delete this result");
+
     storage.deleteResult(id);
     notifyStorageChange("results");
   },

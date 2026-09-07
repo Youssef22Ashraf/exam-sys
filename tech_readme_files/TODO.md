@@ -185,6 +185,33 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
 - [x] `clear-cooldown` stamps `Candidate.cooldownClearedAt`; attempt `submittedAt` untouched — proven: 403 → clear → 201 attempt #2, attempt #1 timestamp identical
 - [x] README badge → Prisma 5.x
 
+### UX and data loss — done
+
+- [x] **Resume a mid-exam refresh** — `page`/`userData` were component state, so
+      a reload landed on the marketing hero and the draft was only reachable by
+      re-registering (which the cooldown could refuse). Proven in a browser
+      (feat/hardening-4-ux)
+- [x] **Buffer the recording as it records** — chunks were in memory until
+      submit, so a crash lost the whole session
+- [x] **Deadline instead of a countdown** — a reload or a throttled background
+      tab used to award free time
+- [x] **Submit progress** — the screen froze silently while the recorder
+      stopped, buffered and uploaded
+- [x] **Delete the seed-on-read demo data** — `getCandidates`/`getResults` wrote
+      fictional people into localStorage and returned them as real records, and
+      the cooldown check compared genuine candidates against them
+- [x] **Admin mutations are server-first** — `handleDeleteCandidate` and
+      `handleDeleteResult` never called the API at all; the rest used
+      `.catch(() => {})`. Refusals now show in a banner. Proven: an ADMIN delete
+      of a result shows "Insufficient privileges" and the row stays
+- [x] **"Camera Disabled" no longer displays as verified** — the results page
+      and both admin views treated anything that was not "Warnings" as clean
+- [x] **Error boundary** + 401 handling (an expired token left the dashboard up
+      showing cached data as live)
+- [x] **Lazy-load the admin portal** — candidates downloaded the 2,099-line
+      dashboard; bundle 353 KB to 312 KB
+- [x] Dashboard refreshes from the API, not a 2-second localStorage re-read
+
 ### Lint — never been green
 
 - [ ] Frontend `npm run lint`: 43 errors. Mostly `catch (err)` unused → `catch {}`, `any` in socket/api, empty blocks → add a comment. Until then the frontend gate is `tsc -b` only.
@@ -207,5 +234,7 @@ frontend `tsc -b` is clean, and `CHANGELOG.md` is updated.
       row) — **blocked on §0.2**. Deleting a record now removes its file, but
       nothing expires recordings by age
 - [ ] Question / option shuffle per attempt, seeded and stored so the answer sheet replays correctly
-- [ ] Replace `page` string state with a real router if a third top-level area appears
-- [ ] Remove `console.log` of candidate data in `App.tsx` `beginExam` (backend socket handlers done in feat/hardening-1-integrity)
+- [ ] Replace `page` string state with a real router if a third top-level area
+      appears (the admin portal is now lazy-loaded; ADR 002's trigger is still unmet)
+- [x] Remove `console.log` of candidate data in `App.tsx` `beginExam` and the
+      backend socket handlers

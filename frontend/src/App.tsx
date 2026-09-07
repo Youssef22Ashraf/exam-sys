@@ -1,16 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Icon } from "./components/Icon";
 
 import ExamRegistration from "./pages/ExamRegistration";
 import ExamInstructions from "./pages/ExamInstructions";
 import Exam from "./pages/Exam";
 import ExamResults from "./pages/ExamResults";
-import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard";
 import { ExamStorage, type ExamResult } from "./services/storage";
-import { api } from "./services/api";
+import { api, ADMIN_SESSION_EXPIRED_EVENT } from "./services/api";
 import { releaseCamera } from "./services/camera";
 import { reconnectSocket } from "./services/socket";
+
+// The admin portal is a large bundle a candidate never opens, and it carried
+// the whole dashboard plus its CSS into every candidate's first load. React's
+// own lazy(); no router library, per ADR 002.
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+
+function AdminChunkFallback() {
+  return (
+    <main className="page-container" role="status" aria-live="polite">
+      <p style={{ textAlign: "center", margin: "80px auto" }}>
+        Loading the admin portal…
+      </p>
+    </main>
+  );
+}
 
 import "./styles.css";
 import "./App.css";
@@ -20,6 +34,9 @@ interface UserData {
   email: string;
   companyId: string;
 }
+
+/** Marks an exam the candidate has actually started, so a refresh can resume it. */
+const ACTIVE_EXAM_KEY = "exam_active_candidate";
 
 function App() {
   const [page, setPage] = useState("home");
@@ -33,7 +50,7 @@ function App() {
       .then((settings) => {
         ExamStorage.saveSettings(settings);
       })
-      .catch(() => {});
+      .catch((err) => console.warn("Could not sync exam settings:", err));
 
     api
       .getQuestions()
@@ -42,7 +59,33 @@ function App() {
           ExamStorage.saveQuestions(questions);
         }
       })
-      .catch(() => {});
+      .catch((err) => console.warn("Could not sync the question bank:", err));
+  }, []);
+
+  // Restore an exam that is still in progress.
+  //
+  // `page` and `userData` are component state, so a mid-exam refresh dropped
+  // the candidate on the marketing hero. The answer draft survived in
+  // sessionStorage but was only reachable by re-registering with the identical
+  // email, which the cooldown check could refuse outright. The sitting id is
+  // the marker: `Exam.tsx` clears it on a successful submit, so a restored
+  // exam is always one that was genuinely still running.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(ACTIVE_EXAM_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as UserData;
+      if (!saved?.email) return;
+      if (!sessionStorage.getItem(`exam_sid_${saved.email}`)) {
+        // The sitting was submitted; nothing to resume.
+        sessionStorage.removeItem(ACTIVE_EXAM_KEY);
+        return;
+      }
+      setUserData(saved);
+      setPage("exam");
+    } catch (err) {
+      console.warn("Could not restore the exam in progress:", err);
+    }
   }, []);
 
   // Dedicated route listener for Admin Portal:
@@ -74,6 +117,20 @@ function App() {
       window.removeEventListener("hashchange", handleRouting);
       window.removeEventListener("popstate", handleRouting);
     };
+  }, []);
+
+  // An expired or revoked admin token used to go unnoticed: every call fell
+  // back to the localStorage cache, so the dashboard stayed up showing stale
+  // data as though it were live. api.ts raises this; sign the admin out.
+  useEffect(() => {
+    function onSessionExpired() {
+      setPage((prev) =>
+        prev === "admin-dashboard" || prev === "admin-login" ? "admin-login" : prev
+      );
+    }
+    window.addEventListener(ADMIN_SESSION_EXPIRED_EVENT, onSessionExpired);
+    return () =>
+      window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT, onSessionExpired);
   }, []);
 
   // Hidden proctor hotkey (Ctrl + Shift + A) to toggle Admin Portal
@@ -112,16 +169,32 @@ function App() {
   }
 
   function beginExam() {
-    console.log("Exam started for:", userData);
+    if (userData) {
+      try {
+        sessionStorage.setItem(ACTIVE_EXAM_KEY, JSON.stringify(userData));
+      } catch (err) {
+        console.warn("Could not mark the exam as in progress:", err);
+      }
+    }
     setPage("exam");
   }
 
+  function clearActiveExam() {
+    try {
+      sessionStorage.removeItem(ACTIVE_EXAM_KEY);
+    } catch (err) {
+      console.warn("Could not clear the exam-in-progress marker:", err);
+    }
+  }
+
   function handleFinishExam(result: ExamResult) {
+    clearActiveExam();
     setExamResult(result);
     setPage("results");
   }
 
   function openCandidateHome() {
+    clearActiveExam();
     releaseCamera();
     window.history.pushState(null, "", "/");
     window.location.hash = "";
@@ -187,10 +260,12 @@ function App() {
       <div className="app">
         <AppHeader />
 
-        <AdminLogin
-          onLogin={openAdminDashboard}
-          onBack={openCandidateHome}
-        />
+        <Suspense fallback={<AdminChunkFallback />}>
+          <AdminLogin
+            onLogin={openAdminDashboard}
+            onBack={openCandidateHome}
+          />
+        </Suspense>
 
         <AppFooter />
       </div>
@@ -198,7 +273,11 @@ function App() {
   }
 
   if (page === "admin-dashboard") {
-    return <AdminDashboard onLogout={logoutAdmin} />;
+    return (
+      <Suspense fallback={<AdminChunkFallback />}>
+        <AdminDashboard onLogout={logoutAdmin} />
+      </Suspense>
+    );
   }
 
   return (

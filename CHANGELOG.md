@@ -125,6 +125,45 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Fixed
 
+- **A mid-exam refresh dropped the candidate on the marketing hero.** `page`
+  and `userData` were component state, so a reload lost the exam; the answer
+  draft survived in `sessionStorage` but was only reachable by re-registering
+  with the identical email, which the cooldown check could refuse outright.
+  The sitting id now marks an exam in progress and `App` restores it. Verified
+  in a browser: reload mid-exam returns to the same question with the answer
+  selected and the clock continuing (29:19, not a fresh 30:00).
+- **The recording lived in memory until submit**, so a tab crash or an OOM on
+  a long session lost all of it. Each chunk is now written to the IndexedDB
+  buffer as it arrives and the sequence continues across a reload;
+  `stopRecording` assembles from the buffer and falls back to memory.
+- **The exam clock could be gamed by reloading.** `timeLeft` was a
+  setInterval countdown persisted as remaining seconds, so time spent
+  reloading, backgrounded (browsers throttle intervals to about once a minute)
+  or offline was free. It is now a wall-clock deadline, recomputed each tick.
+- **Seeded demo data rendered as real records.** `getCandidates` and
+  `getResults` *wrote* fictional people into localStorage on the first read
+  and returned them, so a cold cache showed invented candidates in the admin
+  dashboard — and `checkCandidateCooldown` evaluated genuine candidates
+  against those fake rows. Both now return empty, and 102 lines of fictional
+  data are deleted.
+- **Admin deletes never reached the server.** `handleDeleteCandidate` and
+  `handleDeleteResult` only touched localStorage, so the record survived on
+  the backend and reappeared on the next sync. Every admin mutation is now
+  server-first and surfaces a refusal in a banner instead of `.catch(() => {})`.
+  Verified: an ADMIN-role delete of a result shows "Insufficient privileges"
+  and the row stays in the table.
+- **"Camera Disabled" displayed as verified.** The results page and both admin
+  views branched only on `"Warnings"`, so any other status rendered as a green
+  "Verified & Monitored" — including an attempt the server recorded with no
+  camera at all. All three states are now distinct. Verified: an attempt taken
+  with the camera blocked shows "NO CAMERA" in the results table.
+- **No error boundary anywhere**, so a render throw blanked the page mid-exam.
+  `components/ErrorBoundary.tsx` wraps the app.
+- **An expired admin token went unnoticed** — every call fell back to the
+  localStorage cache, so the dashboard stayed up showing stale data as if it
+  were live. A 401 now clears the token and signs the admin out.
+
+
 - **`trust proxy` was never set**, so behind Railway `req.ip` was the proxy's
   address for every request and the login limiter was a *global* 10-per-15-
   minutes lockout shared by all users.
@@ -174,6 +213,25 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
   `createMany` instead of 40 sequential inserts.
 
 ### Changed
+
+- **The admin portal is a lazy chunk.** Every candidate downloaded the
+  2,099-line dashboard and its CSS on first load. `React.lazy` (no router
+  library, per ADR 002) moves 43.7 KB of JS and 11 KB of CSS out of the
+  candidate bundle: 353 KB to 312 KB, and the main stylesheet 35.7 KB to
+  25.9 KB.
+- **Submit shows what it is doing.** Stopping the recorder, buffering and
+  uploading a 30-minute `.webm` can take tens of seconds, and the screen sat
+  frozen with no spinner or progress. A progress view now names the current
+  stage and warns against closing the window.
+- **The admin dashboard refreshes from the server, not localStorage.**
+  `reloadData` re-read the local cache every 2 seconds and re-rendered the
+  whole component, while a socket event about a submission on another machine
+  fired a toast but never updated the table — that record was not in this
+  browser's cache. Socket events and a 30-second safety net now pull from the
+  API.
+- Candidate details are no longer logged to the console by `App.beginExam`,
+  and the two startup syncs no longer swallow errors silently.
+
 
 - **Indexes.** The schema had no secondary index at all. Added them for the
   columns `services/cooldown.ts` and the admin lists actually filter and order

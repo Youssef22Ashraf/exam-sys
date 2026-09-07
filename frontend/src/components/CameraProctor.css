@@ -221,8 +221,19 @@
    rather than discovered by a supervisor later. */
 .proctor-fallback-note {
   margin: 8px 0 0;
-  font-size: 11px;
-  line-height: 1.5;
+  font-size: 10px;
+  line-height: 1.4;
   color: #cbd5e1;
   text-align: center;
+}
+
+/* The note was being clipped by the fixed-height video wrapper. */
+.proctor-video-wrapper:has(.proctor-fallback-box) {
+  height: auto;
+  min-height: 120px;
+  padding: 10px;
+}
+
+.proctor-fallback-box {
+  height: auto;
 }

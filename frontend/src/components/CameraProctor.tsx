@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Icon } from "./Icon";
 import { socketService } from "../services/socket";
+import { VideoStorage } from "../services/videoStorage";
 import { registerActiveCameraStream, releaseCamera } from "../services/camera";
 import "./CameraProctor.css";
 
@@ -31,6 +32,7 @@ export function CameraProctor({
   const [warningsCount, setWarningsCount] = useState(0);
   const [activeAlert, setActiveAlert] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const chunkSeqRef = useRef(0);
 
   // Initialize camera & background recording
   const startCamera = useCallback(async () => {
@@ -67,9 +69,21 @@ export function CameraProctor({
             ? new MediaRecorder(stream, { mimeType })
             : new MediaRecorder(stream);
 
+          // Continue the sequence if this sitting already has buffered chunks
+          // (a mid-exam reload restarts the recorder but not the exam).
+          if (sessionId) {
+            const existing = await VideoStorage.listChunkKeys(sessionId);
+            chunkSeqRef.current = existing.length;
+          }
+
           recorder.ondataavailable = (event) => {
             if (event.data && event.data.size > 0) {
               recordedChunksRef.current.push(event.data);
+              // Persist as we go: an in-memory-only buffer loses the whole
+              // recording to a tab crash or an OOM on a long session.
+              if (sessionId) {
+                VideoStorage.appendChunk(sessionId, chunkSeqRef.current++, event.data);
+              }
             }
           };
 
@@ -86,7 +100,7 @@ export function CameraProctor({
       console.warn("Camera access not granted or not available:", err);
       setHasPermission(false);
     }
-  }, []);
+  }, [sessionId]);
 
   const stopCamera = useCallback(() => {
     // 1. Stop recorder
@@ -150,36 +164,49 @@ export function CameraProctor({
   }, [startCamera, stopCamera]);
 
   // Stop recording handler
+  /**
+   * Assemble the recording, preferring the IndexedDB buffer because it also
+   * holds chunks written before a reload; fall back to the in-memory chunks
+   * when there is no session key or the buffer is empty.
+   */
+  const assembleRecording = useCallback(async (): Promise<Blob | null> => {
+    if (sessionId) {
+      const buffered = await VideoStorage.assembleChunks(sessionId, "video/webm");
+      if (buffered && buffered.size > 0) return buffered;
+    }
+    return recordedChunksRef.current.length > 0
+      ? new Blob(recordedChunksRef.current, { type: "video/webm" })
+      : null;
+  }, [sessionId]);
+
+  // Stop recording handler
   const stopRecording = useCallback((): Promise<Blob | null> => {
     return new Promise((resolve) => {
+      const finish = () => {
+        stopCamera();
+        assembleRecording().then(resolve).catch(() => resolve(null));
+      };
+
       if (
         !mediaRecorderRef.current ||
         mediaRecorderRef.current.state === "inactive"
       ) {
-        const resultBlob =
-          recordedChunksRef.current.length > 0
-            ? new Blob(recordedChunksRef.current, { type: "video/webm" })
-            : null;
-        stopCamera();
-        resolve(resultBlob);
+        finish();
         return;
       }
 
       mediaRecorderRef.current.onstop = () => {
         setIsRecording(false);
-        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
-        stopCamera();
-        resolve(blob);
+        finish();
       };
 
       try {
         mediaRecorderRef.current.stop();
       } catch {
-        stopCamera();
-        resolve(null);
+        finish();
       }
     });
-  }, [stopCamera]);
+  }, [stopCamera, assembleRecording]);
 
   // Register stop recording getter
   useEffect(() => {
@@ -267,7 +294,8 @@ export function CameraProctor({
       console.error("Failed to capture snapshot:", e);
     }
     return null;
-  }, [hasPermission]);
+    // candidateName/candidateId are stamped onto the frame above.
+  }, [hasPermission, candidateName, candidateId]);
 
   // Register snapshot getter to parent
   useEffect(() => {

@@ -41,6 +41,9 @@ frontend/                    React 19 + Vite + TypeScript, no router lib, no sta
 └── src/
     ├── App.tsx              page state machine: home → registration → instructions → exam → results;
     │                        /admin (pathname, #admin hash, or Ctrl+Shift+A) → admin-login | admin-dashboard
+    │                        (both admin pages are React.lazy chunks; an exam in
+    │                        progress is restored from sessionStorage on mount)
+    ├── components/ErrorBoundary.tsx   wraps the app; a render throw must not blank the page
     ├── pages/               one component + one .css per screen
     ├── components/CameraProctor.tsx   getUserMedia + MediaRecorder + snapshot canvas
     └── services/
@@ -48,7 +51,7 @@ frontend/                    React 19 + Vite + TypeScript, no router lib, no sta
         ├── storage.ts       localStorage schema, INITIAL_QUESTIONS, cooldown check, CSV export
         ├── socket.ts        socket.io-client singleton, candidate:* emits, admin:* listeners
         ├── camera.ts        releaseCamera() — stop every track, always
-        └── videoStorage.ts  IndexedDB chunk buffer for the recording before upload
+        └── videoStorage.ts  IndexedDB chunk buffer; chunks are written as they record, not at submit
 ```
 
 Production: the Dockerfile builds `frontend/dist`, copies it beside the
@@ -109,6 +112,14 @@ path not under `/api`, `/uploads`, or `/socket.io`. One port (5000).
   **`submitExam` and `startExam` are the exceptions** — they throw
   `SubmitFailedError` and the page shows it. A submit that does not reach the
   server must never become a local pass (ADR 008).
+- **The exam clock is a deadline, never a countdown.** `Exam.tsx` persists an
+  absolute `deadline`; a remaining-seconds counter hands back the time a
+  reload or a throttled background tab consumed. The server enforces it
+  independently (ADR 008).
+- **Admin mutations are server-first.** Call the API, await it, and only then
+  touch `ExamStorage` — and surface a refusal. Never apply an admin change
+  locally and fire the request with `.catch(() => {})`; a 401 or 403 then
+  looks like success until the next sync.
 - **Camera release is not optional.** Every path that leaves the exam
   screen (submit, timer expiry, close, admin hotkey, results back) calls
   `releaseCamera()`. A regression here means a candidate's webcam light
