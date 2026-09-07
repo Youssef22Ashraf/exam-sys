@@ -8,6 +8,13 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ### Added
 
+- **Inline SVG icons replace every emoji in the UI.**
+  `components/Icon.tsx` holds 22 glyphs on a 24-grid, `currentColor`,
+  sized by `font-size`, no icon-library dependency. 88 emoji and symbol
+  glyphs across the admin dashboard, login, exam, results, registration,
+  camera panel, and hero were swapped for `<Icon name="…" />`. Emoji
+  inside plain strings (toasts, console lines) were removed rather than
+  replaced. Icon-only buttons carry `aria-label`.
 - **Dark theme for the admin portal.** A token layer at the top of
   `styles.css` (`--bg`, `--surface`, `--text`, `--primary`, semantic
   soft/border pairs, shadows, focus ring) with a `[data-theme="dark"]`

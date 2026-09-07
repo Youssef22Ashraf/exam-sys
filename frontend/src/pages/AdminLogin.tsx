@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Icon } from "../components/Icon";
 import { useTheme } from "../hooks/useTheme";
 import { api } from "../services/api";
 
@@ -71,7 +72,7 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
               marginBottom: "18px",
             }}
           >
-            ⚠️ {errorMsg}
+            <Icon name="alert-triangle" /> {errorMsg}
           </div>
         )}
 

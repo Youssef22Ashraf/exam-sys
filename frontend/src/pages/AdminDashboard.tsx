@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { Icon } from "../components/Icon";
 import { useTheme } from "../hooks/useTheme";
 import {
   ExamStorage,
@@ -156,7 +157,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     const unSubSubmit = socketService.onAdminExamSubmitted((data) => {
       reloadData();
       setLiveSocketToast({
-        message: `🎉 Candidate ${data.candidateName} (${data.companyId}) submitted exam: ${data.score}/${data.totalQuestions} (${data.percentage.toFixed(1)}%) - ${data.isPassed ? "PASSED" : "FAILED"}`,
+        message: `Candidate ${data.candidateName} (${data.companyId}) submitted exam: ${data.score}/${data.totalQuestions} (${data.percentage.toFixed(1)}%) - ${data.isPassed ? "PASSED" : "FAILED"}`,
         type: "success",
       });
     });
@@ -164,7 +165,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     const unSubWarn = socketService.onAdminCandidateWarning((data) => {
       reloadData();
       setLiveSocketToast({
-        message: `⚠️ Proctor Alert: ${data.candidateName} (${data.companyId}) - ${data.warningType} (Total Warnings: ${data.totalWarnings})`,
+        message: `Proctor Alert: ${data.candidateName} (${data.companyId}) - ${data.warningType} (Total Warnings: ${data.totalWarnings})`,
         type: "warning",
       });
     });
@@ -172,7 +173,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     const unSubStart = socketService.onAdminCandidateStarted((data) => {
       reloadData();
       setLiveSocketToast({
-        message: `📝 Candidate ${data.candidateName} (${data.companyId}) just started the assessment.`,
+        message: `Candidate ${data.candidateName} (${data.companyId}) just started the assessment.`,
         type: "info",
       });
     });
@@ -407,7 +408,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       const res = await api.sendTestEmail(email);
       if (res.success) {
         setTestEmailMsg({
-          text: res.message || "✓ Test email sent successfully!",
+          text: res.message || "Test email sent successfully.",
           success: true,
         });
       } else {
@@ -446,7 +447,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
             title={theme === "dark" ? "Light theme" : "Dark theme"}
           >
-            {theme === "dark" ? "☀" : "☾"}
+            {theme === "dark" ? <Icon name="sun" label="Light theme" /> : <Icon name="moon" label="Dark theme" />}
           </button>
           <button className="secondary-button" onClick={onLogout}>
             Logout
@@ -461,7 +462,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           onClick={() => setLiveSocketToast(null)}
         >
           <span>{liveSocketToast.message}</span>
-          <button className="dismiss-toast-btn" type="button">✕</button>
+          <button className="dismiss-toast-btn" type="button" aria-label="Dismiss"><Icon name="x" /></button>
         </div>
       )}
 
@@ -482,14 +483,14 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             className={`admin-tab-btn ${activeTab === "overview" ? "active" : ""}`}
             onClick={() => setActiveTab("overview")}
           >
-            📊 Dashboard Overview
+            <Icon name="chart" /> Dashboard Overview
           </button>
 
           <button
             className={`admin-tab-btn ${activeTab === "candidates" ? "active" : ""}`}
             onClick={() => setActiveTab("candidates")}
           >
-            👥 Candidates
+            <Icon name="users" /> Candidates
             <span className="tab-badge">{candidates.length}</span>
           </button>
 
@@ -497,7 +498,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             className={`admin-tab-btn ${activeTab === "results" ? "active" : ""}`}
             onClick={() => setActiveTab("results")}
           >
-            📑 Exam Results
+            <Icon name="file-text" /> Exam Results
             <span className="tab-badge">{results.length}</span>
           </button>
 
@@ -505,7 +506,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             className={`admin-tab-btn ${activeTab === "exams" ? "active" : ""}`}
             onClick={() => setActiveTab("exams")}
           >
-            ⚙️ Exam Management
+            <Icon name="settings" /> Exam Management
             <span className="tab-badge">{questions.length} Qs</span>
           </button>
         </nav>
@@ -561,7 +562,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
                 {results.length === 0 ? (
                   <div className="empty-state">
-                    <div>📋</div>
+                    <div><Icon name="clipboard" size={32} /></div>
                     <strong>No exam attempts yet</strong>
                     <span>Submissions will appear here once candidates complete tests.</span>
                   </div>
@@ -636,7 +637,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     className="action-button"
                     onClick={() => setActiveTab("candidates")}
                   >
-                    <span>👥 View All Candidates</span>
+                    <span><Icon name="users" /> View All Candidates</span>
                     <span>→</span>
                   </button>
 
@@ -644,7 +645,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     className="action-button"
                     onClick={() => setActiveTab("results")}
                   >
-                    <span>📑 View Exam Results</span>
+                    <span><Icon name="file-text" /> View Exam Results</span>
                     <span>→</span>
                   </button>
 
@@ -652,8 +653,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     className="action-button"
                     onClick={() => ExamStorage.exportResultsToCSV()}
                   >
-                    <span>📥 Export Results to Excel / CSV</span>
-                    <span>⬇</span>
+                    <span><Icon name="download" /> Export Results to Excel / CSV</span>
+                    <span><Icon name="download" /></span>
                   </button>
 
                   <button
@@ -753,7 +754,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 fontSize: "11px",
                               }}
                             >
-                              🔁 {c.totalAttempts} Attempts
+                              <Icon name="repeat" /> {c.totalAttempts} Attempts
                             </span>
                           ) : (
                             <span>{c.totalAttempts}</span>
@@ -824,7 +825,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 style={{ padding: "9px 18px", fontSize: "13px" }}
                 onClick={() => ExamStorage.exportResultsToCSV()}
               >
-                📥 Export to Excel / CSV
+                <Icon name="download" /> Export to Excel / CSV
               </button>
             </div>
 
@@ -874,7 +875,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                   }}
                                   title={`Repeat Attempt #${r.attemptNumber} by candidate`}
                                 >
-                                  🔁 Attempt #{r.attemptNumber}
+                                  <Icon name="repeat" /> Attempt #{r.attemptNumber}
                                 </span>
                               ) : (
                                 <span
@@ -931,8 +932,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                 }`}
                               >
                                 {r.proctoringStatus === "Warnings"
-                                  ? `⚠️ ${r.tabSwitches || 0} Warn`
-                                  : "✓ Monitored"}
+                                  ? <><Icon name="alert-triangle" /> {r.tabSwitches || 0} Warn</>
+                                    : <><Icon name="check" /> Monitored</>}
                               </span>
                               {r.hasVideoRecording || r.videoFilename ? (
                                 <span
@@ -945,7 +946,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                     gap: "3px",
                                   }}
                                 >
-                                  🎥 Video
+                                  <Icon name="video" /> Video
                                 </span>
                               ) : null}
                             </div>
@@ -1004,7 +1005,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                   onClick={() => setSelectedResult(r)}
                                   title="Watch proctoring webcam recording"
                                 >
-                                  🎥 Video
+                                  <Icon name="video" /> Video
                                 </button>
                               ) : null}
                               <button
@@ -1044,7 +1045,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     style={{ padding: "8px 14px", fontSize: "12px" }}
                     onClick={handleResetQuestions}
                   >
-                    ↺ Reset Defaults
+                    <Icon name="rotate-ccw" /> Reset Defaults
                   </button>
 
                   <button
@@ -1155,7 +1156,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                               i === q.correctAnswer ? "correct" : ""
                             }`}
                           >
-                            {opt} {i === q.correctAnswer && " ✓ (Correct)"}
+                            {opt} {i === q.correctAnswer && <> <Icon name="check" /> (Correct)</>}
                           </div>
                         ))}
                       </div>
@@ -1181,7 +1182,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     fontWeight: 650,
                   }}
                 >
-                  ✓ Settings saved successfully!
+                  <Icon name="check" /> Settings saved successfully!
                 </div>
               )}
 
@@ -1279,7 +1280,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     onClick={handleSendTestEmail}
                     disabled={testingEmail}
                   >
-                    {testingEmail ? "Sending..." : "📧 Test Email"}
+                    {testingEmail ? "Sending..." : <><Icon name="mail" /> Test Email</>}
                   </button>
                 </div>
                 <span
@@ -1345,7 +1346,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 className="modal-close-btn"
                 onClick={() => setSelectedResult(null)}
               >
-                ✕
+                <Icon name="x" label="Close" />
               </button>
             </div>
 
@@ -1437,8 +1438,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     }}
                   >
                     {selectedResult.proctoringStatus === "Warnings"
-                      ? `⚠️ ${selectedResult.tabSwitches || 0} Tab Switch(es)`
-                      : "✓ Monitored (0 Warnings)"}
+                      ? <><Icon name="alert-triangle" /> {selectedResult.tabSwitches || 0} Tab Switch(es)</>
+                        : <><Icon name="check" /> Monitored (0 Warnings)</>}
                   </strong>
                 </div>
               </div>
@@ -1474,7 +1475,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           gap: "6px",
                         }}
                       >
-                        🎥 Recorded Proctoring Video
+                        <Icon name="video" /> Recorded Proctoring Video
                       </strong>
                       <span style={{ fontSize: "12px", color: "var(--text-3)" }}>
                         Complete camera feed captured during candidate examination
@@ -1497,7 +1498,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         borderColor: "var(--primary-border)",
                       }}
                     >
-                      ⬇ Download Video (.webm)
+                      <Icon name="download" /> Download Video (.webm)
                     </a>
                   </div>
 
@@ -1605,7 +1606,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                             color: isCorrect ? "var(--success)" : "var(--danger)",
                           }}
                         >
-                          {isCorrect ? "✓ Correct" : "✗ Incorrect"}
+                          {isCorrect ? <><Icon name="check" /> Correct</> : <><Icon name="x" /> Incorrect</>}
                         </span>
                       </div>
 
@@ -1694,7 +1695,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 className="modal-close-btn"
                 onClick={() => setSelectedCandidate(null)}
               >
-                ✕
+                <Icon name="x" label="Close" />
               </button>
             </div>
 
@@ -1777,7 +1778,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       >
                         <div>
                           <div style={{ fontWeight: 700, color: "var(--warning)", fontSize: "13px" }}>
-                            ⛔ 48-Hour Re-attempt Cooldown Active
+                            <Icon name="ban" /> 48-Hour Re-attempt Cooldown Active
                           </div>
                           <div style={{ fontSize: "12px", color: "var(--warning)", marginTop: "2px" }}>
                             Candidate locked until: <strong>{unlockTime.toLocaleString()}</strong> (~{remainingHours}h remaining)
@@ -1797,7 +1798,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           onClick={() => handleClearCandidateCooldown(selectedCandidate.id)}
                           title="Admin override to allow candidate to retake exam immediately"
                         >
-                          🔓 Clear Cooldown (Allow Retest)
+                          <Icon name="unlock" /> Clear Cooldown (Allow Retest)
                         </button>
                       </div>
                     ) : (
@@ -1815,7 +1816,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           gap: "8px",
                         }}
                       >
-                        <span>✓</span>
+                        <span><Icon name="check" /></span>
                         <span>
                           Candidate is currently <strong>eligible</strong> to take the examination (no active 48-hour cooldown lockout).
                         </span>
@@ -1858,7 +1859,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                                       fontSize: "11px",
                                     }}
                                   >
-                                    {attemptNum > 1 ? `🔁 Attempt #${attemptNum}` : `Attempt #${attemptNum}`}
+                                    {attemptNum > 1 ? <><Icon name="repeat" /> Attempt #{attemptNum}</> : `Attempt #${attemptNum}`}
                                   </span>
                                 </td>
                                 <td style={{ fontSize: "12px", color: "var(--text-3)" }}>
@@ -1940,7 +1941,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 className="modal-close-btn"
                 onClick={() => setIsQuestionModalOpen(false)}
               >
-                ✕
+                <Icon name="x" label="Close" />
               </button>
             </div>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Icon } from "./components/Icon";
 
 import ExamRegistration from "./pages/ExamRegistration";
 import ExamInstructions from "./pages/ExamInstructions";
@@ -223,7 +224,7 @@ function App() {
           </div>
 
           <div className="hero-panel">
-            <div className="hero-panel-icon">✓</div>
+            <div className="hero-panel-icon"><Icon name="check" /></div>
 
             <h3>Secure Assessment</h3>
 
@@ -233,17 +234,17 @@ function App() {
             </p>
 
             <div className="hero-feature">
-              <span>✓</span>
+              <span><Icon name="check" /></span>
               Timed examination
             </div>
 
             <div className="hero-feature">
-              <span>✓</span>
+              <span><Icon name="check" /></span>
               Multiple question types
             </div>
 
             <div className="hero-feature">
-              <span>✓</span>
+              <span><Icon name="check" /></span>
               Automated scoring
             </div>
           </div>
