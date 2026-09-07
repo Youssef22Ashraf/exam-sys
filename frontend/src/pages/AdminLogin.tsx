@@ -55,22 +55,22 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
         <div
           className="company-logo-badge"
           style={{
-            height: "56px",
+            height: "60px",
             padding: "8px 18px",
             margin: "0 auto 16px auto",
             borderRadius: "12px",
           }}
-          title="Combined Group Contracting Company"
+          title="Mofarreh Group — Engineering & Construction"
         >
           <img
-            src="/Group-252.webp"
-            alt="Combined Group Logo"
-            style={{ height: "40px", width: "auto" }}
+            src="/mofarreh-logo.png"
+            alt="Mofarreh Group Logo"
+            style={{ height: "46px", width: "auto" }}
           />
         </div>
         <h1 className="page-title">Admin Portal</h1>
         <p className="page-description">
-          Combined Group Assessment • Authorized personnel only.
+          Mofarreh Group Assessment • Authorized personnel only.
         </p>
       </div>
 

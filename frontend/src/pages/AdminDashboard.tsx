@@ -428,8 +428,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       {/* Header */}
       <header className="admin-header">
         <div className="brand">
-          <div className="company-logo-badge" title="Combined Group Contracting Company">
-            <img src="/Group-252.webp" alt="Combined Group Logo" className="company-logo" />
+          <div className="company-logo-badge" title="Mofarreh Group — Engineering & Construction">
+            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" className="company-logo" />
           </div>
           <div className="brand-text">
             <span className="brand-title">EXAM ADMIN</span>
@@ -2030,10 +2030,10 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div className="company-logo-badge" style={{ height: "36px", padding: "3px 8px" }}>
-            <img src="/Group-252.webp" alt="Company Logo" style={{ height: "24px" }} />
+          <div className="company-logo-badge" style={{ height: "40px", padding: "3px 8px" }}>
+            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" style={{ height: "30px" }} />
           </div>
-          <span>Combined Group Contracting • Assessment Management Command</span>
+          <span>Mofarreh Group • Assessment Management Command Center</span>
         </div>
         <div className="powered-by-tag">
           <span className="powered-by-icon">⚡</span>

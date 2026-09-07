@@ -204,8 +204,8 @@ function App() {
         <section className="home-hero">
           <div className="hero-content">
             <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
-              <div className="company-logo-badge" title="Combined Group Contracting Company">
-                <img src="/Group-252.webp" alt="Combined Group Logo" />
+              <div className="company-logo-badge" title="Mofarreh Group — Engineering & Construction">
+                <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" />
               </div>
               <div className="hero-badge">WORKPLACE ASSESSMENT</div>
             </div>
@@ -284,8 +284,8 @@ function AppHeader() {
   return (
     <header className="app-header">
       <div className="brand">
-        <div className="company-logo-badge" title="Combined Group Contracting Company">
-          <img src="/Group-252.webp" alt="Combined Group Logo" />
+        <div className="company-logo-badge" title="Mofarreh Group — Engineering & Construction">
+          <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" />
         </div>
 
         <div className="brand-text">
@@ -307,10 +307,10 @@ function AppFooter() {
   return (
     <footer className="app-footer">
       <div className="footer-left">
-        <div className="company-logo-badge" style={{ height: "36px", padding: "3px 8px" }}>
-          <img src="/Group-252.webp" alt="Combined Group Logo" style={{ height: "24px" }} />
+        <div className="company-logo-badge" style={{ height: "40px", padding: "3px 8px" }}>
+          <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" style={{ height: "30px" }} />
         </div>
-        <span>Combined Group Contracting • Workplace Assessment Portal</span>
+        <span>Mofarreh Group • Engineering & Construction Assessment Portal</span>
       </div>
       <div className="footer-right">
         <div className="powered-by-tag">

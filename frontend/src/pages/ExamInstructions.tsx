@@ -14,23 +14,23 @@ function ExamInstructions({ onStart }: ExamInstructionsProps) {
         <div
           className="company-logo-badge"
           style={{
-            height: "52px",
+            height: "56px",
             padding: "6px 16px",
             margin: "0 auto 14px auto",
             borderRadius: "10px",
           }}
-          title="Combined Group Contracting Company"
+          title="Mofarreh Group — Engineering & Construction"
         >
           <img
-            src="/Group-252.webp"
-            alt="Combined Group Logo"
-            style={{ height: "38px", width: "auto" }}
+            src="/mofarreh-logo.png"
+            alt="Mofarreh Group Logo"
+            style={{ height: "42px", width: "auto" }}
           />
         </div>
         <h1 className="page-title">Examination Instructions</h1>
 
         <p className="page-description">
-          Combined Group Assessment • Please read the following information carefully before starting.
+          Mofarreh Group Assessment • Please read the following information carefully before starting.
         </p>
       </div>
 

@@ -77,22 +77,22 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: #0f172a;
-    padding: 5px 12px;
+    background: #ffffff;
+    padding: 3px 10px;
     border-radius: 9px;
-    height: 44px;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.14);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    height: 48px;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+    border: 1px solid #e2e8f0;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .company-logo-badge:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.12);
   }
 
   .company-logo-badge img {
-    height: 32px;
+    height: 38px;
     width: auto;
     object-fit: contain;
     display: block;

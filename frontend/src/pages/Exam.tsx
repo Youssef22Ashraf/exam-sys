@@ -442,8 +442,8 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       {/* Header */}
       <header className="exam-header">
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div className="company-logo-badge" style={{ height: "46px", padding: "4px 12px" }} title="Combined Group Contracting Company">
-            <img src="/Group-252.webp" alt="Combined Group Logo" style={{ height: "34px", width: "auto" }} />
+          <div className="company-logo-badge" style={{ height: "48px", padding: "4px 10px" }} title="Mofarreh Group — Engineering & Construction">
+            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" style={{ height: "38px", width: "auto" }} />
           </div>
           <div>
             <h1>{settings.examTitle || "Examination"}</h1>
@@ -750,10 +750,10 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div className="company-logo-badge" style={{ height: "30px", padding: "2px 8px" }}>
-            <img src="/Group-252.webp" alt="Company Logo" style={{ height: "20px" }} />
+          <div className="company-logo-badge" style={{ height: "34px", padding: "2px 8px" }}>
+            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" style={{ height: "24px" }} />
           </div>
-          <span>Combined Group Contracting • Proctored Assessment</span>
+          <span>Mofarreh Group • Engineering & Construction Proctored Assessment</span>
         </div>
         <div className="powered-by-tag">
           <span className="powered-by-icon">⚡</span>

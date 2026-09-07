@@ -40,8 +40,8 @@ function ExamResults({
     <div className="results-page">
       <header className="app-header">
         <div className="brand">
-          <div className="company-logo-badge" title="Combined Group Contracting Company">
-            <img src="/Group-252.webp" alt="Combined Group Logo" className="company-logo" />
+          <div className="company-logo-badge" title="Mofarreh Group — Engineering & Construction">
+            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" className="company-logo" />
           </div>
           <div className="brand-text">
             <span className="brand-title">EXAM SYSTEM</span>
@@ -345,10 +345,10 @@ function ExamResults({
 
       <footer className="app-footer">
         <div className="footer-left">
-          <div className="company-logo-badge" style={{ height: "36px", padding: "3px 8px" }}>
-            <img src="/Group-252.webp" alt="Combined Group Logo" style={{ height: "24px" }} />
+          <div className="company-logo-badge" style={{ height: "40px", padding: "3px 8px" }}>
+            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" style={{ height: "30px" }} />
           </div>
-          <span>Combined Group Contracting • Workplace Assessment Portal</span>
+          <span>Mofarreh Group • Engineering & Construction Assessment Portal</span>
         </div>
         <div className="footer-right">
           <div className="powered-by-tag">
