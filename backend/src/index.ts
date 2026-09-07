@@ -145,7 +145,7 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // Start Server
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
   console.log(`🚀 Exam System Backend Server listening on port ${PORT}`);
   console.log(`📡 API Health Check: http://localhost:${PORT}/api/health`);
   console.log(`🔌 WebSocket Server: ws://localhost:${PORT}`);
@@ -153,6 +153,10 @@ httpServer.listen(PORT, () => {
   if (frontendDist) {
     console.log(`🌐 Public Web Application ready on http://localhost:${PORT}`);
   }
+
+  // Automatically bootstrap database with questions, settings & admin credentials if empty
+  const { bootstrapDatabase } = await import("./config/bootstrap");
+  await bootstrapDatabase();
 });
 
 export default app;
