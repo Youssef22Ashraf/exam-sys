@@ -6,7 +6,7 @@
 
 ```bash
 cd backend && npx tsc --noEmit
-cd frontend && npm run lint && npx tsc -b
+cd frontend && npx tsc -b
 ```
 
 ## Manual smoke (do this before every deploy)

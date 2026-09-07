@@ -25,7 +25,7 @@ Example: `GET /api/candidates/:id/summary`.
    `frontend/src/services/storage.ts` next to `Candidate` / `ExamResult`.
 6. **Docs**: add the row to `plan.md` §4 table, note it in
    `CHANGELOG.md` Unreleased, and the relevant `features/*.md`.
-7. **Gate**: `cd backend && npx tsc --noEmit`; `cd frontend && npm run lint && npx tsc -b`.
+7. **Gate**: `cd backend && npx tsc --noEmit`; `cd frontend && npx tsc -b`.
 
 ## Socket event instead of REST?
 

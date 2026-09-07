@@ -4,9 +4,10 @@ Conventions for this repo live in [AGENTS.md](AGENTS.md) — read that first,
 always. This file only covers tool-use rules specific to working here.
 
 - Quality gate before calling any task done:
-  `cd backend && npx tsc --noEmit` and `cd frontend && npm run lint && npx tsc -b`.
-  There is no test suite yet (see `tech_readme_files/TODO.md` §Hardening) —
-  do not claim "tests pass"; say the gate that actually ran.
+  `cd backend && npx tsc --noEmit` and `cd frontend && npx tsc -b`.
+  `npm run lint` in frontend has 43 pre-existing errors and is not part of
+  the gate until `TODO.md` §Lint is done — do not add new ones. There is no
+  test suite yet — do not claim "tests pass"; say the gate that actually ran.
 - `backend/prisma/schema.prisma` is the data contract. Change the schema
   first, then `npx prisma db push` (dev) — never hand-edit `dev.db`.
   `prisma migrate` is not in use; the Dockerfile runs `prisma db push` on

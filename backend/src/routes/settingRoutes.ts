@@ -96,7 +96,7 @@ router.put("/", authenticateAdmin, async (req: Request, res: Response) => {
 });
 
 // POST /api/settings/test-email - Trigger a test email alert
-router.post("/test-email", async (req: Request, res: Response) => {
+router.post("/test-email", authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
     const result = await sendTestEmailAlert(email);
