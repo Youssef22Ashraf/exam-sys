@@ -88,3 +88,24 @@ jobs:
             exit 1
           fi
           echo "No known credentials in tracked files."
+
+  docker-build:
+    name: Docker Build & Image Verification
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build production Alpine container
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: exam-sys:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+

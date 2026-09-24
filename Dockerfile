@@ -43,8 +43,11 @@ COPY --from=backend-builder /app/backend/prisma ./prisma
 # Copy compiled frontend assets to /app/frontend/dist for backend static serving
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
-# Ensure persistent uploads directory exists
-RUN mkdir -p /app/backend/uploads/videos /app/backend/uploads/snapshots
+# Ensure persistent uploads directory exists and set ownership for non-root user
+RUN mkdir -p /app/backend/uploads/videos /app/backend/uploads/snapshots \
+    && chown -R node:node /app
+
+USER node
 
 EXPOSE 5000
 
@@ -54,4 +57,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 
 # Push schema if needed and launch backend server serving both API and frontend
 CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
+
 

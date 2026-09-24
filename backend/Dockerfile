@@ -1,4 +1,4 @@
-﻿# Stage 1: Build & Generate Prisma Client
+# Stage 1: Build & Generate Prisma Client
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -42,8 +42,11 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
-# Create upload directories for persistent storage
-RUN mkdir -p /app/uploads/videos /app/uploads/snapshots
+# Create upload directories for persistent storage and grant permissions to node user
+RUN mkdir -p /app/uploads/videos /app/uploads/snapshots \
+    && chown -R node:node /app
+
+USER node
 
 EXPOSE 5000
 
@@ -53,3 +56,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 
 # Entrypoint: sync schema if needed and launch server
 CMD ["sh", "-c", "npx prisma db push && node dist/index.js"]
+
