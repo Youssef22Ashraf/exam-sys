@@ -8,7 +8,7 @@ import {
 import { VideoStorage } from "../services/videoStorage";
 import { CameraProctor } from "../components/CameraProctor";
 import { releaseCamera } from "../services/camera";
-import { api } from "../services/api";
+import { api, SubmitFailedError } from "../services/api";
 import { socketService } from "../services/socket";
 import "./Exam.css";
 
@@ -28,6 +28,16 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     ExamStorage.getQuestions()
   );
 
+  // Server-owned sitting. Held in sessionStorage so a mid-exam reload rejoins
+  // the same sitting rather than resetting the server's clock.
+  const [sessionId, setSessionId] = useState<string>(() => {
+    try {
+      return sessionStorage.getItem(`exam_sid_${userData?.email || "candidate"}`) || "";
+    } catch {
+      return "";
+    }
+  });
+
   useEffect(() => {
     api
       .getQuestions()
@@ -37,8 +47,11 @@ function Exam({ userData, onFinishExam }: ExamProps) {
           ExamStorage.saveQuestions(remote);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Could not refresh the question bank:", err);
+      });
   }, []);
+
 
   const partA = useMemo(
     () => questions.filter((q) => q.section === "A"),
@@ -60,7 +73,9 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.currentQuestion === "number") return parsed.currentQuestion;
       }
-    } catch {}
+    } catch {
+      // A corrupt draft falls back to the default below.
+    }
     return 0;
   });
 
@@ -71,20 +86,47 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         const parsed = JSON.parse(saved);
         if (parsed.selectedAnswers) return parsed.selectedAnswers;
       }
-    } catch {}
+    } catch {
+      // A corrupt draft falls back to no answers.
+    }
     return {};
   });
 
-  const [timeLeft, setTimeLeft] = useState<number>(() => {
+  /**
+   * Wall-clock deadline, not a countdown.
+   *
+   * `timeLeft` used to be decremented by a setInterval and persisted as a
+   * remaining-seconds number, so any time the tab was reloading, backgrounded
+   * (browsers throttle intervals to roughly once a minute) or offline was free
+   * time. The server rejects a late submit either way (ADR 008); this keeps
+   * the displayed clock honest.
+   */
+  const [deadline] = useState<number>(() => {
     try {
       const saved = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (typeof parsed.timeLeft === "number" && parsed.timeLeft > 0) return parsed.timeLeft;
+        // Accepted even if it has already passed: a lapsed deadline means the
+        // exam is over and must auto-submit. Requiring it to be in the future
+        // handed a candidate a fresh 30 minutes for letting the clock run out
+        // and reloading.
+        if (typeof parsed.deadline === "number") {
+          return parsed.deadline;
+        }
+        // A session saved by the old countdown format: convert once.
+        if (typeof parsed.timeLeft === "number" && parsed.timeLeft > 0) {
+          return Date.now() + parsed.timeLeft * 1000;
+        }
       }
-    } catch {}
-    return EXAM_DURATION;
+    } catch (err) {
+      console.warn("Could not read the saved exam deadline:", err);
+    }
+    return Date.now() + EXAM_DURATION * 1000;
   });
+
+  const [timeLeft, setTimeLeft] = useState<number>(() =>
+    Math.max(0, Math.round((deadline - Date.now()) / 1000))
+  );
 
   const [tabSwitches, setTabSwitches] = useState<number>(() => {
     try {
@@ -93,12 +135,20 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         const parsed = JSON.parse(saved);
         if (typeof parsed.tabSwitches === "number") return parsed.tabSwitches;
       }
-    } catch {}
+    } catch {
+      // A corrupt draft falls back to zero warnings; the server keeps its own
+      // count either way (services/examSession.ts).
+    }
     return 0;
   });
 
   const [submitted, setSubmitted] = useState(false);
   const [submitRefusal, setSubmitRefusal] = useState<string | null>(null);
+  const [submitCanRetry, setSubmitCanRetry] = useState(false);
+  // What the submit is currently doing. Stopping the recorder, writing to
+  // IndexedDB and uploading a 30-minute .webm can take tens of seconds on a
+  // slow link, and the screen used to sit frozen with no indication at all.
+  const [submitStage, setSubmitStage] = useState<string | null>(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [securityToast, setSecurityToast] = useState<string | null>(null);
   const [sessionResumed, setSessionResumed] = useState<boolean>(() => {
@@ -109,6 +159,31 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       return false;
     }
   });
+
+  // Open the server-owned sitting once. Without it the submit is refused, so
+  // failing here must be visible rather than silent.
+  useEffect(() => {
+    if (sessionId || !userData?.email) return;
+    const key = `exam_sid_${userData.email}`;
+    api
+      .startExam(userData.email, userData.companyId || "")
+      .then((id) => {
+        setSessionId(id);
+        try {
+          sessionStorage.setItem(key, id);
+        } catch (err) {
+          console.warn("Could not persist the exam session id:", err);
+        }
+      })
+      .catch((err) => {
+        setSubmitCanRetry(true);
+        setSubmitRefusal(
+          err instanceof Error
+            ? err.message
+            : "Could not start the exam session on the server."
+        );
+      });
+  }, [sessionId, userData?.email, userData?.companyId]);
 
   const getSnapshotRef = useRef<(() => string | null) | null>(null);
   const stopRecordingRef = useRef<(() => Promise<Blob | null>) | null>(null);
@@ -142,55 +217,26 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     }
   }
 
-  function calculateResults(): ExamResult {
-    let score = 0;
-    let partAScore = 0;
-    let partBScore = 0;
-
-    questions.forEach((q) => {
-      const isCorrect = selectedAnswers[q.id] === q.correctAnswer;
-      if (isCorrect) {
-        score++;
-        if (q.section === "A") partAScore++;
-        if (q.section === "B") partBScore++;
-      }
-    });
-
-    const totalQuestions = questions.length;
-    const percentage = totalQuestions > 0 ? (score / totalQuestions) * 100 : 0;
-    const isPassed = percentage >= (settings.passingPercentage || 70);
-    const timeSpentSeconds = Math.max(0, EXAM_DURATION - timeLeft);
-
-    // Capture proctor photo snapshot if available
+  /**
+   * The payload the server scores. ADR 001 + ADR 008: the client no longer
+   * holds `correctAnswer`, so it cannot compute a score even for preview —
+   * pass/fail comes back from `POST /api/exam/submit` or the attempt fails.
+   */
+  function buildSubmission() {
     const photo = getSnapshotRef.current ? getSnapshotRef.current() : null;
-    const proctoringStatus: "Verified" | "Warnings" =
-      tabSwitches === 0 ? "Verified" : "Warnings";
 
-    const result: ExamResult = {
-      id: "res-" + Date.now(),
+    return {
+      draftId: "draft-" + Date.now(),
       candidateId: userData?.companyId || "cand-guest",
       candidateName: userData?.name || "Candidate",
       candidateEmail: userData?.email || "candidate@company.com",
       companyId: userData?.companyId || "N/A",
-      submittedAt: new Date().toISOString(),
-      score,
-      totalQuestions,
-      percentage,
-      isPassed,
-      timeSpentSeconds,
-      partAScore,
-      partATotal: partA.length,
-      partBScore,
-      partBTotal: partB.length,
       answers: selectedAnswers,
       tabSwitches,
-      proctoringStatus,
       candidatePhoto: photo || undefined,
-      hasVideoRecording: false,
-      passingPercentage: settings.passingPercentage || 70,
+      hasVideoRecording: false as boolean,
+      videoFilename: undefined as string | undefined,
     };
-
-    return result;
   }
 
   async function submitExam() {
@@ -199,7 +245,9 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     }
 
     setSubmitted(true);
-    const result = calculateResults();
+    setSubmitRefusal(null);
+    setSubmitStage("Finalising your recording…");
+    const submission = buildSubmission();
 
     // Finalize and store video recording
     if (stopRecordingRef.current) {
@@ -207,13 +255,20 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         const videoBlob = await stopRecordingRef.current();
         releaseCamera();
         if (videoBlob && videoBlob.size > 0) {
-          result.hasVideoRecording = true;
+          submission.hasVideoRecording = true;
           // Save to local IndexedDB backup
-          await VideoStorage.saveVideo(result.id, videoBlob);
+          await VideoStorage.saveVideo(submission.draftId, videoBlob);
+
+          const mb = (videoBlob.size / (1024 * 1024)).toFixed(1);
+          setSubmitStage(`Uploading your recording (${mb} MB)…`);
           // Upload to backend so remote admin can stream/watch/download it
-          const uploadRes = await api.uploadVideo(videoBlob, result.id);
+          const uploadRes = await api.uploadVideo(videoBlob, sessionId);
           if (uploadRes && uploadRes.filename) {
-            result.videoFilename = uploadRes.filename;
+            submission.videoFilename = uploadRes.filename;
+          } else {
+            // The attempt is still submittable, but the supervisor gets no
+            // footage — say so rather than recording "no video" silently.
+            console.warn("Recording upload failed:", uploadRes?.error);
           }
         }
       } catch (err) {
@@ -224,40 +279,52 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       releaseCamera();
     }
 
-    // The server re-scores and owns pass/fail, attempt number and the id
-    // (ADR 001). The local calculation is only what we show if the API is
-    // unreachable (api.submitExam falls back to it), never the source of truth.
-    let finalResult: ExamResult = result;
-    try {
-      const serverResult = await api.submitExam({
-        candidateId: result.candidateId,
-        candidateName: result.candidateName,
-        candidateEmail: result.candidateEmail,
-        companyId: result.companyId,
-        answers: result.answers,
-        timeSpentSeconds: result.timeSpentSeconds,
-        tabSwitches: result.tabSwitches,
-        proctoringStatus: result.proctoringStatus,
-        candidatePhoto: result.candidatePhoto,
-        hasVideoRecording: result.hasVideoRecording,
-        videoFilename: result.videoFilename,
-      });
-      finalResult = {
-        ...result,
-        ...serverResult,
-        passingPercentage: result.passingPercentage,
-      };
+    setSubmitStage("Submitting your answers…");
 
-      // Also map video in IndexedDB to server attempt ID if different
-      if (serverResult && serverResult.id && result.id !== serverResult.id) {
-        VideoStorage.getVideo(result.id).then((blob) => {
-          if (blob) VideoStorage.saveVideo(serverResult.id, blob);
+    let finalResult: ExamResult;
+    try {
+      finalResult = await api.submitExam({
+        candidateId: submission.candidateId,
+        candidateName: submission.candidateName,
+        candidateEmail: submission.candidateEmail,
+        companyId: submission.companyId,
+        answers: submission.answers,
+        sessionId,
+        tabSwitches: submission.tabSwitches,
+        candidatePhoto: submission.candidatePhoto,
+        hasVideoRecording: submission.hasVideoRecording,
+        videoFilename: submission.videoFilename,
+      });
+
+      // Re-key the local recording to the attempt id the server assigned.
+      if (finalResult.id && finalResult.id !== submission.draftId) {
+        VideoStorage.getVideo(submission.draftId).then((blob) => {
+          if (blob) VideoStorage.saveVideo(finalResult.id, blob);
         });
       }
     } catch (err) {
-      // A 403 cooldown refusal is the only thing api.submitExam throws.
+      const retryable = err instanceof SubmitFailedError ? err.retryable : true;
+      setSubmitStage(null);
       setSubmitRefusal(err instanceof Error ? err.message : String(err));
+      // A retryable failure must not strand the candidate: re-arm the button.
+      // Their answers are still in sessionStorage.
+      setSubmitCanRetry(retryable);
+      if (retryable) {
+        setSubmitted(false);
+      }
       return;
+    }
+
+    setSubmitStage(null);
+    // The recording is uploaded and the attempt recorded; drop the local buffer.
+    VideoStorage.clearChunks(sessionId).catch((err) =>
+      console.warn("Could not clear the recording buffer:", err)
+    );
+
+    try {
+      sessionStorage.removeItem(`exam_sid_${userData?.email || "candidate"}`);
+    } catch (err) {
+      console.warn("Could not clear the exam session id:", err);
     }
 
     // Persist to local storage
@@ -276,12 +343,6 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
     if (onFinishExam) {
       onFinishExam(finalResult);
-    } else {
-      alert(
-        `Exam submitted!\n\nScore: ${finalResult.score}/${questions.length} (${finalResult.percentage.toFixed(1)}%)\nStatus: ${
-          finalResult.isPassed ? "PASSED" : "FAILED"
-        }`
-      );
     }
   }
 
@@ -299,7 +360,8 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     return () => {
       releaseCamera();
     };
-  }, []);
+    // Announced once per candidate; userData does not change mid-exam.
+  }, [userData]);
 
   function confirmSubmit() {
     setShowSubmitModal(true);
@@ -311,23 +373,39 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     }
 
     if (timeLeft <= 0) {
-      submitExam();
+      // Without a sitting the server refuses the submit outright, so wait for
+      // POST /api/exam/start to land rather than firing a doomed request. A
+      // failure to open one already surfaces its own retry banner.
+      if (sessionId) {
+        // The timer reaching zero must submit -- that is the auto-submit
+        // requirement -- and `submitted` guards re-entry.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        submitExam();
+      }
       return;
     }
 
+    // Recomputed from the deadline each tick, so a throttled or suspended tab
+    // catches up instead of gaining time.
     const timer = setInterval(() => {
-      setTimeLeft((previousTime) => previousTime - 1);
+      setTimeLeft(Math.max(0, Math.round((deadline - Date.now()) / 1000)));
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, submitted]);
+    // submitExam is re-created every render; listing it would tear down and
+    // rebuild the interval each tick. `submitted` and `sessionId` are what
+    // actually gate the call above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft, submitted, deadline, sessionId]);
 
   // Continuously persist active session to sessionStorage
   useEffect(() => {
     if (submitted) {
       try {
         sessionStorage.removeItem(SESSION_STORAGE_KEY);
-      } catch {}
+      } catch {
+        // Private-mode storage can refuse; the draft is stale, not harmful.
+      }
       return;
     }
 
@@ -337,16 +415,20 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         JSON.stringify({
           currentQuestion,
           selectedAnswers,
-          timeLeft,
+          // The deadline, not a remaining count -- a reload must not hand back
+          // the seconds it took.
+          deadline,
           tabSwitches,
           lastSavedAt: new Date().toISOString(),
         })
       );
-    } catch {}
+    } catch (err) {
+      console.warn("Could not save exam progress:", err);
+    }
   }, [
     currentQuestion,
     selectedAnswers,
-    timeLeft,
+    deadline,
     tabSwitches,
     submitted,
     SESSION_STORAGE_KEY,
@@ -426,8 +508,31 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       ? question?.sectionTitle || "Part A — Interface Management"
       : question?.sectionTitle || "Part B — Stakeholder Management";
 
-  if (!question) {
-    if (submitRefusal) {
+  // Submitting: hold the screen with what is actually happening.
+  if (submitStage) {
+    return (
+      <div
+        className="exam-page exam-submitting"
+        role="status"
+        aria-live="polite"
+      >
+        <div className="exam-submitting-card">
+          <div className="exam-spinner" aria-hidden="true" />
+          <h2>Submitting your assessment</h2>
+          <p>{submitStage}</p>
+          <p className="exam-submitting-note">
+            Do not close this window. Your answers are saved on this device
+            until the server confirms them.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // A refusal the candidate cannot retry (a cooldown 403) ends the attempt.
+  // This used to be nested inside the `!question` branch below, which is false
+  // in the normal case — so a refused submit rendered nothing at all.
+  if (submitRefusal && !submitCanRetry) {
     return (
       <div className="exam-page" style={{ maxWidth: 560, margin: "80px auto", textAlign: "center" }}>
         <h2>Submission refused</h2>
@@ -437,7 +542,8 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     );
   }
 
-  return (
+  if (!question) {
+    return (
       <div className="exam-page">
         <p>No questions available.</p>
       </div>
@@ -446,6 +552,23 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
   return (
     <div className="exam-page">
+      {/* Submission failed but can be retried — answers are still held locally */}
+      {submitRefusal && submitCanRetry && (
+        <div className="exam-submit-error" role="alert">
+          <strong>Submission not sent.</strong> {submitRefusal}
+          <button
+            type="button"
+            className="btn-retry-submit"
+            onClick={() => {
+              setSubmitRefusal(null);
+              submitExam();
+            }}
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       {/* Session Resumed Banner */}
       {sessionResumed && (
         <div className="exam-session-resumed-banner">
@@ -521,6 +644,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         <aside className="question-sidebar">
           {/* Live Camera Proctoring & Background Video Recording Card */}
           <CameraProctor
+            sessionId={sessionId}
             candidateName={userData?.name}
             candidateId={userData?.companyId}
             onWarningChange={(count) => setTabSwitches(count)}

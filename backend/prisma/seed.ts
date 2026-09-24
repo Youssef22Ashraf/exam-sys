@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { resolveAdminInitialPassword } from "../src/config/env";
 
 const prisma = new PrismaClient();
 
@@ -500,30 +501,34 @@ const QUESTIONS = [
 ];
 
 async function main() {
-  console.log("🌱 Starting database seeding...");
+  console.log("Starting database seeding...");
 
-  // 1. Seed Admin Users
-  const adminPassword = await bcrypt.hash("Mofarreh@2026", 10);
+  // 1. Seed Admin Users.
+  // The password comes from ADMIN_INITIAL_PASSWORD, never a literal, and is
+  // never printed. It used to be committed here and echoed to stdout.
+  // `update` deliberately leaves passwordHash alone so re-seeding an existing
+  // database does not silently reset a password an admin has already changed.
+  const adminPassword = await bcrypt.hash(resolveAdminInitialPassword(), 10);
   await prisma.adminUser.upsert({
     where: { username: "mofarreh.admin" },
-    update: { passwordHash: adminPassword },
+    update: {},
     create: {
       username: "mofarreh.admin",
       passwordHash: adminPassword,
-      role: "ADMIN",
+      role: "SUPERADMIN",
     },
   });
 
   await prisma.adminUser.upsert({
     where: { username: "admin" },
-    update: { passwordHash: adminPassword },
+    update: {},
     create: {
       username: "admin",
       passwordHash: adminPassword,
       role: "ADMIN",
     },
   });
-  console.log("👤 Admin users seeded: mofarreh.admin & admin (password: Mofarreh@2026)");
+  console.log("Admin users seeded: mofarreh.admin (SUPERADMIN) & admin (ADMIN).");
 
   // 2. Seed Exam Settings
   await prisma.examSetting.upsert({
@@ -536,10 +541,10 @@ async function main() {
       passingPercentage: 70,
       sectorBadge: "Engineering & Construction Sector",
       allowReviewAnswers: true,
-      notifyEmail: "admin@harbico.com",
+      notifyEmail: process.env.ADMIN_ALERT_EMAIL || null,
     },
   });
-  console.log("⚙️  Exam settings seeded");
+  console.log("Exam settings seeded");
 
   // 3. Seed Questions
   for (const q of QUESTIONS) {
@@ -562,8 +567,8 @@ async function main() {
       },
     });
   }
-  console.log(`📚 Seeded ${QUESTIONS.length} assessment questions`);
-  console.log("✅ Production database initialized with official questions, settings, and admin credentials (0 candidate records).");
+  console.log(`Seeded ${QUESTIONS.length} assessment questions`);
+  console.log("Database initialized with official questions, settings, and admin credentials (0 candidate records).");
 }
 
 main()

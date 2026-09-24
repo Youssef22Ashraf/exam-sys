@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Icon } from "../components/Icon";
 import {
   ExamStorage,
@@ -66,6 +66,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     let isMounted = true;
     let currentObjectUrl: string | null = null;
     if (!selectedResult) {
+      // Releasing the object URL when the modal closes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoadedVideoUrl(null);
       return;
     }
@@ -130,15 +132,31 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [tempSettings, setTempSettings] = useState<ExamSettings>(settings);
   const [settingsSavedMsg, setSettingsSavedMsg] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ success: boolean; text: string } | null>(null);
+
   const [testEmailMsg, setTestEmailMsg] = useState<{
     text: string;
     success: boolean;
   } | null>(null);
+  // Surfaces a mutation the server refused. Every admin action used to be
+  // applied to localStorage first and fired at the API with `.catch(() => {})`,
+  // so a 401 or 403 still looked like success and the row came back on the
+  // next sync.
+  const [adminError, setAdminError] = useState<string | null>(null);
+  // Calling Date.now() during render is impure: the cooldown countdown only
+  // refreshed when something unrelated re-rendered. Ticked alongside the
+  // periodic server refresh below.
+  const [now, setNow] = useState(() => Date.now());
   const [liveSocketToast, setLiveSocketToast] = useState<{
     message: string;
     type: "info" | "warning" | "success";
   } | null>(null);
 
+  /** Read the local cache. Cheap; used by the cross-tab sync listeners. */
   function reloadData() {
     setCandidates(ExamStorage.getCandidates());
     setResults(ExamStorage.getResults());
@@ -146,13 +164,32 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setSettings(ExamStorage.getSettings());
   }
 
-  // Load latest state from backend on mount
-  useEffect(() => {
-    api.getCandidates().then((c) => { if (c) setCandidates(c); }).catch(() => {});
-    api.getResults().then((r) => { if (r) setResults(r); }).catch(() => {});
-    api.getQuestions().then((q) => { if (q) setQuestions(q); }).catch(() => {});
-    api.getSettings().then((s) => { if (s) setSettings(s); }).catch(() => {});
+  /**
+   * Pull from the server.
+   *
+   * `reloadData` reads localStorage, so a socket event about a submission on a
+   * different machine fired a toast but never updated the table — that record
+   * was not in this browser's cache.
+   */
+  const refreshFromServer = useCallback(async () => {
+    const [c, r, q, st] = await Promise.allSettled([
+      api.getCandidates(),
+      api.getResults(),
+      api.getQuestions(),
+      api.getSettings(),
+    ]);
+    if (c.status === "fulfilled" && c.value) setCandidates(c.value);
+    if (r.status === "fulfilled" && r.value) setResults(r.value);
+    if (q.status === "fulfilled" && q.value) setQuestions(q.value);
+    if (st.status === "fulfilled" && st.value) setSettings(st.value);
   }, []);
+
+  useEffect(() => {
+    // refreshFromServer is async and only sets state once the requests
+    // resolve, so this cannot cascade renders; fetching on mount is the point.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refreshFromServer();
+  }, [refreshFromServer]);
 
   // Real-time live synchronization across tabs, windows, and remote computers via WebSocket
   useEffect(() => {
@@ -163,7 +200,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
     // 2. Remote WebSocket live proctoring events
     const unSubSubmit = socketService.onAdminExamSubmitted((data) => {
-      reloadData();
+      refreshFromServer();
       setLiveSocketToast({
         message: `Candidate ${data.candidateName} (${data.companyId}) submitted exam: ${data.score}/${data.totalQuestions} (${data.percentage.toFixed(1)}%) - ${data.isPassed ? "PASSED" : "FAILED"}`,
         type: "success",
@@ -171,7 +208,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     });
 
     const unSubWarn = socketService.onAdminCandidateWarning((data) => {
-      reloadData();
+      refreshFromServer();
       setLiveSocketToast({
         message: `Proctor Alert: ${data.candidateName} (${data.companyId}) - ${data.warningType} (Total Warnings: ${data.totalWarnings})`,
         type: "warning",
@@ -179,16 +216,20 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     });
 
     const unSubStart = socketService.onAdminCandidateStarted((data) => {
-      reloadData();
+      refreshFromServer();
       setLiveSocketToast({
         message: `Candidate ${data.candidateName} (${data.companyId}) just started the assessment.`,
         type: "info",
       });
     });
 
+    // Was a 2-second localStorage re-read that re-rendered this whole
+    // component and recomputed every filter. Sockets already push the events
+    // that matter; this is just a slow safety net.
     const interval = setInterval(() => {
-      reloadData();
-    }, 2000);
+      setNow(Date.now());
+      refreshFromServer();
+    }, 30000);
 
     return () => {
       unsubscribe();
@@ -197,7 +238,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       unSubStart();
       clearInterval(interval);
     };
-  }, []);
+  }, [refreshFromServer]);
 
   // Auto-dismiss live socket toast
   useEffect(() => {
@@ -293,11 +334,11 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setQSection(q.section);
     setQText(q.question);
     setQOptions([...q.options]);
-    setQCorrect(q.correctAnswer);
+    setQCorrect(q.correctAnswer ?? 0);
     setIsQuestionModalOpen(true);
   }
 
-  function handleSaveQuestion() {
+  async function handleSaveQuestion() {
     if (!qText.trim()) {
       alert("Please enter question text.");
       return;
@@ -316,8 +357,13 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
         options: qOptions,
         correctAnswer: qCorrect,
       };
-      ExamStorage.addQuestion(newQ);
-      api.createQuestion(newQ).catch(() => {});
+      try {
+        await api.createQuestion(newQ);
+        ExamStorage.addQuestion(newQ);
+      } catch (err) {
+        setAdminError(err instanceof Error ? err.message : "Could not add the question.");
+        return;
+      }
     } else if (editingQuestion) {
       const updatedQ = {
         ...editingQuestion,
@@ -327,20 +373,30 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
         options: qOptions,
         correctAnswer: qCorrect,
       };
-      ExamStorage.updateQuestion(updatedQ);
-      api.updateQuestion(updatedQ).catch(() => {});
+      try {
+        await api.updateQuestion(updatedQ);
+        ExamStorage.updateQuestion(updatedQ);
+      } catch (err) {
+        setAdminError(err instanceof Error ? err.message : "Could not update the question.");
+        return;
+      }
     }
 
     setIsQuestionModalOpen(false);
-    reloadData();
+    await refreshFromServer();
   }
 
-  function handleDeleteQuestion(id: number) {
-    if (window.confirm(`Are you sure you want to delete question #${id}?`)) {
-      ExamStorage.deleteQuestion(id);
-      api.deleteQuestion(id).catch(() => {});
-      reloadData();
+  async function handleDeleteQuestion(id: number) {
+    if (!window.confirm(`Are you sure you want to delete question #${id}?`)) return;
+    setAdminError(null);
+    try {
+      await api.deleteQuestion(id);
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "Could not delete the question.");
+      return;
     }
+    ExamStorage.deleteQuestion(id);
+    await refreshFromServer();
   }
 
   function handleResetQuestions() {
@@ -349,20 +405,32 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
         "Are you sure you want to restore the default 40 questions? Custom changes will be overwritten."
       )
     ) {
-      ExamStorage.resetQuestions();
-      api.resetQuestions().catch(() => {});
-      reloadData();
+      setAdminError(null);
+      api
+        .resetQuestions()
+        .then(() => {
+          ExamStorage.resetQuestions();
+          return refreshFromServer();
+        })
+        .catch((err) =>
+          setAdminError(err instanceof Error ? err.message : "Could not reset the questions.")
+        );
     }
   }
 
   // Handlers for Candidates
-  function handleDeleteCandidate(id: string) {
-    if (
-      window.confirm("Are you sure you want to remove this candidate record?")
-    ) {
-      ExamStorage.deleteCandidate(id);
-      reloadData();
+  async function handleDeleteCandidate(id: string) {
+    if (!window.confirm("Are you sure you want to remove this candidate record?")) return;
+    setAdminError(null);
+    try {
+      // This used to delete from localStorage only, so the candidate stayed on
+      // the server and reappeared on the next sync.
+      await api.deleteCandidate(id);
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "Could not delete the candidate.");
+      return;
     }
+    await refreshFromServer();
   }
 
   async function handleClearCandidateCooldown(candidateId: string) {
@@ -392,17 +460,30 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   }
 
   // Handlers for Results
-  function handleDeleteResult(id: string) {
-    if (window.confirm("Are you sure you want to delete this exam result?")) {
-      ExamStorage.deleteResult(id);
-      VideoStorage.deleteVideo(id);
-      reloadData();
+  async function handleDeleteResult(id: string) {
+    if (!window.confirm("Are you sure you want to delete this exam result?")) return;
+    setAdminError(null);
+    try {
+      // Local-only before, so the attempt survived on the server.
+      await api.deleteResult(id);
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "Could not delete the result.");
+      return;
     }
+    VideoStorage.deleteVideo(id);
+    await refreshFromServer();
   }
 
   function handleSaveSettings() {
+    setAdminError(null);
     ExamStorage.saveSettings(tempSettings);
-    api.saveSettings(tempSettings).catch(() => {});
+    api
+      .saveSettings(tempSettings)
+      .catch((err) =>
+        setAdminError(
+          err instanceof Error ? err.message : "Settings were not saved on the server."
+        )
+      );
     setSettings(tempSettings);
     setSettingsSavedMsg(true);
     setTimeout(() => setSettingsSavedMsg(false), 3000);
@@ -435,8 +516,49 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     }
   }
 
+  async function handleChangePassword() {
+    setPwMsg(null);
+
+    if (pwNew.length < 12) {
+      setPwMsg({ success: false, text: "The new password must be at least 12 characters." });
+      return;
+    }
+    if (pwNew !== pwConfirm) {
+      setPwMsg({ success: false, text: "The two new passwords do not match." });
+      return;
+    }
+
+    setPwBusy(true);
+    const res = await api.changePassword(pwCurrent, pwNew);
+    setPwBusy(false);
+
+    if (res.success) {
+      setPwCurrent("");
+      setPwNew("");
+      setPwConfirm("");
+      setPwMsg({ success: true, text: "Password updated." });
+    } else {
+      setPwMsg({ success: false, text: res.error || "Could not change the password." });
+    }
+  }
+
   return (
     <div className="admin-page">
+      {/* A server-refused admin action. Previously these failed silently. */}
+      {adminError && (
+        <div className="admin-error-banner" role="alert">
+          <span>{adminError}</span>
+          <button
+            type="button"
+            className="admin-error-dismiss"
+            onClick={() => setAdminError(null)}
+            aria-label="Dismiss"
+          >
+            <Icon name="x" />
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <header className="admin-header">
         <div className="brand">
@@ -932,16 +1054,29 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           </td>
                           <td>
                             <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                              {/* "Camera Disabled" used to render as a green
+                                  "Monitored" badge, because anything that was
+                                  not "Warnings" was treated as clean. */}
                               <span
                                 className={`badge ${
-                                  r.proctoringStatus === "Warnings"
-                                    ? "badge-failed"
-                                    : "badge-passed"
+                                  r.proctoringStatus === "Verified"
+                                    ? "badge-passed"
+                                    : "badge-failed"
                                 }`}
                               >
-                                {r.proctoringStatus === "Warnings"
-                                  ? <><Icon name="alert-triangle" /> {r.tabSwitches || 0} Warn</>
-                                    : <><Icon name="check" /> Monitored</>}
+                                {r.proctoringStatus === "Warnings" ? (
+                                  <>
+                                    <Icon name="alert-triangle" /> {r.tabSwitches || 0} Warn
+                                  </>
+                                ) : r.proctoringStatus === "Camera Disabled" ? (
+                                  <>
+                                    <Icon name="alert-triangle" /> No Camera
+                                  </>
+                                ) : (
+                                  <>
+                                    <Icon name="check" /> Monitored
+                                  </>
+                                )}
                               </span>
                               {r.hasVideoRecording || r.videoFilename ? (
                                 <span
@@ -1330,6 +1465,81 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 Save Settings
               </button>
             </div>
+
+            <div className="settings-card">
+              <h3>Change Password</h3>
+              <p style={{ fontSize: "12px", color: "var(--text-3)", marginTop: 0 }}>
+                Changes the password of the account you are signed in as. Do this
+                on first login — both admin accounts start on the same password.
+              </p>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="pw-current">Current password</label>
+                <input
+                  id="pw-current"
+                  type="password"
+                  autoComplete="current-password"
+                  className="form-input"
+                  value={pwCurrent}
+                  onChange={(e) => setPwCurrent(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="pw-new">New password</label>
+                <input
+                  id="pw-new"
+                  type="password"
+                  autoComplete="new-password"
+                  className="form-input"
+                  value={pwNew}
+                  onChange={(e) => setPwNew(e.target.value)}
+                />
+                <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                  Minimum 12 characters.
+                </span>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" htmlFor="pw-confirm">Confirm new password</label>
+                <input
+                  id="pw-confirm"
+                  type="password"
+                  autoComplete="new-password"
+                  className="form-input"
+                  value={pwConfirm}
+                  onChange={(e) => setPwConfirm(e.target.value)}
+                />
+              </div>
+
+              {pwMsg && (
+                <div
+                  role="status"
+                  style={{
+                    marginTop: "8px",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    background: pwMsg.success ? "var(--success-soft)" : "var(--danger-soft)",
+                    color: pwMsg.success ? "var(--success)" : "var(--danger)",
+                    border: `1px solid ${
+                      pwMsg.success ? "var(--success-border)" : "var(--danger-border)"
+                    }`,
+                  }}
+                >
+                  {pwMsg.text}
+                </div>
+              )}
+
+              <button
+                className="primary-button"
+                style={{ width: "100%", marginTop: "10px" }}
+                onClick={handleChangePassword}
+                disabled={pwBusy || !pwCurrent || !pwNew || !pwConfirm}
+              >
+                {pwBusy ? "Updating…" : "Change Password"}
+              </button>
+            </div>
           </div>
         )}
       </main>
@@ -1440,14 +1650,25 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       display: "block",
                       marginTop: "6px",
                       color:
-                        selectedResult.proctoringStatus === "Warnings"
-                          ? "var(--danger)"
-                          : "var(--success)",
+                        selectedResult.proctoringStatus === "Verified"
+                          ? "var(--success)"
+                          : "var(--danger)",
                     }}
                   >
-                    {selectedResult.proctoringStatus === "Warnings"
-                      ? <><Icon name="alert-triangle" /> {selectedResult.tabSwitches || 0} Tab Switch(es)</>
-                        : <><Icon name="check" /> Monitored (0 Warnings)</>}
+                    {selectedResult.proctoringStatus === "Warnings" ? (
+                      <>
+                        <Icon name="alert-triangle" /> {selectedResult.tabSwitches || 0} Tab
+                        Switch(es)
+                      </>
+                    ) : selectedResult.proctoringStatus === "Camera Disabled" ? (
+                      <>
+                        <Icon name="alert-triangle" /> Camera Disabled — no recording
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="check" /> Monitored (0 Warnings)
+                      </>
+                    )}
                   </strong>
                 </div>
               </div>
@@ -1695,7 +1916,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                           </span>
                         </div>
 
-                        {!isCorrect && (
+                        {!isCorrect && q.correctAnswer !== undefined && (
                           <div>
                             <strong>Correct answer: </strong>
                             <span style={{ color: "var(--success)" }}>
@@ -1762,7 +1983,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   : latestAttempt
                   ? new Date(latestAttempt.submittedAt).getTime()
                   : 0;
-                const timeSince = Date.now() - lastAttemptTime;
+                const timeSince = now - lastAttemptTime;
                 const isCooldownActive = lastAttemptTime > 0 && timeSince < 48 * 60 * 60 * 1000;
                 const remainingHours = Math.ceil((48 * 60 * 60 * 1000 - timeSince) / (1000 * 60 * 60));
                 const unlockTime = new Date(lastAttemptTime + 48 * 60 * 60 * 1000);

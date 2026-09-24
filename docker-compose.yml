@@ -11,7 +11,12 @@ services:
     environment:
       - PORT=5000
       - DATABASE_URL=file:./dev.db
-      - JWT_SECRET=super_secret_exam_jwt_key_production_2026_x89
+      # Never commit a real secret. Both are read from your shell or a .env
+      # file next to this compose file; production refuses to boot without
+      # them (backend/src/config/env.ts).
+      #   JWT_SECRET=$(openssl rand -base64 48)
+      - JWT_SECRET=${JWT_SECRET:?set JWT_SECRET before starting}
+      - ADMIN_INITIAL_PASSWORD=${ADMIN_INITIAL_PASSWORD:?set ADMIN_INITIAL_PASSWORD before starting}
       - CORS_ORIGIN=http://localhost:5173
       - NODE_ENV=production
       # Optional SMTP configuration for live email alerts

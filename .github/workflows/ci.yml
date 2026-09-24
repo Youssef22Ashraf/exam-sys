@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  quality-gate:
+    name: Type-check, lint and test
+    runs-on: ubuntu-latest
+
+    env:
+      # Never a real value. The backend refuses to boot in production on a
+      # secret published in this repository, and these are test-only.
+      JWT_SECRET: ci-only-secret-not-used-anywhere-else-0123456789
+      ADMIN_INITIAL_PASSWORD: ci-admin-password
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend
+        working-directory: backend
+        run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Install frontend
+        working-directory: frontend
+        run: npm ci
+
+      # The repo's stated quality gate (AGENTS.md, CLAUDE.md).
+      - name: Backend type-check
+        working-directory: backend
+        run: npx tsc --noEmit
+
+      - name: Frontend type-check
+        working-directory: frontend
+        run: npx tsc -b
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Backend tests
+        working-directory: backend
+        run: npm test
+
+      - name: Frontend tests
+        working-directory: frontend
+        run: npm test
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build
+
+      # A candidate must never be able to read the answer key out of the
+      # bundle. This is the Phase 1 regression guard at the artefact level.
+      - name: Assert the answer key is not in the built bundle
+        working-directory: frontend
+        run: |
+          if grep -rqE 'correctAnswer:[0-9]' dist/assets/*.js; then
+            echo "::error::correctAnswer values found in the built bundle"
+            exit 1
+          fi
+          echo "No answer key in the bundle."
+
+      # CHANGELOG records the history, config/env.ts denylists them on purpose,
+      # and this file names them to search for. The patterns are assembled so
+      # this step cannot match itself.
+      - name: Assert no credentials in tracked files
+        run: |
+          PATTERNS="Mofarreh@""2026|super_secret_exam_jwt_key_""production"
+          if git grep -nE "$PATTERNS" -- \
+               ':!CHANGELOG.md' ':!backend/src/config/env.ts' ':!.github/workflows/ci.yml'; then
+            echo "::error::a known credential is present in a tracked file"
+            exit 1
+          fi
+          echo "No known credentials in tracked files."

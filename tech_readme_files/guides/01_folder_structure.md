@@ -7,7 +7,7 @@ exam-sys/
 ├── backend/
 │   ├── prisma/
 │   │   ├── schema.prisma        5 models — the data contract
-│   │   ├── seed.ts              40 questions + admin/admin123 + default ExamSetting
+│   │   ├── seed.ts              40 questions + admin users + default ExamSetting
 │   │   └── dev.db               gitignored SQLite (created by `prisma db push`)
 │   ├── src/
 │   │   ├── index.ts             Express app, Socket.io, static SPA, /api mounts, error handler

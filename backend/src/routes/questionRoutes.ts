@@ -1,24 +1,30 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
-import { authenticateAdmin } from "../middleware/auth";
+import { parseJsonColumn } from "../services/validation";
+import { authenticateAdmin, optionalAdmin, requireRole, AuthRequest } from "../middleware/auth";
 import { QUESTIONS } from "../config/defaultQuestions";
 
 const router = Router();
 
 // GET /api/questions - List all questions
-router.get("/", async (_req: Request, res: Response) => {
+//
+// ADR 001 says the server owns pass/fail, but that is worth nothing while the
+// answer key is one unauthenticated GET away. `correctAnswer` is returned only
+// to a caller holding an admin JWT; the exam page never needs it.
+router.get("/", optionalAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const questions = await prisma.question.findMany({
       orderBy: { id: "asc" },
     });
 
+    const isAdmin = Boolean(req.user);
     const formatted = questions.map((q) => ({
       id: q.id,
       section: q.section,
       sectionTitle: q.sectionTitle,
       question: q.question,
-      options: JSON.parse(q.options),
-      correctAnswer: q.correctAnswer,
+      options: parseJsonColumn<string[]>(q.options, []),
+      ...(isAdmin ? { correctAnswer: q.correctAnswer } : {}),
     }));
 
     return res.json(formatted);
@@ -65,7 +71,7 @@ router.post("/", authenticateAdmin, async (req: Request, res: Response) => {
       section: created.section,
       sectionTitle: created.sectionTitle,
       question: created.question,
-      options: JSON.parse(created.options),
+      options: parseJsonColumn<string[]>(created.options, []),
       correctAnswer: created.correctAnswer,
     });
   } catch (error) {
@@ -96,7 +102,7 @@ router.put("/:id", authenticateAdmin, async (req: Request, res: Response) => {
       section: updated.section,
       sectionTitle: updated.sectionTitle,
       question: updated.question,
-      options: JSON.parse(updated.options),
+      options: parseJsonColumn<string[]>(updated.options, []),
       correctAnswer: updated.correctAnswer,
     });
   } catch (error) {
@@ -120,7 +126,7 @@ router.delete("/:id", authenticateAdmin, async (req: Request, res: Response) => 
 });
 
 // POST /api/questions/reset - Restore default 40 questions (Admin)
-router.post("/reset", authenticateAdmin, async (_req: Request, res: Response) => {
+router.post("/reset", authenticateAdmin, requireRole("SUPERADMIN"), async (_req: Request, res: Response) => {
   try {
     await prisma.question.deleteMany();
     for (const q of QUESTIONS) {
@@ -143,7 +149,7 @@ router.post("/reset", authenticateAdmin, async (_req: Request, res: Response) =>
       section: q.section,
       sectionTitle: q.sectionTitle,
       question: q.question,
-      options: JSON.parse(q.options),
+      options: parseJsonColumn<string[]>(q.options, []),
       correctAnswer: q.correctAnswer,
     }));
     return res.json(formatted);

@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Icon } from "./Icon";
 import { socketService } from "../services/socket";
+import { VideoStorage } from "../services/videoStorage";
 import { registerActiveCameraStream, releaseCamera } from "../services/camera";
 import "./CameraProctor.css";
 
 interface CameraProctorProps {
   candidateName?: string;
   candidateId?: string;
+  /** Server-owned sitting; warnings are banked against it. */
+  sessionId?: string;
   onWarningChange?: (warningsCount: number) => void;
   onRegisterSnapshotGetter?: (getSnapshotFn: () => string | null) => void;
   onRegisterStopRecording?: (stopFn: () => Promise<Blob | null>) => void;
@@ -15,6 +18,7 @@ interface CameraProctorProps {
 export function CameraProctor({
   candidateName,
   candidateId,
+  sessionId,
   onWarningChange,
   onRegisterSnapshotGetter,
   onRegisterStopRecording,
@@ -25,10 +29,10 @@ export function CameraProctor({
   const recordedChunksRef = useRef<Blob[]>([]);
 
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [isSimulated, setIsSimulated] = useState(false);
   const [warningsCount, setWarningsCount] = useState(0);
   const [activeAlert, setActiveAlert] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const chunkSeqRef = useRef(0);
 
   // Initialize camera & background recording
   const startCamera = useCallback(async () => {
@@ -49,7 +53,6 @@ export function CameraProctor({
           videoRef.current.srcObject = stream;
         }
         setHasPermission(true);
-        setIsSimulated(false);
 
         // Start background media recording
         try {
@@ -66,9 +69,21 @@ export function CameraProctor({
             ? new MediaRecorder(stream, { mimeType })
             : new MediaRecorder(stream);
 
+          // Continue the sequence if this sitting already has buffered chunks
+          // (a mid-exam reload restarts the recorder but not the exam).
+          if (sessionId) {
+            const existing = await VideoStorage.listChunkKeys(sessionId);
+            chunkSeqRef.current = existing.length;
+          }
+
           recorder.ondataavailable = (event) => {
             if (event.data && event.data.size > 0) {
               recordedChunksRef.current.push(event.data);
+              // Persist as we go: an in-memory-only buffer loses the whole
+              // recording to a tab crash or an OOM on a long session.
+              if (sessionId) {
+                VideoStorage.appendChunk(sessionId, chunkSeqRef.current++, event.data);
+              }
             }
           };
 
@@ -85,7 +100,7 @@ export function CameraProctor({
       console.warn("Camera access not granted or not available:", err);
       setHasPermission(false);
     }
-  }, []);
+  }, [sessionId]);
 
   const stopCamera = useCallback(() => {
     // 1. Stop recorder
@@ -95,7 +110,10 @@ export function CameraProctor({
     ) {
       try {
         mediaRecorderRef.current.stop();
-      } catch {}
+      } catch {
+        // Already stopping or in a bad state; the track teardown below is
+        // what actually turns the camera off.
+      }
     }
     // 2. Stop all camera media tracks immediately
     if (streamRef.current) {
@@ -104,7 +122,9 @@ export function CameraProctor({
           track.stop();
           track.enabled = false;
         });
-      } catch {}
+      } catch {
+        // releaseCamera() below is the global safety net.
+      }
       streamRef.current = null;
     }
     // 3. Clear video element source
@@ -117,6 +137,9 @@ export function CameraProctor({
   }, []);
 
   useEffect(() => {
+    // startCamera awaits getUserMedia before setting any state. Acquiring
+    // hardware is a side effect and belongs in an effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     startCamera();
 
     const handleWindowUnload = () => {
@@ -135,7 +158,9 @@ export function CameraProctor({
       ) {
         try {
           mediaRecorderRef.current.stop();
-        } catch {}
+        } catch {
+          // Unmount path; nothing useful to do if the recorder is already gone.
+        }
       }
       // Clean up media tracks
       if (streamRef.current) {
@@ -149,36 +174,49 @@ export function CameraProctor({
   }, [startCamera, stopCamera]);
 
   // Stop recording handler
+  /**
+   * Assemble the recording, preferring the IndexedDB buffer because it also
+   * holds chunks written before a reload; fall back to the in-memory chunks
+   * when there is no session key or the buffer is empty.
+   */
+  const assembleRecording = useCallback(async (): Promise<Blob | null> => {
+    if (sessionId) {
+      const buffered = await VideoStorage.assembleChunks(sessionId, "video/webm");
+      if (buffered && buffered.size > 0) return buffered;
+    }
+    return recordedChunksRef.current.length > 0
+      ? new Blob(recordedChunksRef.current, { type: "video/webm" })
+      : null;
+  }, [sessionId]);
+
+  // Stop recording handler
   const stopRecording = useCallback((): Promise<Blob | null> => {
     return new Promise((resolve) => {
+      const finish = () => {
+        stopCamera();
+        assembleRecording().then(resolve).catch(() => resolve(null));
+      };
+
       if (
         !mediaRecorderRef.current ||
         mediaRecorderRef.current.state === "inactive"
       ) {
-        const resultBlob =
-          recordedChunksRef.current.length > 0
-            ? new Blob(recordedChunksRef.current, { type: "video/webm" })
-            : null;
-        stopCamera();
-        resolve(resultBlob);
+        finish();
         return;
       }
 
       mediaRecorderRef.current.onstop = () => {
         setIsRecording(false);
-        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
-        stopCamera();
-        resolve(blob);
+        finish();
       };
 
       try {
         mediaRecorderRef.current.stop();
       } catch {
-        stopCamera();
-        resolve(null);
+        finish();
       }
     });
-  }, [stopCamera]);
+  }, [stopCamera, assembleRecording]);
 
   // Register stop recording getter
   useEffect(() => {
@@ -201,6 +239,7 @@ export function CameraProctor({
           companyId: candidateId || "N/A",
           warningType: reason,
           totalWarnings: newCount,
+          sessionId,
         });
         return newCount;
       });
@@ -228,36 +267,10 @@ export function CameraProctor({
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("blur", onWindowBlur);
     };
-  }, [onWarningChange]);
+  }, [onWarningChange, candidateName, candidateId, sessionId]);
 
   // Snapshot capture function
   const captureSnapshot = useCallback((): string | null => {
-    if (isSimulated) {
-      // Return a simulated candidate avatar canvas
-      const canvas = document.createElement("canvas");
-      canvas.width = 320;
-      canvas.height = 240;
-      const ctx = canvas.getContext("2d");
-      if (ctx) {
-        ctx.fillStyle = "#1e293b";
-        ctx.fillRect(0, 0, 320, 240);
-        ctx.fillStyle = "#3b82f6";
-        ctx.beginPath();
-        ctx.arc(160, 100, 50, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(160, 240, 90, Math.PI, 0);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 13px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(candidateName || "Candidate", 160, 215);
-        ctx.font = "10px monospace";
-        ctx.fillText(`ID: ${candidateId || "N/A"} • Verified`, 160, 230);
-      }
-      return canvas.toDataURL("image/jpeg", 0.8);
-    }
-
     if (!videoRef.current || !hasPermission) {
       return null;
     }
@@ -291,7 +304,8 @@ export function CameraProctor({
       console.error("Failed to capture snapshot:", e);
     }
     return null;
-  }, [candidateName, candidateId, hasPermission, isSimulated]);
+    // candidateName/candidateId are stamped onto the frame above.
+  }, [hasPermission, candidateName, candidateId]);
 
   // Register snapshot getter to parent
   useEffect(() => {
@@ -299,11 +313,6 @@ export function CameraProctor({
       onRegisterSnapshotGetter(captureSnapshot);
     }
   }, [onRegisterSnapshotGetter, captureSnapshot]);
-
-  function enableSimulatedCamera() {
-    setIsSimulated(true);
-    setHasPermission(true);
-  }
 
   return (
     <>
@@ -330,18 +339,12 @@ export function CameraProctor({
               warningsCount > 0 ? "warn" : hasPermission ? "active" : ""
             }`}
           >
-            {hasPermission
-              ? isSimulated
-                ? "Simulated"
-                : isRecording
-                ? "Recording"
-                : "Active"
-              : "Camera Off"}
+            {hasPermission ? (isRecording ? "Recording" : "Active") : "Camera Off"}
           </span>
         </div>
 
         <div className="proctor-video-wrapper">
-          {hasPermission && !isSimulated && (
+          {hasPermission && (
             <>
               <video
                 ref={videoRef}
@@ -358,36 +361,6 @@ export function CameraProctor({
             </>
           )}
 
-          {hasPermission && isSimulated && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: "8px",
-                color: "#94a3b8",
-              }}
-            >
-              <div
-                style={{
-                  width: "56px",
-                  height: "56px",
-                  borderRadius: "50%",
-                  background: "#334155",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "24px",
-                }}
-              >
-                
-              </div>
-              <span style={{ fontSize: "11px", color: "#cbd5e1" }}>
-                Proctoring Verified (Simulation)
-              </span>
-            </div>
-          )}
-
           {!hasPermission && (
             <div className="proctor-fallback-box">
               <span className="fallback-icon"><Icon name="camera" size={36} /></span>
@@ -400,14 +373,11 @@ export function CameraProctor({
                 >
                   Retry Camera
                 </button>
-                <button
-                  type="button"
-                  className="proctor-retry-btn"
-                  onClick={enableSimulatedCamera}
-                >
-                  Use Simulation
-                </button>
               </div>
+              <p className="proctor-fallback-note">
+                The assessment is recorded. Without a camera this attempt is
+                filed as <strong>Camera Disabled</strong>.
+              </p>
             </div>
           )}
         </div>

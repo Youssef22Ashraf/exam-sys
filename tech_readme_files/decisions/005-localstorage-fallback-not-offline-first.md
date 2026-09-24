@@ -1,7 +1,10 @@
 # ADR 005 — API fallback to localStorage is graceful degradation, not offline-first
 
 ## Status
-Accepted (2026-09-05)
+Accepted (2026-09-05). **Submit half superseded by
+[ADR 008](008-submit-must-reach-the-server.md) (2026-09-07)** — a submit that
+cannot reach the server is now a visible error, not a local pass. Read
+fallbacks are unchanged.
 
 ## Context
 The first two days of the project had no backend; the whole app ran from

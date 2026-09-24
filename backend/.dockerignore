@@ -1,7 +1,16 @@
-﻿node_modules
+node_modules
 dist
 .git
 .gitignore
 *.log
 .DS_Store
 *.md
+
+# Databases and secrets at any depth. This file previously began with a
+# UTF-8 BOM (U+FEFF), so its first line never matched the literal --
+# node_modules was not actually excluded from the build context.
+**/*.db
+**/*.db-journal
+**/.env
+**/.env.*
+!**/.env.example

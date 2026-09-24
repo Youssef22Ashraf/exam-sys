@@ -32,6 +32,8 @@ in `TODO.md` is complete.
 
 - Secrets only in env. `.env.example` holds placeholders.
 - `uploads/` and `*.db` hold PII and webcam video — gitignored, volume-mounted, never in a bug report.
-- Change `admin/admin123` on first deploy: log in, then update `passwordHash` via a one-off script (no UI yet).
+- Set `ADMIN_INITIAL_PASSWORD` before the first production boot (the server
+  refuses to start without it), then change it in the admin portal under
+  Settings -> Change password.
 - `tls.rejectUnauthorized:false` in `emailService.ts` disables cert checks. Acceptable for a known Office 365 host; not for arbitrary SMTP.
 - Never log candidate identity or answers. `App.tsx beginExam` and the socket handlers currently do — `TODO.md` §Later.

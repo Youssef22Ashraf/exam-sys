@@ -1,143 +1,20 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../config/db";
-import { authenticateAdmin } from "../middleware/auth";
+import { rateLimit } from "../middleware/rateLimit";
+import { authenticateAdmin, requireRole } from "../middleware/auth";
 import { findActiveCooldown } from "../services/cooldown";
+import { validateExamineeEmail, parseJsonColumn } from "../services/validation";
+import { validateCandidateIdentity } from "../services/candidateIdentity";
+import { deleteRecordings } from "../services/proctorFiles";
 
 const router = Router();
 
-// Strict Examinee Email Validation Helper
-export function validateExamineeEmail(email: string): { valid: boolean; message?: string } {
-  if (!email || typeof email !== "string") {
-    return { valid: false, message: "Email address is required." };
-  }
-  const trimmed = email.trim().toLowerCase();
-
-  // Basic RFC format test (local@domain.tld)
-  const generalEmailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!generalEmailRegex.test(trimmed)) {
-    return {
-      valid: false,
-      message: "Please enter a valid email address (e.g. employee@gmail.com, candidate@outlook.com, or company email).",
-    };
-  }
-
-  // Domain structure checks
-  const parts = trimmed.split("@");
-  if (parts.length !== 2) {
-    return { valid: false, message: "Malformed email address." };
-  }
-  const domain = parts[1];
-  if (!domain.includes(".") || domain.startsWith(".") || domain.endsWith(".")) {
-    return { valid: false, message: "Email domain is invalid." };
-  }
-
-  return { valid: true };
-}
-
-// 1-to-1 Candidate Identity Consistency Checker
-export async function validateCandidateIdentity(name: string, email: string, companyId: string) {
-  const normName = name.trim().toLowerCase();
-  const normEmail = email.trim().toLowerCase();
-  const normCompanyId = companyId.trim().toLowerCase();
-
-  // Query all candidates to check for 1-to-1 uniqueness and cross-consistency
-  const allCandidates = await prisma.candidate.findMany();
-
-  for (const cand of allCandidates) {
-    const cName = cand.name.trim().toLowerCase();
-    const cEmail = cand.email.trim().toLowerCase();
-    const cCompanyId = cand.companyId.trim().toLowerCase();
-
-    // Check Company ID collisions
-    if (cCompanyId === normCompanyId) {
-      if (cName !== normName) {
-        return {
-          conflict: true,
-          message: `Company ID '${companyId.trim()}' is already registered to candidate '${cand.name}'. The entered name does not match.`,
-        };
-      }
-      if (cEmail !== normEmail) {
-        return {
-          conflict: true,
-          message: `Company ID '${companyId.trim()}' is already registered with email '${cand.email}'. The entered email does not match.`,
-        };
-      }
-    }
-
-    // Check Name collisions
-    if (cName === normName) {
-      if (cCompanyId !== normCompanyId) {
-        return {
-          conflict: true,
-          message: `Candidate '${name.trim()}' is already registered under Company ID '${cand.companyId}'. Please use your registered Company ID.`,
-        };
-      }
-      if (cEmail !== normEmail) {
-        return {
-          conflict: true,
-          message: `Candidate '${name.trim()}' is already registered with email '${cand.email}'. Please use your registered email address.`,
-        };
-      }
-    }
-
-    // Check Email collisions
-    if (cEmail === normEmail) {
-      if (cCompanyId !== normCompanyId) {
-        return {
-          conflict: true,
-          message: `Email '${email.trim()}' is already registered under Company ID '${cand.companyId}'. The entered Company ID does not match.`,
-        };
-      }
-      if (cName !== normName) {
-        return {
-          conflict: true,
-          message: `Email '${email.trim()}' is already registered to candidate '${cand.name}'. The entered name does not match.`,
-        };
-      }
-    }
-  }
-
-  // Also check prior exam attempts to catch any attempts submitted before
-  const allAttempts = await prisma.examAttempt.findMany({
-    select: { candidateName: true, candidateEmail: true, companyId: true },
-  });
-
-  for (const att of allAttempts) {
-    const aName = att.candidateName.trim().toLowerCase();
-    const aEmail = att.candidateEmail.trim().toLowerCase();
-    const aCompanyId = att.companyId.trim().toLowerCase();
-
-    if (aCompanyId === normCompanyId && aName !== normName) {
-      return {
-        conflict: true,
-        message: `Company ID '${companyId.trim()}' has a previous exam record under candidate '${att.candidateName}'.`,
-      };
-    }
-    if (aCompanyId === normCompanyId && aEmail !== normEmail) {
-      return {
-        conflict: true,
-        message: `Company ID '${companyId.trim()}' has a previous exam record with email '${att.candidateEmail}'.`,
-      };
-    }
-    if (aName === normName && aCompanyId !== normCompanyId) {
-      return {
-        conflict: true,
-        message: `Candidate '${name.trim()}' has a previous exam record under Company ID '${att.companyId}'.`,
-      };
-    }
-    if (aEmail === normEmail && aCompanyId !== normCompanyId) {
-      return {
-        conflict: true,
-        message: `Email '${email.trim()}' has a previous exam record under Company ID '${att.companyId}'.`,
-      };
-    }
-  }
-
-  return { conflict: false };
-}
+// Candidate-facing and unauthenticated, so there is no token to throttle on.
+// These were entirely unlimited while doing real database and disk work.
+const publicLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 60 });
 
 // GET /api/candidates/check-cooldown - Check if candidate is within 48-hour cooldown & validate identity
-router.get("/check-cooldown", async (req: Request, res: Response) => {
+router.get("/check-cooldown", publicLimit, async (req: Request, res: Response) => {
   try {
     const name = req.query.name ? String(req.query.name).trim() : "";
     const email = req.query.email ? String(req.query.email).trim().toLowerCase() : "";
@@ -166,7 +43,7 @@ router.get("/check-cooldown", async (req: Request, res: Response) => {
         return res.status(409).json({
           eligible: false,
           error: "IDENTITY_CONFLICT",
-          message: identityCheck.message,
+          message: identityCheck.publicMessage,
         });
       }
     }
@@ -190,7 +67,7 @@ router.get("/check-cooldown", async (req: Request, res: Response) => {
 });
 
 // POST /api/candidates/register - Public (examinee registration)
-router.post("/register", async (req: Request, res: Response) => {
+router.post("/register", publicLimit, async (req: Request, res: Response) => {
   try {
     const { name, email, companyId } = req.body;
 
@@ -218,7 +95,7 @@ router.post("/register", async (req: Request, res: Response) => {
     if (identityCheck.conflict) {
       return res.status(409).json({
         error: "IDENTITY_CONFLICT",
-        message: identityCheck.message,
+        message: identityCheck.publicMessage,
       });
     }
 
@@ -334,7 +211,7 @@ router.get("/:id/history", authenticateAdmin, async (req: Request, res: Response
     const formattedAttempts = candidate.attempts.map((att) => ({
       ...att,
       submittedAt: att.submittedAt.toISOString(),
-      answers: JSON.parse(att.answers || "{}"),
+      answers: parseJsonColumn(att.answers, {}),
     }));
 
     return res.json({
@@ -355,13 +232,29 @@ router.get("/:id/history", authenticateAdmin, async (req: Request, res: Response
 });
 
 // DELETE /api/candidates/:id - Delete candidate
-router.delete("/:id", authenticateAdmin, async (req: Request, res: Response) => {
+router.delete("/:id", authenticateAdmin, requireRole("SUPERADMIN"), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    await prisma.candidate.delete({
+
+    const candidate = await prisma.candidate.findUnique({
       where: { id },
+      select: { attempts: { select: { videoFilename: true } } },
     });
-    return res.json({ success: true, message: "Candidate deleted successfully." });
+    if (!candidate) {
+      // Prisma P2025 used to surface here as a 500.
+      return res.status(404).json({ error: "Candidate not found." });
+    }
+
+    // Collect the filenames before the cascade removes the attempt rows.
+    const filenames = candidate.attempts.map((a) => a.videoFilename);
+
+    await prisma.candidate.delete({ where: { id } });
+    const removed = deleteRecordings(filenames);
+
+    return res.json({
+      success: true,
+      message: `Candidate deleted successfully. ${removed} recording(s) removed.`,
+    });
   } catch (error) {
     console.error("Delete candidate error:", error);
     return res.status(500).json({ error: "Failed to delete candidate." });

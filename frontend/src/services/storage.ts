@@ -4,7 +4,12 @@ export interface Question {
   sectionTitle: string;
   question: string;
   options: string[];
-  correctAnswer: number;
+  /**
+   * Present only for an admin. `GET /api/questions` withholds it from every
+   * caller without an admin JWT, and INITIAL_QUESTIONS below carries no
+   * answers — the key must never reach a candidate's bundle. See ADR 008.
+   */
+  correctAnswer?: number;
 }
 
 export interface Candidate {
@@ -77,7 +82,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. A document issued only by the Client",
       "D. A construction delay report",
     ],
-    correctAnswer: 0,
   },
   {
     id: 2,
@@ -90,7 +94,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Record only contractual claims",
       "D. Monitor procurement costs",
     ],
-    correctAnswer: 1,
   },
   {
     id: 3,
@@ -103,7 +106,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Interface Manager",
       "D. Procurement Department",
     ],
-    correctAnswer: 2,
   },
   {
     id: 4,
@@ -116,7 +118,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Open and Closed only",
       "D. Internal and External",
     ],
-    correctAnswer: 3,
   },
   {
     id: 5,
@@ -129,7 +130,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. After a conflict occurs",
       "D. Only during handover",
     ],
-    correctAnswer: 0,
   },
   {
     id: 6,
@@ -142,7 +142,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Quarterly",
       "D. Annually",
     ],
-    correctAnswer: 1,
   },
   {
     id: 7,
@@ -155,7 +154,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. At least 48 hours",
       "D. One week",
     ],
-    correctAnswer: 2,
   },
   {
     id: 8,
@@ -168,7 +166,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Two weeks",
       "D. At least 72 hours",
     ],
-    correctAnswer: 3,
   },
   {
     id: 9,
@@ -176,7 +173,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part A — Interface Management",
     question: "True or False: An interface point can be closed before all involved parties verify and sign off on it.",
     options: ["A. True", "B. False"],
-    correctAnswer: 1,
   },
   {
     id: 10,
@@ -189,7 +185,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. SharePoint only",
       "D. Procurement system",
     ],
-    correctAnswer: 0,
   },
   {
     id: 11,
@@ -202,7 +197,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Planning Engineer",
       "D. Procurement Manager",
     ],
-    correctAnswer: 1,
   },
   {
     id: 12,
@@ -215,7 +209,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Coordination with an authority for permits and NOCs",
       "D. Internal document revision control",
     ],
-    correctAnswer: 2,
   },
   {
     id: 13,
@@ -228,7 +221,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Interface Engineer alone",
       "D. Client / Employer",
     ],
-    correctAnswer: 3,
   },
   {
     id: 14,
@@ -241,7 +233,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Record employee responsibilities only",
       "D. Record contractual payments",
     ],
-    correctAnswer: 0,
   },
   {
     id: 15,
@@ -254,7 +245,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Record only escalated claims",
       "D. Replace meeting minutes",
     ],
-    correctAnswer: 1,
   },
   {
     id: 16,
@@ -267,7 +257,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Record and manage interface conflicts/issues that have escalated from coordination points",
       "D. Replace the Interface Matrix",
     ],
-    correctAnswer: 2,
   },
   {
     id: 17,
@@ -275,7 +264,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part A — Interface Management",
     question: "True or False: Escalation should replace normal coordination whenever an interface issue is identified.",
     options: ["A. True", "B. False"],
-    correctAnswer: 1,
   },
   {
     id: 18,
@@ -283,7 +271,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part A — Interface Management",
     question: "True or False: Safety-related interface issues may be escalated immediately regardless of the normal hierarchy.",
     options: ["A. True", "B. False"],
-    correctAnswer: 0,
   },
   {
     id: 19,
@@ -296,7 +283,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. 7 working days",
       "D. 48 hours",
     ],
-    correctAnswer: 3,
   },
   {
     id: 20,
@@ -309,7 +295,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. One year only",
       "D. Five years",
     ],
-    correctAnswer: 0,
   },
   {
     id: 21,
@@ -317,7 +302,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part A — Interface Management",
     question: "All interface points should have a defined owner and target resolution date.",
     options: ["A. True", "B. False"],
-    correctAnswer: 0,
   },
   {
     id: 22,
@@ -325,7 +309,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part A — Interface Management",
     question: "An unresolved interface point may remain open beyond its target date without formal escalation.",
     options: ["A. True", "B. False"],
-    correctAnswer: 1,
   },
   {
     id: 23,
@@ -333,7 +316,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part A — Interface Management",
     question: "The Interface Matrix should be updated whenever new scopes or packages are added.",
     options: ["A. True", "B. False"],
-    correctAnswer: 0,
   },
 
   // Part B — Stakeholder Management (24 to 40)
@@ -348,7 +330,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Prioritize construction activities",
       "D. Evaluate subcontractor payments",
     ],
-    correctAnswer: 1,
   },
   {
     id: 25,
@@ -361,7 +342,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Manage Closely",
       "D. Keep Satisfied",
     ],
-    correctAnswer: 2,
   },
   {
     id: 26,
@@ -374,7 +354,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Monitor",
       "D. Keep Satisfied",
     ],
-    correctAnswer: 3,
   },
   {
     id: 27,
@@ -387,7 +366,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Keep Satisfied",
       "D. Manage Closely",
     ],
-    correctAnswer: 0,
   },
   {
     id: 28,
@@ -395,7 +373,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part B — Stakeholder Management",
     question: "True or False: The Stakeholder Register should be reviewed and updated regularly to include new stakeholders or remove inactive stakeholders.",
     options: ["A. True", "B. False"],
-    correctAnswer: 0,
   },
   {
     id: 29,
@@ -408,7 +385,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Only meeting dates",
       "D. Only stakeholder contact information",
     ],
-    correctAnswer: 1,
   },
   {
     id: 30,
@@ -421,7 +397,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Stakeholder Manager",
       "D. Planning Engineer",
     ],
-    correctAnswer: 2,
   },
   {
     id: 31,
@@ -434,7 +409,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. HSE Level",
       "D. Sector Level",
     ],
-    correctAnswer: 3,
   },
   {
     id: 32,
@@ -442,7 +416,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part B — Stakeholder Management",
     question: "True or False: A stakeholder commitment that exceeds the project team’s delegated authority can be confirmed first and approved later.",
     options: ["A. True", "B. False"],
-    correctAnswer: 1,
   },
   {
     id: 33,
@@ -455,7 +428,6 @@ export const INITIAL_QUESTIONS: Question[] = [
       "C. Quarterly",
       "D. Annually",
     ],
-    correctAnswer: 0,
   },
   {
     id: 34,
@@ -463,7 +435,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part B — Stakeholder Management",
     question: "The Power–Interest Matrix should be reviewed periodically or whenever major project or stakeholder changes occur.",
     options: ["A. True", "B. False"],
-    correctAnswer: 0,
   },
   {
     id: 35,
@@ -471,7 +442,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part B — Stakeholder Management",
     question: "Stakeholder communication should use the same frequency and method for every stakeholder regardless of influence or interest.",
     options: ["A. True", "B. False"],
-    correctAnswer: 1,
   },
   {
     id: 36,
@@ -479,7 +449,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part B — Stakeholder Management",
     question: "All stakeholder communications, feedback, and meeting outcomes should be formally recorded.",
     options: ["A. True", "B. False"],
-    correctAnswer: 0,
   },
   {
     id: 37,
@@ -487,7 +456,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part B — Stakeholder Management",
     question: "An overdue stakeholder item should be escalated to the Project Manager and PMC.",
     options: ["A. True", "B. False"],
-    correctAnswer: 0,
   },
   {
     id: 38,
@@ -495,7 +463,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part B — Stakeholder Management",
     question: "Stakeholder commitments beyond delegated authority may be accepted without escalation if the stakeholder has high influence.",
     options: ["A. True", "B. False"],
-    correctAnswer: 1,
   },
   {
     id: 39,
@@ -503,7 +470,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part B — Stakeholder Management",
     question: "Stakeholder awareness and collaboration sessions should include records of the agenda, attendees, and outcomes.",
     options: ["A. True", "B. False"],
-    correctAnswer: 0,
   },
   {
     id: 40,
@@ -511,109 +477,6 @@ export const INITIAL_QUESTIONS: Question[] = [
     sectionTitle: "Part B — Stakeholder Management",
     question: "Stakeholder KPI results should only be reviewed at the end of the project.",
     options: ["A. True", "B. False"],
-    correctAnswer: 1,
-  },
-];
-
-const SEED_CANDIDATES: Candidate[] = [
-  {
-    id: "cand-1",
-    name: "Ahmed Ashraf Youssef",
-    email: "ahmed.youssef@harbico.com",
-    companyId: "9353",
-    registeredAt: "2026-09-02T11:20:00.000Z",
-    status: "Completed",
-    totalAttempts: 1,
-    highestScore: 36,
-    latestScore: 36,
-  },
-  {
-    id: "cand-2",
-    name: "Sarah M. Jenkins",
-    email: "sarah.jenkins@al-bayan.com",
-    companyId: "8412",
-    registeredAt: "2026-09-03T09:15:00.000Z",
-    status: "Completed",
-    totalAttempts: 1,
-    highestScore: 31,
-    latestScore: 31,
-  },
-  {
-    id: "cand-3",
-    name: "Omar Tariq Al-Mansoor",
-    email: "omar.mansoor@harbico.com",
-    companyId: "9104",
-    registeredAt: "2026-09-03T14:40:00.000Z",
-    status: "Completed",
-    totalAttempts: 1,
-    highestScore: 24,
-    latestScore: 24,
-  },
-  {
-    id: "cand-4",
-    name: "Khaled Nasser",
-    email: "khaled.nasser@apexbuild.com",
-    companyId: "7720",
-    registeredAt: "2026-09-04T08:30:00.000Z",
-    status: "Registered",
-    totalAttempts: 0,
-  },
-];
-
-const SEED_RESULTS: ExamResult[] = [
-  {
-    id: "res-1",
-    candidateId: "cand-1",
-    candidateName: "Ahmed Ashraf Youssef",
-    candidateEmail: "ahmed.youssef@harbico.com",
-    companyId: "9353",
-    submittedAt: "2026-09-02T11:48:30.000Z",
-    score: 36,
-    totalQuestions: 40,
-    percentage: 90.0,
-    isPassed: true,
-    timeSpentSeconds: 1710,
-    partAScore: 21,
-    partATotal: 23,
-    partBScore: 15,
-    partBTotal: 17,
-    answers: { 1: 0, 2: 1, 3: 2, 4: 3, 5: 0, 6: 1, 7: 2, 8: 3, 9: 1, 10: 0 },
-  },
-  {
-    id: "res-2",
-    candidateId: "cand-2",
-    candidateName: "Sarah M. Jenkins",
-    candidateEmail: "sarah.jenkins@al-bayan.com",
-    companyId: "8412",
-    submittedAt: "2026-09-03T09:43:10.000Z",
-    score: 31,
-    totalQuestions: 40,
-    percentage: 77.5,
-    isPassed: true,
-    timeSpentSeconds: 1692,
-    partAScore: 18,
-    partATotal: 23,
-    partBScore: 13,
-    partBTotal: 17,
-    answers: { 1: 0, 2: 1, 3: 2 },
-  },
-  {
-    id: "res-3",
-    candidateId: "cand-3",
-    candidateName: "Omar Tariq Al-Mansoor",
-    candidateEmail: "omar.mansoor@harbico.com",
-    companyId: "9104",
-    submittedAt: "2026-09-03T15:10:00.000Z",
-    score: 24,
-    totalQuestions: 40,
-    percentage: 60.0,
-    isPassed: false,
-    timeSpentSeconds: 1800,
-    partAScore: 14,
-    partATotal: 23,
-    partBScore: 10,
-    partBTotal: 17,
-    answers: { 1: 1, 2: 1, 3: 0 },
   },
 ];
 
@@ -633,7 +496,9 @@ export function notifyStorageChange(action: string): void {
   if (syncChannel) {
     try {
       syncChannel.postMessage({ action, timestamp: Date.now() });
-    } catch {}
+    } catch {
+      // Cross-tab sync is a convenience; a closed channel is not an error.
+    }
   }
   if (typeof window !== "undefined") {
     window.dispatchEvent(
@@ -745,6 +610,14 @@ export const ExamStorage = {
   },
 
   // Candidates
+  /**
+   * An empty cache means empty, not "show demo data".
+   *
+   * This used to WRITE a set of fictional candidates into localStorage on the
+   * first read and return them, so a cold cache made the admin dashboard show
+   * invented people as real records — and `checkCandidateCooldown` below then
+   * evaluated genuine candidates against those fake rows.
+   */
   getCandidates(): Candidate[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.CANDIDATES);
@@ -752,10 +625,10 @@ export const ExamStorage = {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
       }
-      this.saveCandidates(SEED_CANDIDATES);
-      return SEED_CANDIDATES;
-    } catch {
-      return SEED_CANDIDATES;
+      return [];
+    } catch (err) {
+      console.warn("Could not read the candidate cache:", err);
+      return [];
     }
   },
 
@@ -806,6 +679,7 @@ export const ExamStorage = {
   },
 
   // Exam Results
+  /** Empty cache means empty. See getCandidates. */
   getResults(): ExamResult[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.RESULTS);
@@ -813,10 +687,10 @@ export const ExamStorage = {
         const parsed = JSON.parse(data);
         if (Array.isArray(parsed)) return parsed;
       }
-      this.saveResults(SEED_RESULTS);
-      return SEED_RESULTS;
-    } catch {
-      return SEED_RESULTS;
+      return [];
+    } catch (err) {
+      console.warn("Could not read the results cache:", err);
+      return [];
     }
   },
 

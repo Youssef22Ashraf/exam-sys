@@ -33,4 +33,5 @@ button in the admin exams tab.
 ## Known gaps
 
 - `test-email` is unauthenticated — `TODO.md` §Security item 1.
-- Hardcoded fallback recipient in `emailService.ts`.
+- ~~Hardcoded fallback recipient in `emailService.ts`.~~ Closed: falls back to
+`ADMIN_ALERT_EMAIL` only; an unset recipient skips the send with a warning.

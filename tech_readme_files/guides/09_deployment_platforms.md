@@ -353,7 +353,9 @@ a load balancer become possible, and backups are the DB vendor's job.
 ## 7. Checklist before going live on any platform
 
 1. Full 30-minute recording uploads and plays back **through the host's proxy**, not just localhost.
-2. `JWT_SECRET` set and not the fallback; `admin/admin123` changed.
+2. `JWT_SECRET` set to a private value (32+ chars, never one from the docs);
+   `ADMIN_INITIAL_PASSWORD` set, and the password changed in the portal after
+   first login.
 3. Volume / disk mounted at the path `index.ts` resolves (`/app/backend/uploads`), confirmed by uploading, redeploying, and playing.
 4. SMTP test button delivers to the real supervisor mailbox.
 5. `GET /api/health` returns `frontendServed: true`.

@@ -41,5 +41,6 @@ single component), `AdminDashboard.css`, `backend/src/routes/authRoutes.ts`,
 ## Known gaps
 
 - Read endpoints have no auth — `TODO.md` §Security item 1.
-- `admin/admin123` seeded; no password change UI.
+- ~~`admin/admin123` seeded; no password change UI.~~ Closed: accounts come
+  from `ADMIN_INITIAL_PASSWORD` and Settings has a Change Password form.
 - `AdminDashboard.tsx` should be split per tab before it grows further.

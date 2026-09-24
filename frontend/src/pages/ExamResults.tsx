@@ -170,18 +170,31 @@ function ExamResults({
               </div>
               <div className="meta-row">
                 <label>Proctoring Integrity</label>
+                {/* Three states, not two. Anything that was not "Warnings"
+                    used to render as "Verified & Monitored", so an attempt the
+                    server recorded as "Camera Disabled" told the candidate
+                    their session was verified. */}
                 <span
                   style={{
                     color:
-                      result.proctoringStatus === "Warnings"
-                        ? "#dc2626"
-                        : "#16a34a",
+                      result.proctoringStatus === "Verified" ? "#16a34a" : "#dc2626",
                     fontWeight: 700,
                   }}
                 >
-                  {result.proctoringStatus === "Warnings"
-                    ? <><Icon name="alert-triangle" /> {result.tabSwitches || 0} Tab Switch Warning(s)</>
-                      : <><Icon name="check" /> Verified & Monitored</>}
+                  {result.proctoringStatus === "Warnings" ? (
+                    <>
+                      <Icon name="alert-triangle" /> {result.tabSwitches || 0} Tab Switch
+                      Warning(s)
+                    </>
+                  ) : result.proctoringStatus === "Camera Disabled" ? (
+                    <>
+                      <Icon name="alert-triangle" /> Camera Disabled
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="check" /> Verified &amp; Monitored
+                    </>
+                  )}
                 </span>
               </div>
               {result.candidatePhoto && (
