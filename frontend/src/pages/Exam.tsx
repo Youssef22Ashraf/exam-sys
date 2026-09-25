@@ -166,7 +166,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
     if (sessionId || !userData?.email) return;
     const key = `exam_sid_${userData.email}`;
     api
-      .startExam(userData.email, userData.companyId || "")
+      .startExam(userData.email, userData.companyId || "", userData.name)
       .then((id) => {
         setSessionId(id);
         try {
@@ -183,7 +183,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
             : "Could not start the exam session on the server."
         );
       });
-  }, [sessionId, userData?.email, userData?.companyId]);
+  }, [sessionId, userData?.email, userData?.companyId, userData?.name]);
 
   const getSnapshotRef = useRef<(() => string | null) | null>(null);
   const stopRecordingRef = useRef<(() => Promise<Blob | null>) | null>(null);

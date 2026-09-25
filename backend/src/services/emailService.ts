@@ -15,6 +15,14 @@ export interface ExamCompletionEmailData {
   attemptNumber?: number;
 }
 
+export interface ExamStartEmailData {
+  candidateName: string;
+  candidateEmail: string;
+  companyId: string;
+  sessionId?: string;
+  startedAt?: Date;
+}
+
 /**
  * Escape a value for inclusion in the HTML mail body. candidateName, email and
  * companyId reach here from the unauthenticated /register endpoint, so they
@@ -56,11 +64,7 @@ export const createTransporter = () => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      // Certificate verification stays ON. This block used to set
-      // `rejectUnauthorized: false` with an SSLv3 cipher string on every
-      // provider, which exposed the SMTP credentials to anyone able to
-      // intercept the connection. SMTP_INSECURE_TLS exists only for a server
-      // with a genuinely broken certificate, and must be set deliberately.
+      // Certificate verification stays ON.
       ...(process.env.SMTP_INSECURE_TLS === "true"
         ? { tls: { rejectUnauthorized: false } }
         : {}),
@@ -68,6 +72,118 @@ export const createTransporter = () => {
   }
   return null;
 };
+
+/**
+ * Dispatches an immediate email alert to the admin/supervisor list
+ * whenever an examinee begins sitting their assessment.
+ */
+export async function sendExamStartAlert(data: ExamStartEmailData) {
+  let rawRecipient = process.env.ADMIN_ALERT_EMAIL || "";
+  try {
+    const settings = await prisma.examSetting.findFirst({
+      where: { id: "default-settings" },
+    });
+    if (settings?.notifyEmail) {
+      rawRecipient = settings.notifyEmail;
+    }
+  } catch (err) {
+    // Fallback to env
+  }
+
+  const recipient = parseRecipients(rawRecipient);
+  if (!recipient) {
+    console.warn(
+      "[Email] No recipient configured. Set ExamSetting.notifyEmail or ADMIN_ALERT_EMAIL."
+    );
+    return;
+  }
+
+  const subject = `[Exam Started] ${data.candidateName} (${data.companyId}) has entered the assessment`;
+
+  const textBody = `
+=========================================
+EXAM ENTRY NOTIFICATION
+=========================================
+Candidate:       ${data.candidateName}
+Email:           ${data.candidateEmail}
+Company ID:      ${data.companyId}
+Status:          Started Sitting (In Progress)
+Session ID:      ${data.sessionId || "N/A"}
+Started At:      ${(data.startedAt || new Date()).toISOString()}
+=========================================
+`;
+
+  const appAdminUrl = process.env.APP_URL
+    ? `${process.env.APP_URL.replace(/\/$/, "")}/admin`
+    : process.env.RAILWAY_PUBLIC_DOMAIN
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/admin`
+    : "https://mofarreh-exam-system.up.railway.app/admin";
+
+  const htmlBody = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; padding: 24px; color: #1e293b; }
+      .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+      .header { background: #172033; padding: 24px; color: #ffffff; text-align: center; }
+      .header h1 { margin: 0 0 6px 0; font-size: 20px; font-weight: 700; }
+      .badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 13px; font-weight: 700; color: #ffffff; background-color: #2563eb; }
+      .content { padding: 24px; }
+      .table { width: 100%; border-collapse: collapse; margin-top: 16px; margin-bottom: 24px; }
+      .table td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+      .table td:first-child { font-weight: 600; color: #64748b; width: 40%; }
+      .cta { text-align: center; margin: 20px 0; }
+      .button { background-color: #2563eb; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block; }
+      .footer { background: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Assessment In Progress</h1>
+        <div class="badge">STARTED</div>
+      </div>
+      <div class="content">
+        <p style="margin-top: 0;">An examinee has just entered and commenced their assessment session:</p>
+        <table class="table">
+          <tr><td>Candidate Name</td><td><strong>${escapeHtml(data.candidateName)}</strong></td></tr>
+          <tr><td>Email Address</td><td>${escapeHtml(data.candidateEmail)}</td></tr>
+          <tr><td>Company ID</td><td>${escapeHtml(data.companyId)}</td></tr>
+          <tr><td>Session Started</td><td>${(data.startedAt || new Date()).toLocaleString()}</td></tr>
+          <tr><td>Status</td><td><span style="color: #2563eb; font-weight: 600;">Active / In Progress</span></td></tr>
+        </table>
+        <div class="cta">
+          <a href="${appAdminUrl}" class="button">Open Admin Live Oversight</a>
+        </div>
+      </div>
+      <div class="footer">
+        Automated real-time notification from Workplace Assessment System
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+
+  try {
+    const transporter = createTransporter();
+    if (transporter) {
+      await transporter.sendMail({
+        from: `"Workplace Assessment System" <${process.env.SMTP_USER}>`,
+        to: recipient,
+        subject,
+        text: textBody,
+        html: htmlBody,
+      });
+      console.log(`[Email Alert Sent] Exam start notification delivered to: ${recipient}`);
+    } else {
+      console.log(`[Email] No SMTP configured; exam start alert for ${recipient} not sent.`);
+    }
+  } catch (error) {
+    console.error("Failed to send exam start email alert:", error);
+  }
+}
 
 export async function sendExamCompletionAlert(data: ExamCompletionEmailData) {
   let rawRecipient = process.env.ADMIN_ALERT_EMAIL || "";
@@ -157,7 +273,7 @@ Submitted:       ${new Date().toISOString()}
           <tr><td>Submission Time</td><td>${new Date().toLocaleString()}</td></tr>
         </table>
         <div class="cta">
-          <a href="${process.env.APP_URL ? `${process.env.APP_URL.replace(/\/$/, '')}/admin` : (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/admin` : 'http://localhost:5173/admin')}" class="button">Open Admin Dashboard</a>
+          <a href="${process.env.APP_URL ? `${process.env.APP_URL.replace(/\/$/, '')}/admin` : (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/admin` : 'https://mofarreh-exam-system.up.railway.app/admin')}" class="button">Open Admin Dashboard</a>
         </div>
       </div>
       <div class="footer">
@@ -187,8 +303,6 @@ Submitted:       ${new Date().toISOString()}
       });
       console.log(`[Email Alert Sent] Notification delivered to: ${recipient}`);
     } else {
-      // The mock branch used to print the whole body, which carries the
-      // candidate's name, email, company ID and score.
       console.log(`[Email] No SMTP configured; alert for ${recipient} not sent.`);
     }
   } catch (error) {
@@ -234,7 +348,7 @@ export async function sendTestEmailAlert(targetEmail?: string) {
         <div class="status-box">
           ✓ Your notification service is successfully operational and reaching: <strong>${recipient}</strong>.
         </div>
-        <p>When examinees complete assessments, detailed score reports and proctoring summaries will be dispatched to this address.</p>
+        <p>When examinees enter and complete assessments, detailed reports and proctoring summaries will be dispatched to this address.</p>
         <p style="color: #64748b; font-size: 12px; margin-top: 24px;">Timestamp: ${new Date().toLocaleString()}</p>
       </div>
     </div>
@@ -263,10 +377,11 @@ export async function sendTestEmailAlert(targetEmail?: string) {
       };
     }
   } else {
-    console.log(`📧 [Simulated Test Email dispatched to ${recipient}]`);
+    console.log(`📧 [Simulated Test Email logged for ${recipient} - SMTP not configured]`);
     return {
-      success: true,
-      message: `SMTP not configured in .env. Simulated email alert logged to server console for ${recipient}. Add SMTP credentials to backend/.env to send real emails.`,
+      success: false,
+      error: "SMTP_NOT_CONFIGURED",
+      message: `SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) are not configured in Railway environment variables. The server cannot send real emails until these variables are added in your Railway dashboard.`,
       simulated: true,
     };
   }

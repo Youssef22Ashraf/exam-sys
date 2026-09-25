@@ -300,6 +300,12 @@ function startServer() {
     console.log(`Uploads:   ${uploadsDir}`);
     console.log("Both paths must be on a persistent volume, or a redeploy wipes them.");
 
+    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+      console.log(`SMTP Alerting: Active (${process.env.SMTP_HOST}:${process.env.SMTP_PORT || 587}, User: ${process.env.SMTP_USER})`);
+    } else {
+      console.warn("[SMTP Warning] SMTP_HOST, SMTP_USER, or SMTP_PASS is missing in environment variables. Email alerts cannot be delivered until SMTP is added to Railway Variables.");
+    }
+
     // Bootstrap the database with questions, settings and admin accounts if empty
     const { bootstrapDatabase } = await import("./config/bootstrap");
     await bootstrapDatabase();

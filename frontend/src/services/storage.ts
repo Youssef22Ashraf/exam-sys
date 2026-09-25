@@ -58,6 +58,9 @@ export interface ExamSettings {
   sectorBadge: string;
   allowReviewAnswers: boolean;
   notifyEmail?: string;
+  isSmtpConfigured?: boolean;
+  smtpHost?: string | null;
+  adminAlertEmail?: string | null;
 }
 
 const DEFAULT_SETTINGS: ExamSettings = {

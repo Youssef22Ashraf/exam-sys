@@ -401,11 +401,11 @@ export const api = {
    * body. Throws if the server is unreachable — an exam that cannot be
    * submitted should not be started (ADR 008).
    */
-  async startExam(candidateEmail: string, companyId: string): Promise<string> {
+  async startExam(candidateEmail: string, companyId: string, candidateName?: string): Promise<string> {
     const res = await fetch(`${API_BASE}/exam/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ candidateEmail, companyId }),
+      body: JSON.stringify({ candidateEmail, companyId, candidateName }),
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));

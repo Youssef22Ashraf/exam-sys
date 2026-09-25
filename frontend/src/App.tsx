@@ -238,7 +238,10 @@ function App() {
       <div className="app">
         <AppHeader />
 
-        <ExamInstructions onStart={beginExam} />
+        <ExamInstructions
+          onStart={beginExam}
+          candidateName={userData?.name}
+        />
 
         <AppFooter />
       </div>

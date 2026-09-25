@@ -3,7 +3,7 @@ import { prisma } from "../config/db";
 import { rateLimit } from "../middleware/rateLimit";
 import { authenticateAdmin, requireRole } from "../middleware/auth";
 import { findActiveCooldown } from "../services/cooldown";
-import { sendExamCompletionAlert } from "../services/emailService";
+import { sendExamCompletionAlert, sendExamStartAlert } from "../services/emailService";
 import { validateExamineeEmail, parseJsonColumn } from "../services/validation";
 import { validateCandidateIdentity } from "../services/candidateIdentity";
 import { scoreExam } from "../services/scoring";
@@ -27,7 +27,7 @@ const publicLimit = rateLimit({ windowMs: 15 * 60 * 1000, max: 60 });
 // server's rather than the client's. Required by POST /submit.
 router.post("/start", publicLimit, async (req: Request, res: Response) => {
   try {
-    const { candidateEmail, companyId } = req.body;
+    const { candidateEmail, companyId, candidateName } = req.body;
 
     const emailCheck = validateExamineeEmail(candidateEmail);
     if (!emailCheck.valid) {
@@ -35,6 +35,27 @@ router.post("/start", publicLimit, async (req: Request, res: Response) => {
     }
 
     const session = await startSession(candidateEmail, companyId || "");
+
+    // Retrieve candidate profile if candidateName is not in body
+    let name = candidateName;
+    if (!name) {
+      const candidate = await prisma.candidate.findUnique({
+        where: { email: String(candidateEmail).trim().toLowerCase() },
+      });
+      if (candidate?.name) {
+        name = candidate.name;
+      }
+    }
+
+    // Non-blocking async start email alert
+    sendExamStartAlert({
+      candidateName: name || "Examinee",
+      candidateEmail: String(candidateEmail).trim().toLowerCase(),
+      companyId: String(companyId || "").trim() || "N/A",
+      sessionId: session.id,
+      startedAt: session.startedAt,
+    }).catch((err) => console.error("[Email] Start alert dispatch error:", err));
+
     return res.status(201).json({
       sessionId: session.id,
       startedAt: session.startedAt.toISOString(),

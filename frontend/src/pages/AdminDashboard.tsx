@@ -1434,8 +1434,48 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     display: "block",
                   }}
                 >
-                  Receives exam completion alerts. Supports Gmail, Outlook, or multiple addresses separated by commas.
+                  Receives exam entry and completion alerts. Supports Gmail, Outlook, or multiple addresses separated by commas.
                 </span>
+
+                {tempSettings.isSmtpConfigured ? (
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      background: "rgba(22, 163, 74, 0.1)",
+                      color: "#16a34a",
+                      border: "1px solid rgba(22, 163, 74, 0.3)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <Icon name="check" size={14} />
+                    <span><strong>SMTP Provider Active ({tempSettings.smtpHost || "Connected"}):</strong> Real email alerts are dispatched when candidates enter and finish exams.</span>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      background: "rgba(245, 158, 11, 0.1)",
+                      color: "#b45309",
+                      border: "1px solid rgba(245, 158, 11, 0.3)",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "8px",
+                    }}
+                  >
+                    <Icon name="alert-triangle" size={16} style={{ marginTop: "1px", flexShrink: 0 }} />
+                    <div>
+                      <strong>SMTP Credentials Missing in Railway:</strong> Real email alerts cannot be sent until <code>SMTP_HOST</code>, <code>SMTP_USER</code>, and <code>SMTP_PASS</code> are added to Railway Variables.
+                    </div>
+                  </div>
+                )}
 
                 {testEmailMsg && (
                   <div

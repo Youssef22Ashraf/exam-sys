@@ -84,7 +84,7 @@ describe("Exam timer", () => {
   it("opens a server-owned sitting on mount", async () => {
     const Exam = await loadExam();
     render(<Exam userData={USER} />);
-    await waitFor(() => expect(startExam).toHaveBeenCalledWith(USER.email, USER.companyId));
+    await waitFor(() => expect(startExam).toHaveBeenCalledWith(USER.email, USER.companyId, USER.name));
   });
 
   it("persists a deadline, not a remaining-seconds countdown", async () => {

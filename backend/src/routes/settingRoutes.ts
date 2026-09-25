@@ -25,6 +25,10 @@ router.get("/", async (_req: Request, res: Response) => {
       });
     }
 
+    const isSmtpConfigured = Boolean(
+      process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
+    );
+
     return res.json({
       examTitle: settings.examTitle,
       durationMinutes: settings.durationMinutes,
@@ -32,6 +36,9 @@ router.get("/", async (_req: Request, res: Response) => {
       sectorBadge: settings.sectorBadge,
       allowReviewAnswers: settings.allowReviewAnswers,
       notifyEmail: settings.notifyEmail,
+      isSmtpConfigured,
+      smtpHost: process.env.SMTP_HOST || null,
+      adminAlertEmail: process.env.ADMIN_ALERT_EMAIL || null,
     });
   } catch (error) {
     console.error("Fetch settings error:", error);
