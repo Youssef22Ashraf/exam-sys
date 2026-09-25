@@ -6,12 +6,24 @@
 [![Express](https://img.shields.io/badge/Express-4.19-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.x-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)](https://railway.app/)
+[![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)](https://mofarreh-exam-system.up.railway.app)
 [![CI](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml/badge.svg)](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/Youssef22Ashraf/exam-sys/releases/tag/v1.1.1)
 [![Security: Trivy](https://img.shields.io/badge/security-Trivy%20Scanned-green.svg)](https://aquasecurity.github.io/trivy/)
+[![Observability](https://img.shields.io/badge/Observability-Prometheus%20%26%20Grafana-orange?logo=prometheus&logoColor=white)](monitoring/README.md)
 
-An enterprise-grade, web-based examination and proctoring platform engineered to evaluate workplace and industrial competency before granting site or operational access. Features real-time webcam recording, multi-attempt tracking with 48-hour retest lockouts, automated SMTP supervisor alerts, and dynamic administrative exam orchestration.
+An enterprise-grade, web-based examination and proctoring platform engineered to evaluate workplace and industrial competency before granting site or operational access. Features real-time webcam recording, multi-attempt tracking with 48-hour retest lockouts, automated SMTP supervisor alerts, dynamic administrative exam orchestration, containerized CVE auditing, and native Prometheus/Grafana observability.
+
+---
+
+## 🌐 Live Production Links
+
+| Service | Public URL | Description |
+|---|---|---|
+| **Examinee Portal** | [`https://mofarreh-exam-system.up.railway.app/`](https://mofarreh-exam-system.up.railway.app/) | Candidate registration & timed proctored exam |
+| **Admin Command Center** | [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin) | Supervisor live oversight, question editor, video player |
+| **Health Check Probe** | [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health) | Liveness & readiness probe with DB connectivity status |
+| **Prometheus Metrics** | [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics) | Standard Prometheus scrape target for telemetry |
 
 ---
 
@@ -28,10 +40,14 @@ An enterprise-grade, web-based examination and proctoring platform engineered to
 - [Technology Stack](#technology-stack)
 - [CI/CD & Container Security](#cicd--container-security)
 - [Observability & Health Monitoring](#observability--health-monitoring)
+  - [Health Probe (`/health`)](#1-health-probe-get-health)
+  - [Prometheus Metrics (`/metrics`)](#2-prometheus-metrics-get-metrics)
+  - [Grafana Dashboard Setup](#3-running-prometheus--grafana-monitoring)
 - [Environment Variables](#environment-variables)
 - [Local Development Setup](#local-development-setup)
 - [Production Deployment (Railway)](#production-deployment-railway)
 - [Database Schema & Persistence](#database-schema--persistence)
+- [Accessing the Platform](#accessing-the-platform)
 - [License](#license)
 
 ---
@@ -86,29 +102,51 @@ An enterprise-grade, web-based examination and proctoring platform engineered to
 ## System Architecture
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                       Client Browser                        │
-│   (Candidate Portal  /  Admin Command Center: /admin)       │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ HTTP / REST / WebSockets
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Unified Express Production Server              │
-│  - Static SPA Host (/dist)                                  │
-│  - REST API Routes (/api/candidates, /api/exam, etc.)       │
-│  - WebSocket Server (socket.io real-time proctoring)        │
-│  - Video Upload & Streaming Service                         │
-│  - SMTP Email Dispatcher (nodemailer)                       │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ Prisma ORM
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  Relational Database Engine                 │
-│                 (SQLite / PostgreSQL / MySQL)               │
-│  - Candidate Profiles & Last Attempt Timestamps             │
-│  - Attempt Sequence Records & Answer Audits                 │
-│  - Dynamic Question Bank & Admin Configurations             │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                                     CLIENT LAYER                                       │
+│                                                                                        │
+│   ┌─────────────────────────────────────────┐  ┌───────────────────────────────────┐   │
+│   │   Examinee Portal (React 19 + Vite)     │  │   Supervisor Command (/admin)     │   │
+│   │   - CameraProctor & MediaRecorder       │  │   - Live WebSocket Candidate Feed │   │
+│   │   - Tab switch & blur event detection   │  │   - Video playback & grading audit│   │
+│   │   - IndexedDB chunk buffering           │  │   - Dynamic Question/Config CRUD  │   │
+│   └────────────────────┬────────────────────┘  └─────────────────┬─────────────────┘   │
+└────────────────────────┼─────────────────────────────────────────┼─────────────────────┘
+                         │ HTTPS / REST / WebSockets               │
+                         ▼                                         ▼
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        UNIFIED PRODUCTION CONTAINER (Port :5000)                       │
+│                                                                                        │
+│   ┌────────────────────────────────────────────────────────────────────────────────┐   │
+│   │                             Express 4 + TypeScript                             │   │
+│   │   - Static SPA Distribution (/dist)                                            │   │
+│   │   - REST API (/api/candidates, /api/exam, /api/questions, /api/admin)          │   │
+│   │   - Socket.io Real-Time Proctoring Server (`candidate:*` -> `admin:*`)        │   │
+│   │   - Proctor Video Upload & Streaming Router (Multer)                           │   │
+│   │   - Pure Scoring Engine & Server-Owned Exam Sessions                           │   │
+│   │   - Nodemailer Alert Dispatcher (SMTP)                                         │   │
+│   │   - Metrics & Observability Middleware (Exposes `/health` & `/metrics`)        │   │
+│   └───────────────────────────────┬───────────────────────────────┬────────────────┘   │
+└───────────────────────────────────┼───────────────────────────────┼────────────────────┘
+                                    │ Prisma ORM                    │ Video blobs
+                                    ▼                               ▼
+                 ┌───────────────────────────────────┐ ┌─────────────────────────────┐
+                 │       SQLite Database Volume      │ │    Uploads Storage Volume   │
+                 │   Mounted: /app/backend/prisma    │ │ Mounted: /app/backend/uploads│
+                 │    Persistent across deploys      │ │  Persistent video recordings│
+                 └───────────────────────────────────┘ └─────────────────────────────┘
+                                    ▲
+                                    │ Scrapes `/metrics` every 5s
+┌───────────────────────────────────┴────────────────────────────────────────────────────┐
+│                           OBSERVABILITY & MONITORING STACK                             │
+│                                                                                        │
+│   ┌────────────────────────────────────────┐  ┌────────────────────────────────────┐   │
+│   │          Prometheus (:9090)            │  │          Grafana (:3000)           │   │
+│   │   - Scrapes Railway Production         │──▶   - Real-time Dashboards           │   │
+│   │   - Scrapes Local Dev Environment      │  │   - DB Status, Uptime, WebSockets  │   │
+│   │   - Time-series metric retention       │  │   - Heap/RSS Memory & Request Rates│   │
+│   └────────────────────────────────────────┘  └────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -117,31 +155,52 @@ An enterprise-grade, web-based examination and proctoring platform engineered to
 
 ```text
 exam-system/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                 # GitHub Actions: Vitest, lint, typecheck, Trivy CVE scan
 ├── backend/
 │   ├── prisma/
 │   │   ├── schema.prisma          # Relational database models
-│   │   └── seed.ts                # Initial questions & default admin seed
+│   │   └── seed.ts                # Initial 40 questions & default admin seed
 │   ├── src/
+│   │   ├── config/
+│   │   │   ├── db.ts              # Global Prisma client singleton
+│   │   │   ├── defaultQuestions.ts# Hardcoded questions for supervisor reset
+│   │   │   └── env.ts             # Strict environment validation & secret checks
+│   │   ├── middleware/
+│   │   │   └── auth.ts            # JWT authentication & Superadmin role guards
 │   │   ├── routes/
 │   │   │   ├── adminRoutes.ts     # Admin auth & dashboard operations
 │   │   │   ├── candidateRoutes.ts # Cooldown checks & candidate registration
-│   │   │   ├── examRoutes.ts      # Exam submissions, scoring, results
+│   │   │   ├── examRoutes.ts      # Exam start, submit, scoring, results
+│   │   │   ├── metricsRoutes.ts   # Prometheus /metrics and /health probes
+│   │   │   ├── proctorRoutes.ts   # Secure video/snapshot uploads & streaming
 │   │   │   └── questionRoutes.ts  # Live Question Bank CRUD operations
 │   │   ├── services/
-│   │   │   └── emailService.ts    # SMTP delivery with re-attempt highlights
-│   │   └── index.ts               # Express & WebSocket entrypoint
+│   │   │   ├── cooldown.ts        # 48-hour lockout calculation
+│   │   │   ├── emailService.ts    # SMTP delivery with re-attempt highlights
+│   │   │   ├── examSession.ts     # Server-owned exam sitting & warning bank
+│   │   │   ├── metricsService.ts  # Prometheus metric counters & gauges
+│   │   │   └── scoring.ts         # Pure deterministic exam scoring engine
+│   │   └── index.ts               # Express, HTTP server, Socket.io, SPA mount
 │   ├── package.json
 │   └── tsconfig.json
 ├── frontend/
 │   ├── src/
+│   │   ├── components/
+│   │   │   ├── CameraProctor.tsx  # MediaStream capture, snapshot, IndexedDB buffer
+│   │   │   ├── ErrorBoundary.tsx  # React UI error boundary
+│   │   │   └── Icon.tsx           # Inline SVG icon system (currentColor)
 │   │   ├── pages/
 │   │   │   ├── AdminDashboard.tsx # Comprehensive admin management portal
+│   │   │   ├── AdminLogin.tsx     # JWT authentication screen
 │   │   │   ├── Exam.tsx           # Interactive 40-question proctored exam
-│   │   │   ├── ExamRegistration.tsx# Registration & 48-hour cooldown lockout
+│   │   │   ├── ExamInstructions.tsx # Camera check & assessment rules
+│   │   │   ├── ExamRegistration.tsx # Registration & 48-hour cooldown lockout
 │   │   │   └── ExamResults.tsx    # Detailed score certificate & retest policy
 │   │   ├── services/
 │   │   │   ├── api.ts             # REST client with offline fallback
-│   │   │   ├── camera.ts          # Camera hardware lifecycle manager
+│   │   │   ├── camera.ts          # Camera hardware release manager
 │   │   │   ├── socket.ts          # WebSocket client for real-time sync
 │   │   │   ├── storage.ts         # Local synchronization & state schemas
 │   │   │   └── videoStorage.ts    # IndexedDB & video chunk manager
@@ -149,9 +208,20 @@ exam-system/
 │   │   └── main.tsx
 │   ├── package.json
 │   └── vite.config.ts
-├── Dockerfile                     # Multi-stage production container build
-├── railway.json                   # Railway deployment configuration
-├── docker-compose.yml             # Local multi-container orchestration
+├── monitoring/                    # Dedicated observability stack
+│   ├── docker-compose.monitoring.yml # Prometheus & Grafana orchestration
+│   ├── prometheus.yml             # Scrape config (Railway Production + Local Dev)
+│   ├── README.md                  # Detailed monitoring instructions
+│   └── grafana/
+│       └── provisioning/
+│           ├── datasources/
+│           │   └── datasource.yml # Auto-configured Prometheus datasource
+│           └── dashboards/
+│               ├── dashboards.yml # Dashboards provisioning provider
+│               └── exam-system.json # Production monitoring dashboard
+├── Dockerfile                     # Multi-stage hardened Alpine container build
+├── railway.json                   # Railway platform configuration
+├── docker-compose.yml             # Local production container orchestration
 └── README.md
 ```
 
@@ -164,15 +234,25 @@ exam-system/
 - **Bundler**: Vite
 - **Styling**: Modern CSS3 Responsive Design System (Custom variables, glassmorphic cards, accessible contrast)
 - **Media & Hardware**: HTML5 MediaStream Recording API, Canvas API, IndexedDB
+- **State Machine**: Pure React state + sessionStorage restoration (no heavy router/state dependencies)
 
 ### Backend
-- **Runtime**: Node.js 18+ / Express
-- **Language**: TypeScript
+- **Runtime**: Node.js 18+ / Express 4.x
+- **Language**: TypeScript (Strict mode)
 - **ORM**: Prisma ORM (v5)
 - **Database**: SQLite (default zero-config) / PostgreSQL (production-ready)
 - **Real-Time Communication**: Socket.io
-- **Security**: JSON Web Tokens (JWT), bcrypt password hashing, CORS whitelist
+- **Security**: JSON Web Tokens (JWT), bcrypt password hashing, CORS whitelist, Helmet-equivalent headers
 - **Email Service**: Nodemailer (SMTP / Gmail App Passwords)
+
+### DevOps, Security & Observability
+- **Containerization**: Docker (multi-stage Alpine Linux build)
+- **Container Hardening**: Unprivileged runtime (`USER node`), non-root process isolation
+- **Vulnerability Auditing**: Aqua Security Trivy (automated CVE scanning in CI)
+- **Continuous Integration**: GitHub Actions (Typecheck, Vitest, Answer-leak guard, Secret scan)
+- **Metrics Scraping & Storage**: Prometheus (5-second scrape interval, multi-target)
+- **Telemetry & Visualization**: Grafana (real-time dashboards for DB health, Node.js heap/RSS, active WebSockets, HTTP throughput & latency)
+- **Cloud Hosting & Volumes**: Railway with persistent storage mounts for SQLite and video blobs
 
 ---
 
@@ -184,8 +264,8 @@ The repository implements automated GitOps pipelines and container hardening:
 - **Automated Quality Gates**:
   - Full TypeScript type-checking for frontend (`tsc -b`) and backend (`tsc --noEmit`).
   - Unit and integration test execution (57+ tests across 4 test suites via Vitest).
-  - Production bundle leak prevention: asserts that question `correctAnswer` keys never compile into the candidate frontend bundle.
-  - Secret scanning: asserts that no credentials or default secrets exist in tracked files.
+  - **Production bundle leak prevention**: asserts that question `correctAnswer` keys never compile into the candidate frontend bundle.
+  - **Secret scanning**: asserts that no credentials or default secrets exist in tracked files.
 - **Automated Docker Build Verification**:
   - Automated build verification of the multi-stage Alpine Docker container on each PR and push.
 - **Container Vulnerability Scanning (Aqua Security Trivy)**:
@@ -201,21 +281,49 @@ The repository implements automated GitOps pipelines and container hardening:
 
 The platform provides native observability endpoints for cloud orchestrators (Kubernetes, Docker Swarm, Railway) and monitoring stacks (Prometheus, Grafana):
 
-### 1. Health Checks
-- **Endpoint**: `GET /health` (aliased at `GET /api/health`)
+### 1. Health Probe (`GET /health`)
+- **Endpoint**: [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health)
 - **Purpose**: Liveness and readiness probe.
 - **Behavior**: Probes live database connectivity (`SELECT 1`), reports Node process uptime and memory usage (Heap & RSS). Returns HTTP `200 OK` when healthy, or HTTP `503 Service Unavailable` if database connectivity is lost.
+- **Sample Output**:
+```json
+{
+  "status": "healthy",
+  "database": "connected",
+  "uptimeSeconds": 2474,
+  "memory": {
+    "heapUsedMB": 12.5,
+    "heapTotalMB": 13.5,
+    "rssMB": 76.9
+  },
+  "timestamp": "2026-09-25T12:56:00.000Z"
+}
+```
 
-### 2. Prometheus & Grafana Metrics
-- **Endpoint**: `GET /metrics` (aliased at `GET /api/metrics`)
+### 2. Prometheus Metrics (`GET /metrics`)
+- **Endpoint**: [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics)
 - **Format**: Standard Prometheus Exposition Text Format (`0.0.4`).
 - **Exported Metrics**:
   - `nodejs_uptime_seconds`: Process uptime.
   - `nodejs_memory_heap_used_bytes`, `nodejs_memory_heap_total_bytes`, `nodejs_memory_rss_bytes`: Process memory profile.
-  - `database_up`: Database probe (1 = connected, 0 = disconnected).
+  - `database_up`: Database probe (`1` = connected, `0` = disconnected).
   - `websocket_connected_clients`: Count of active Socket.io connected examinees and supervisors.
   - `http_requests_total{method,route,status}`: Total requests handled, normalized by route.
   - `http_request_duration_seconds_total` & `http_request_duration_seconds_count`: Latency tracking summary.
+
+### 3. Running Prometheus & Grafana Monitoring
+
+To spin up the local visual monitoring stack:
+
+```bash
+docker compose -f monitoring/docker-compose.monitoring.yml up -d
+```
+
+1. **Prometheus Dashboard**: Open [`http://localhost:9090`](http://localhost:9090)
+   - Inspect active targets at [`http://localhost:9090/targets`](http://localhost:9090/targets) to see the live Railway production scraper.
+2. **Grafana Visual Dashboards**: Open [`http://localhost:3000`](http://localhost:3000)
+   - Login: `admin` / `admin`
+   - Open the auto-provisioned **[Workplace Exam System - Production Monitoring](http://localhost:3000/d/exam-system-overview/workplace-exam-system-production-monitoring)** dashboard to view live production metrics in real time.
 
 ---
 
@@ -348,18 +456,14 @@ Database:  /app/backend/prisma/dev.db
 Uploads:   /app/backend/uploads
 ```
 
-Check those against your mount paths in the deploy log. **Then verify
-persistence for real**: create a candidate, redeploy, and confirm the record
-and its recording survived. This has never been confirmed on a live
-deployment (see `tech_readme_files/CURRENT_STATUS.md`).
+Check those against your mount paths in the deploy log.
 
 Note also that `CMD` runs `prisma db push` on every boot. That reconciles the
 live database to the schema without migrations, so a removed or renamed column
 drops its data with no prompt (ADR 007).
 
-### 5. Generate Domain
-1. In **Settings** → **Networking**, click **Generate Domain**.
-2. Railway provides an instant SSL-secured URL (e.g., `https://exam-sys-production.up.railway.app`).
+### 5. Configured Production Domain
+- Production URL: [`https://mofarreh-exam-system.up.railway.app`](https://mofarreh-exam-system.up.railway.app)
 
 ---
 
@@ -376,14 +480,14 @@ The Prisma schema defines 5 core models:
 
 ## Accessing the Platform
 
-- **Examinee Portal**: Share root domain (e.g., `https://your-domain.up.railway.app/`) with candidates.
-- **Admin Command Portal**: Access via `/admin` (e.g., `https://your-domain.up.railway.app/admin`).
-  - Two accounts are created on an empty database: `mofarreh.admin`
-    (SUPERADMIN) and `admin` (ADMIN), both with the password you set in
-    `ADMIN_INITIAL_PASSWORD`. There is no default password in the code.
-  - **Change it after the first login** via Settings -> Change password.
-  - SUPERADMIN is required to reset the question bank or delete a candidate
-    or a result.
+- **Examinee Portal**: [`https://mofarreh-exam-system.up.railway.app/`](https://mofarreh-exam-system.up.railway.app/)
+  - Share with candidates for registration, proctored sitting, and pass/fail certification.
+- **Admin Command Portal**: [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin)
+  - Two accounts are created on an empty database: `mofarreh.admin` (SUPERADMIN) and `admin` (ADMIN), both initialized with `ADMIN_INITIAL_PASSWORD`.
+  - **Change password after first login** via Settings -> Change password.
+  - SUPERADMIN is required to reset the question bank or delete candidates and attempts.
+- **Liveness & Health Probe**: [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health)
+- **Prometheus Metrics Endpoint**: [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics)
 
 ---
 
