@@ -7,6 +7,9 @@
 [![Prisma](https://img.shields.io/badge/Prisma-5.x-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)](https://railway.app/)
+[![CI](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml/badge.svg)](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/Youssef22Ashraf/exam-sys/releases/tag/v1.1.1)
+[![Security: Trivy](https://img.shields.io/badge/security-Trivy%20Scanned-green.svg)](https://aquasecurity.github.io/trivy/)
 
 An enterprise-grade, web-based examination and proctoring platform engineered to evaluate workplace and industrial competency before granting site or operational access. Features real-time webcam recording, multi-attempt tracking with 48-hour retest lockouts, automated SMTP supervisor alerts, and dynamic administrative exam orchestration.
 
@@ -23,6 +26,8 @@ An enterprise-grade, web-based examination and proctoring platform engineered to
 - [System Architecture](#system-architecture)
 - [Directory Structure](#directory-structure)
 - [Technology Stack](#technology-stack)
+- [CI/CD & Container Security](#cicd--container-security)
+- [Observability & Health Monitoring](#observability--health-monitoring)
 - [Environment Variables](#environment-variables)
 - [Local Development Setup](#local-development-setup)
 - [Production Deployment (Railway)](#production-deployment-railway)
@@ -168,6 +173,49 @@ exam-system/
 - **Real-Time Communication**: Socket.io
 - **Security**: JSON Web Tokens (JWT), bcrypt password hashing, CORS whitelist
 - **Email Service**: Nodemailer (SMTP / Gmail App Passwords)
+
+---
+
+## CI/CD & Container Security
+
+The repository implements automated GitOps pipelines and container hardening:
+
+### 1. GitHub Actions CI Pipeline (`.github/workflows/ci.yml`)
+- **Automated Quality Gates**:
+  - Full TypeScript type-checking for frontend (`tsc -b`) and backend (`tsc --noEmit`).
+  - Unit and integration test execution (57+ tests across 4 test suites via Vitest).
+  - Production bundle leak prevention: asserts that question `correctAnswer` keys never compile into the candidate frontend bundle.
+  - Secret scanning: asserts that no credentials or default secrets exist in tracked files.
+- **Automated Docker Build Verification**:
+  - Automated build verification of the multi-stage Alpine Docker container on each PR and push.
+- **Container Vulnerability Scanning (Aqua Security Trivy)**:
+  - Automatically audits the built production image for OS-level and application library CVEs (`CRITICAL,HIGH` severity).
+
+### 2. Container Hardening
+- **Unprivileged Runtime**: Container executes under `USER node` instead of `root`, preventing container escape vectors.
+- **Unified Single-Port Serving**: Multi-stage build compiles both the React SPA and Express backend, exposing a single port (`:5000`).
+
+---
+
+## Observability & Health Monitoring
+
+The platform provides native observability endpoints for cloud orchestrators (Kubernetes, Docker Swarm, Railway) and monitoring stacks (Prometheus, Grafana):
+
+### 1. Health Checks
+- **Endpoint**: `GET /health` (aliased at `GET /api/health`)
+- **Purpose**: Liveness and readiness probe.
+- **Behavior**: Probes live database connectivity (`SELECT 1`), reports Node process uptime and memory usage (Heap & RSS). Returns HTTP `200 OK` when healthy, or HTTP `503 Service Unavailable` if database connectivity is lost.
+
+### 2. Prometheus & Grafana Metrics
+- **Endpoint**: `GET /metrics` (aliased at `GET /api/metrics`)
+- **Format**: Standard Prometheus Exposition Text Format (`0.0.4`).
+- **Exported Metrics**:
+  - `nodejs_uptime_seconds`: Process uptime.
+  - `nodejs_memory_heap_used_bytes`, `nodejs_memory_heap_total_bytes`, `nodejs_memory_rss_bytes`: Process memory profile.
+  - `database_up`: Database probe (1 = connected, 0 = disconnected).
+  - `websocket_connected_clients`: Count of active Socket.io connected examinees and supervisors.
+  - `http_requests_total{method,route,status}`: Total requests handled, normalized by route.
+  - `http_request_duration_seconds_total` & `http_request_duration_seconds_count`: Latency tracking summary.
 
 ---
 
