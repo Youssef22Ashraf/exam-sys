@@ -8,146 +8,242 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)](https://mofarreh-exam-system.up.railway.app)
 [![CI](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml/badge.svg)](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)](https://github.com/Youssef22Ashraf/exam-sys/releases/tag/v1.1.1)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/Youssef22Ashraf/exam-sys/releases/tag/v1.2.0)
 [![Security: Trivy](https://img.shields.io/badge/security-Trivy%20Scanned-green.svg)](https://aquasecurity.github.io/trivy/)
 [![Observability](https://img.shields.io/badge/Observability-Prometheus%20%26%20Grafana-orange?logo=prometheus&logoColor=white)](monitoring/README.md)
 
-An enterprise-grade, web-based examination and proctoring platform engineered to evaluate workplace and industrial competency before granting site or operational access. Features real-time webcam recording, multi-attempt tracking with 48-hour retest lockouts, automated SMTP supervisor alerts, dynamic administrative exam orchestration, containerized CVE auditing, and native Prometheus/Grafana observability.
+An enterprise-grade, web-based examination and proctoring platform engineered to evaluate workplace and industrial competency before granting site or operational access. Features interactive pre-exam camera verification, live webcam recording with IndexedDB chunk streaming, window/tab blur auditing, multi-attempt tracking with 48-hour retest lockouts, dual-engine email delivery (Resend HTTPS + SMTP fallback), dynamic administrative exam orchestration, containerized CVE auditing, and native Prometheus/Grafana observability.
 
 ---
 
-## 🌐 Live Production Links
+## Live Production Links
 
 | Service | Public URL | Description |
 |---|---|---|
-| **Examinee Portal** | [`https://mofarreh-exam-system.up.railway.app/`](https://mofarreh-exam-system.up.railway.app/) | Candidate registration & timed proctored exam |
-| **Admin Command Center** | [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin) | Supervisor live oversight, question editor, video player |
-| **Health Check Probe** | [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health) | Liveness & readiness probe with DB connectivity status |
+| **Examinee Portal** | [`https://mofarreh-exam-system.up.railway.app/`](https://mofarreh-exam-system.up.railway.app/) | Candidate registration, hardware check, timed exam & certificate |
+| **Admin Command Center** | [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin) | Supervisor live oversight, question editor, video stream audit |
+| **Health Probe** | [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health) | Liveness & readiness probe with DB connectivity status |
 | **Prometheus Metrics** | [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics) | Standard Prometheus scrape target for telemetry |
 
 ---
 
 ## Table of Contents
 
+- [System Design & Architecture](#system-design--architecture)
+- [Workflow & Candidate Lifecycle](#workflow--candidate-lifecycle)
 - [Key Features](#key-features)
   - [Examinee Experience & Assessment Flow](#examinee-experience--assessment-flow)
   - [Anti-Cheating & Proctoring Engine](#anti-cheating--proctoring-engine)
   - [48-Hour Cooldown & Multi-Attempt Enforcement](#48-hour-cooldown--multi-attempt-enforcement)
   - [Administrative Command Center (`/admin`)](#administrative-command-center-admin)
-  - [Automated Email Notification System](#automated-email-notification-system)
-- [System Architecture](#system-architecture)
+  - [Dual-Engine Email Alerting System](#dual-engine-email-alerting-system)
+  - [Single-Volume Persistence Architecture](#single-volume-persistence-architecture)
 - [Directory Structure](#directory-structure)
 - [Technology Stack](#technology-stack)
 - [CI/CD & Container Security](#cicd--container-security)
 - [Observability & Health Monitoring](#observability--health-monitoring)
-  - [Health Probe (`/health`)](#1-health-probe-get-health)
-  - [Prometheus Metrics (`/metrics`)](#2-prometheus-metrics-get-metrics)
+  - [Health Probe (`GET /health`)](#1-health-probe-get-health)
+  - [Prometheus Metrics (`GET /metrics`)](#2-prometheus-metrics-get-metrics)
   - [Grafana Dashboard Setup](#3-running-prometheus--grafana-monitoring)
 - [Environment Variables](#environment-variables)
 - [Local Development Setup](#local-development-setup)
 - [Production Deployment (Railway)](#production-deployment-railway)
-- [Database Schema & Persistence](#database-schema--persistence)
+- [Database Schema & Models](#database-schema--models)
 - [Accessing the Platform](#accessing-the-platform)
 - [License](#license)
+
+---
+
+## System Design & Architecture
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                           CLIENT LAYER                                           │
+│                                                                                                  │
+│   ┌──────────────────────────────────────────────┐  ┌────────────────────────────────────────┐   │
+│   │     Examinee Portal (React 19 + Vite)        │  │      Supervisor Command (/admin)       │   │
+│   │   - Interactive Camera Check & Face Guide    │  │   - Live WebSocket Candidate Feed      │   │
+│   │   - Mandatory Anti-Cheating Checklist        │  │   - Proctor Video Playback Audit       │   │
+│   │   - MediaRecorder + IndexedDB Chunking       │  │   - Question Bank CRUD & Pass % Editor │   │
+│   │   - Tab Switch & Blur Event Detection        │  │   - Cooldown Unlock & CSV Export       │   │
+│   │   - Absolute Deadline Clock (ADR 008)        │  │   - Instant Email Alert Dispatch Tool  │   │
+│   └──────────────────────┬───────────────────────┘  └───────────────────┬────────────────────┘   │
+└──────────────────────────┼──────────────────────────────────────────────┼────────────────────────┘
+                           │ HTTPS / REST / Socket.io                     │
+                           ▼                                              ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             UNIFIED PRODUCTION CONTAINER (Port :5000)                            │
+│                                                                                                  │
+│   ┌──────────────────────────────────────────────────────────────────────────────────────────┐   │
+│   │                                  Express 4 + TypeScript                                  │   │
+│   │   - Static SPA Distribution (/dist) with fallback routing                                │   │
+│   │   - Authenticated REST APIs (/api/candidates, /api/exam, /api/questions, /api/settings)  │   │
+│   │   - Server-Owned Exam Sessions (Deterministic clock, warning counter bank)               │   │
+│   │   - Pure Scoring Engine (Scores evaluated solely on server against DB keys)              │   │
+│   │   - Socket.io Server (Admins room segregation with JWT handshake verification)           │   │
+│   │   - Dual-Engine Notification Dispatcher (Resend HTTPS port 443 + Nodemailer SMTP)       │   │
+│   │   - Prometheus Telemetry & Liveness Engine (/health, /metrics)                           │   │
+│   └──────────────────────────────┬──────────────────────────────┬────────────────────────────┘   │
+└──────────────────────────────────┼──────────────────────────────┼────────────────────────────────┘
+                                   │                              │
+                                   ▼                              ▼
+                 ┌──────────────────────────────────────────────────────────────┐
+                 │          SINGLE PERSISTENT VOLUME: /app/backend/prisma       │
+                 │                                                              │
+                 │   - dev.db (SQLite database: candidates, attempts, scores)   │
+                 │   - schema.prisma (Auto-restored from template on boot)      │
+                 │   - uploads/ (Symlinked: webcam recordings & snapshots)      │
+                 │                                                              │
+                 │   * Fully survives redeployments and container restarts *    │
+                 └──────────────────────────────────────────────────────────────┘
+                                   ▲
+                                   │ Scrapes `/metrics` every 5s
+┌──────────────────────────────────┴───────────────────────────────────────────────────────────────┐
+│                                OBSERVABILITY & MONITORING STACK                                  │
+│                                                                                                  │
+│   ┌──────────────────────────────────────────────┐  ┌────────────────────────────────────────┐   │
+│   │              Prometheus (:9090)              │  │             Grafana (:3000)            │   │
+│   │   - Scrapes Railway Production (:443)        │──▶   - Real-time Production Dashboards    │   │
+│   │   - Scrapes Local Dev Container (:5000)      │  │   - Database Health, Memory Profiles   │   │
+│   │   - Time-series metric retention & alerts    │  │   - WebSocket Concurrency & Latency    │   │
+│   └──────────────────────────────────────────────┘  └────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Architectural Decisions & Core Tenets
+
+1. **Server Scores, Server Decides (ADR 008)**:
+   - Question choices sent to the client **never contain `correctAnswer`**. The exam cannot be scored on the frontend.
+   - Upon submission (`POST /api/exam/submit`), the backend scoring engine evaluates answers against DB rows, computes passing percentage, applies thresholds, and registers attempt numbers.
+   - Proctoring warnings recorded on the client can only increase the server's warning tally (`max(client, server)`), never decrease it.
+2. **Absolute Deadline Clock**:
+   - The examination timer is an absolute server-anchored deadline timestamp, not a decrementing countdown counter.
+   - Candidates cannot bypass the timer by pausing browser execution, switching tabs, or refreshing the page.
+3. **Single Process, Unified Port**:
+   - Built via a multi-stage Docker container. The Express backend serves the pre-compiled React 19 SPA static assets alongside the API, WebSockets, and health checks on port `5000`.
+
+---
+
+## Workflow & Candidate Lifecycle
+
+The platform enforces a strict, guided 6-step lifecycle for every examinee:
+
+```text
+[ 1. Registration ]
+        │
+        ▼
+[ 2. Cooldown Gate ] ──(Under 48 Hours)──▶ [ Lockout Screen with Countdown ]
+        │
+    (Eligible)
+        ▼
+[ 3. Hardware & Rules Check ] ──(Camera Inactive or Checkboxes Unchecked)──▶ [ Gated / Blocked ]
+        │
+ (All Verified)
+        ▼
+[ 4. Proctored Exam Sitting ]
+  ├── Real-time webcam video recording (IndexedDB chunking)
+  ├── Tab-switch & focus loss auditing
+  └── Server-anchored countdown timer
+        │
+        ▼
+[ 5. Server Submission & Scoring ]
+  ├── Automatic snapshot & WebM video upload
+  ├── Server evaluates score against DB question keys
+  └── Instant breakdown certificate & armed 48-hour retest lock
+        │
+        ▼
+[ 6. Automated Supervisor Notification ]
+  ├── Resend HTTPS (Port 443) / SMTP Alert dispatched
+  ├── Re-attempt detection with banner & score summary
+  └── Admin link with 1-click candidate audit access
+```
+
+### Step 1: Candidate Registration (`/`)
+- Candidates input **Full Name**, **Company Employee ID**, and **Work Email**.
+- Basic client-side and server-side validation guarantees well-formed email addresses and trimmed identities.
+
+### Step 2: 48-Hour Retest Cooldown Check
+- Upon submitting credentials, `GET /api/candidates/check-cooldown?email=...&companyId=...` evaluates the candidate's history.
+- If an attempt was submitted within the previous 48 hours, the candidate is immediately locked out.
+- The lockout screen displays a live dynamic countdown showing the exact hours and minutes until eligibility opens, along with supervisor contact instructions.
+
+### Step 3: Hardware Verification & Compliance Agreement (`/instructions`)
+- **Live Webcam Preview**: Activates the candidate's camera with an ergonomic face-alignment guide overlay.
+- **Continuous Video Verification**: Verifies media hardware stream binding so the examinee confirms their feed is clear (eliminating black-screen or permission issues before entry).
+- **Mandatory 3-Point Rules Checklist**: The "Start Examination" button remains strictly disabled until the candidate manually verifies all conditions:
+  1. *Camera Active & Visible*: Confirms face is centered in the live preview.
+  2. *Single-Tab Policy*: Confirms all other tabs, messengers, and devtools are closed, acknowledging tab switches are audited in real time.
+  3. *Video Footage Integrity*: Acknowledges that blank, obstructed, or bypassed video feeds disqualify the assessment.
+- **Exam Commencement Alert**: When the candidate starts, the backend immediately records sitting metadata and fires an assessment-start email notification to management.
+
+### Step 4: Proctored Assessment Sitting (`/exam`)
+- **Server-Owned Session**: Initialized via `POST /api/exam/start`, returning an active session ID held in `sessionStorage` (allowing seamless reconnection on accidental reload).
+- **Categorized Question Modules (40 Questions)**:
+  - **Part A — Interface Management**: Evaluates cross-functional communication, operational protocols, and interface matrices.
+  - **Part B — Stakeholder Management**: Evaluates client communications, escalation pathways, and stakeholder expectations.
+- **Continuous Anti-Cheating Engine**:
+  - Live webcam stream recorded continuously using HTML5 `MediaRecorder`.
+  - Chunks stream into an `IndexedDB` local buffer as they record, preventing memory bloat.
+  - Window blur and tab-switching events trigger immediate warnings and increment the server-tracked warning tally via `candidate:warning` WebSocket events.
+- **Hardware Release Guarantee**: All media tracks are unconditionally stopped and released upon submit, timer expiration, or navigation away (`releaseCamera()`).
+
+### Step 5: Submission & Instant Results Breakdown (`/results`)
+- `POST /api/exam/submit` transmits candidate answers and final integrity counters.
+- Snapshots and video recordings are transferred to backend storage (`POST /api/proctor/upload-video`, `/upload-snapshot`).
+- Results screen displays an official certificate breakdown:
+  - Overall score and percentage against the passing mark.
+  - Section-by-section breakdown (Part A vs. Part B).
+  - Attempt sequence badge (`Attempt #1`, `Attempt #2`).
+  - Pass/Fail verification badge.
+
+### Step 6: Automated Supervisor Email Alert
+- Delivered within seconds of assessment finalization.
+- Features complete candidate credentials, score breakdown, duration, proctoring integrity status, and a direct button to open the supervisor dashboard.
+- Highlights re-attempts with an amber alert notice and `[RE-ATTEMPT #X]` subject line.
 
 ---
 
 ## Key Features
 
 ### Examinee Experience & Assessment Flow
-- **Streamlined Candidate Registration**: Capture full name, company employee ID, and corporate email.
-- **Categorized Question Modules**:
-  - **Part A — Interface Management**: Evaluates cross-functional communication, operational protocols, and interface matrices.
-  - **Part B — Stakeholder Management**: Evaluates client communications, escalation pathways, and stakeholder expectations.
-- **Dynamic Examination Settings**: Timers, passing marks, and question banks update in real time based on supervisor configuration.
-- **Seamless Navigation**: Answer tracking, flagged questions, responsive question grid, and auto-submission upon timer expiration.
-- **Instant Result Breakdown**: Displays overall score percentage, section-by-section analysis (Part A vs. Part B), pass/fail certification status, and attempt sequence.
+- **Modern Responsive Design System**: Built with modern CSS custom properties, accessible contrast ratios, and clean typography.
+- **Question Flagging & Navigation Grid**: Examinees can bookmark questions for review and jump across the 40-question matrix effortlessly.
+- **Auto-Submission Engine**: Automatic submission triggers upon timer expiration, safeguarding all recorded selections.
 
 ### Anti-Cheating & Proctoring Engine
-- **Continuous Camera Proctoring**: Live webcam stream with automatic snapshot capture on submission.
-- **Webcam Video Archiving**: Records the entire examination session and securely streams or uploads it to backend storage for supervisor verification.
-- **Tab & Window Focus Auditing**: Real-time tracking of blur/focus events and tab switches. Warnings are logged and displayed directly on the admin report.
-- **Hardware Lifecycle Management**: Guarantees that camera and audio streams are immediately released and powered off when the exam terminates or closes.
+- **Webcam Video Archiving**: Records the entire session and uploads an optimized `.webm` archive to protected storage.
+- **Identity Snapshot Capture**: Captures candidate identity proof during assessment progression.
+- **Tab & Window Auditing**: Real-time tracking of blur/focus events. The server retains the maximum warning count to prevent client tampering.
+- **Zero World-Readable Media**: Webcam recordings and snapshots are never exposed via static directory mounts. All media access requires an authenticated admin JWT session.
 
 ### 48-Hour Cooldown & Multi-Attempt Enforcement
-- **Algorithmic Retest Lockout**: Examinees who have completed an assessment cannot re-attempt the exam within 48 hours of completion.
-- **Compound Identity Verification**: Checks both email and company ID against local storage and the database to prevent duplicate registration circumvention.
-- **Dynamic Lockout Countdown**: Informs blocked candidates of the exact hours remaining and the exact date/time their retest window opens.
-- **Supervisor Retest Override**: Administrators can clear the 48-hour lockout with one click for authorized re-examinations.
+- **Compound Identity Matching**: Prevents circumventing lockouts by switching email or company ID.
+- **Supervisor Retest Override**: Supervisors can clear the 48-hour lockout with one click directly from the Admin Command Center.
 
 ### Administrative Command Center (`/admin`)
-- **Live Proctoring & Candidate Oversight**: Monitor ongoing assessments via WebSockets (`socket.io`).
+- **Live Proctoring Feed**: Real-time candidate monitoring powered by WebSockets (`socket.io`).
 - **Comprehensive Candidate Timeline**:
   - Search by Name, Company ID, or Email.
-  - View full chronological attempt history (`Attempt #1`, `🔁 Attempt #2`, etc.).
+  - View full chronological attempt history (`Attempt #1`, `Attempt #2`, etc.).
   - Inspect individual answer sheets question-by-question with candidate vs. correct answer comparisons.
-  - Stream archived proctor webcam videos directly inside the dashboard.
+  - In-browser playback of archived proctor webcam videos.
 - **Live Question Bank Management**:
   - Add, edit, or delete questions on the fly.
-  - Filter by section (Part A / Part B).
   - Changes instantly propagate to new candidate sessions without server restarts.
 - **Global Assessment Configuration**:
-  - Modify passing percentage threshold (e.g. from 70% to 60%) anytime.
-  - Adjust exam duration minutes and exam title.
-  - Updates immediately reflect on the candidate's exam screen and results certificate.
+  - Modify passing percentage threshold (e.g., 70% to 60%) anytime.
+  - Adjust exam duration minutes, exam title, and supervisor notification email list.
 - **Audit Reporting & Export**: 1-click export of all candidate records, scores, timestamps, and integrity logs to Excel / CSV format.
 
-### Automated Email Notification System
-- **Real-Time SMTP Alerting**: Automatically dispatches a rich HTML notification to management whenever an assessment is finalized.
-- **Re-Attempt Highlighting**: Re-test submissions automatically include `[RE-ATTEMPT #X]` in the subject line and an amber alert banner highlighting previous attempts.
-- **Full Metric Delivery**: Includes candidate credentials, overall score, percentage, passing verdict, duration, and proctoring integrity flags.
+### Dual-Engine Email Alerting System
+- **Resend REST API over HTTPS (Port 443)**: Bypasses cloud host and ISP outbound SMTP port blocks (ports 25, 465, 587, 2525 blocked on Railway Hobby plans). Uses native Node.js `fetch` with zero third-party dependencies.
+- **Nodemailer SMTP Fallback**: Standard SMTP transport supporting Gmail App Passwords and enterprise mail servers with 8-second connection timeouts.
+- **Instant Test Trigger**: Admins can verify email delivery anytime via the Admin Settings portal with one click.
 
----
-
-## System Architecture
-
-```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                     CLIENT LAYER                                       │
-│                                                                                        │
-│   ┌─────────────────────────────────────────┐  ┌───────────────────────────────────┐   │
-│   │   Examinee Portal (React 19 + Vite)     │  │   Supervisor Command (/admin)     │   │
-│   │   - CameraProctor & MediaRecorder       │  │   - Live WebSocket Candidate Feed │   │
-│   │   - Tab switch & blur event detection   │  │   - Video playback & grading audit│   │
-│   │   - IndexedDB chunk buffering           │  │   - Dynamic Question/Config CRUD  │   │
-│   └────────────────────┬────────────────────┘  └─────────────────┬─────────────────┘   │
-└────────────────────────┼─────────────────────────────────────────┼─────────────────────┘
-                         │ HTTPS / REST / WebSockets               │
-                         ▼                                         ▼
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        UNIFIED PRODUCTION CONTAINER (Port :5000)                       │
-│                                                                                        │
-│   ┌────────────────────────────────────────────────────────────────────────────────┐   │
-│   │                             Express 4 + TypeScript                             │   │
-│   │   - Static SPA Distribution (/dist)                                            │   │
-│   │   - REST API (/api/candidates, /api/exam, /api/questions, /api/admin)          │   │
-│   │   - Socket.io Real-Time Proctoring Server (`candidate:*` -> `admin:*`)        │   │
-│   │   - Proctor Video Upload & Streaming Router (Multer)                           │   │
-│   │   - Pure Scoring Engine & Server-Owned Exam Sessions                           │   │
-│   │   - Nodemailer Alert Dispatcher (SMTP)                                         │   │
-│   │   - Metrics & Observability Middleware (Exposes `/health` & `/metrics`)        │   │
-│   └───────────────────────────────┬───────────────────────────────┬────────────────┘   │
-└───────────────────────────────────┼───────────────────────────────┼────────────────────┘
-                                    │ Prisma ORM                    │ Video blobs
-                                    ▼                               ▼
-                 ┌───────────────────────────────────┐ ┌─────────────────────────────┐
-                 │       SQLite Database Volume      │ │    Uploads Storage Volume   │
-                 │   Mounted: /app/backend/prisma    │ │ Mounted: /app/backend/uploads│
-                 │    Persistent across deploys      │ │  Persistent video recordings│
-                 └───────────────────────────────────┘ └─────────────────────────────┘
-                                    ▲
-                                    │ Scrapes `/metrics` every 5s
-┌───────────────────────────────────┴────────────────────────────────────────────────────┐
-│                           OBSERVABILITY & MONITORING STACK                             │
-│                                                                                        │
-│   ┌────────────────────────────────────────┐  ┌────────────────────────────────────┐   │
-│   │          Prometheus (:9090)            │  │          Grafana (:3000)           │   │
-│   │   - Scrapes Railway Production         │──▶   - Real-time Dashboards           │   │
-│   │   - Scrapes Local Dev Environment      │  │   - DB Status, Uptime, WebSockets  │   │
-│   │   - Time-series metric retention       │  │   - Heap/RSS Memory & Request Rates│   │
-│   └────────────────────────────────────────┘  └────────────────────────────────────┘   │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-```
+### Single-Volume Persistence Architecture
+- **Railway Single-Volume Optimization**: Railway permits only one volume per service. The system mounts the single volume at `/app/backend/prisma`.
+- **Self-Healing Container Startup**: When an empty volume is mounted over `/app/backend/prisma`, Docker auto-restores `schema.prisma` from a template directory before running `prisma db push`.
+- **Unified File & Database Storage**: Uploads are redirected to `/app/backend/prisma/uploads`, ensuring that both the SQLite database (`dev.db`) and all webcam recordings/snapshots persist across deploys on that single volume.
 
 ---
 
@@ -160,12 +256,12 @@ exam-system/
 │       └── ci.yml                 # GitHub Actions: Vitest, lint, typecheck, Trivy CVE scan
 ├── backend/
 │   ├── prisma/
-│   │   ├── schema.prisma          # Relational database models
+│   │   ├── schema.prisma          # Prisma relational models
 │   │   └── seed.ts                # Initial 40 questions & default admin seed
 │   ├── src/
 │   │   ├── config/
 │   │   │   ├── db.ts              # Global Prisma client singleton
-│   │   │   ├── defaultQuestions.ts# Hardcoded questions for supervisor reset
+│   │   │   ├── defaultQuestions.ts# Seed fallback for question bank reset
 │   │   │   └── env.ts             # Strict environment validation & secret checks
 │   │   ├── middleware/
 │   │   │   └── auth.ts            # JWT authentication & Superadmin role guards
@@ -175,13 +271,17 @@ exam-system/
 │   │   │   ├── examRoutes.ts      # Exam start, submit, scoring, results
 │   │   │   ├── metricsRoutes.ts   # Prometheus /metrics and /health probes
 │   │   │   ├── proctorRoutes.ts   # Secure video/snapshot uploads & streaming
-│   │   │   └── questionRoutes.ts  # Live Question Bank CRUD operations
+│   │   │   ├── questionRoutes.ts  # Live Question Bank CRUD operations
+│   │   │   └── settingRoutes.ts   # Global settings & test email trigger
 │   │   ├── services/
+│   │   │   ├── candidateIdentity.ts# Compound identity matching
 │   │   │   ├── cooldown.ts        # 48-hour lockout calculation
-│   │   │   ├── emailService.ts    # SMTP delivery with re-attempt highlights
-│   │   │   ├── examSession.ts     # Server-owned exam sitting & warning bank
+│   │   │   ├── emailService.ts    # Dual-engine dispatch (Resend HTTPS + SMTP)
+│   │   │   ├── examSession.ts     # Server-owned sitting & warning bank
 │   │   │   ├── metricsService.ts  # Prometheus metric counters & gauges
-│   │   │   └── scoring.ts         # Pure deterministic exam scoring engine
+│   │   │   ├── proctorFiles.ts    # Safe deletion & file lifecycle management
+│   │   │   ├── scoring.ts         # Pure deterministic exam scoring engine
+│   │   │   └── validation.ts      # Input sanitization & JSON parsing guards
 │   │   └── index.ts               # Express, HTTP server, Socket.io, SPA mount
 │   ├── package.json
 │   └── tsconfig.json
@@ -232,7 +332,7 @@ exam-system/
 ### Frontend
 - **Framework**: React 19 + TypeScript
 - **Bundler**: Vite
-- **Styling**: Modern CSS3 Responsive Design System (Custom variables, glassmorphic cards, accessible contrast)
+- **Styling**: Vanilla CSS3 Design System (zero third-party UI framework bloat, custom CSS properties, responsive grids)
 - **Media & Hardware**: HTML5 MediaStream Recording API, Canvas API, IndexedDB
 - **State Machine**: Pure React state + sessionStorage restoration (no heavy router/state dependencies)
 
@@ -243,7 +343,7 @@ exam-system/
 - **Database**: SQLite (default zero-config) / PostgreSQL (production-ready)
 - **Real-Time Communication**: Socket.io
 - **Security**: JSON Web Tokens (JWT), bcrypt password hashing, CORS whitelist, Helmet-equivalent headers
-- **Email Service**: Nodemailer (SMTP / Gmail App Passwords)
+- **Email Delivery**: Resend HTTPS REST API (Port 443) + Nodemailer SMTP fallback
 
 ### DevOps, Security & Observability
 - **Containerization**: Docker (multi-stage Alpine Linux build)
@@ -252,7 +352,7 @@ exam-system/
 - **Continuous Integration**: GitHub Actions (Typecheck, Vitest, Answer-leak guard, Secret scan)
 - **Metrics Scraping & Storage**: Prometheus (5-second scrape interval, multi-target)
 - **Telemetry & Visualization**: Grafana (real-time dashboards for DB health, Node.js heap/RSS, active WebSockets, HTTP throughput & latency)
-- **Cloud Hosting & Volumes**: Railway with persistent storage mounts for SQLite and video blobs
+- **Cloud Hosting & Volumes**: Railway with unified persistent volume mount
 
 ---
 
@@ -263,7 +363,7 @@ The repository implements automated GitOps pipelines and container hardening:
 ### 1. GitHub Actions CI Pipeline (`.github/workflows/ci.yml`)
 - **Automated Quality Gates**:
   - Full TypeScript type-checking for frontend (`tsc -b`) and backend (`tsc --noEmit`).
-  - Unit and integration test execution (57+ tests across 4 test suites via Vitest).
+  - Unit and integration test execution (Vitest test suites across frontend and backend).
   - **Production bundle leak prevention**: asserts that question `correctAnswer` keys never compile into the candidate frontend bundle.
   - **Secret scanning**: asserts that no credentials or default secrets exist in tracked files.
 - **Automated Docker Build Verification**:
@@ -292,11 +392,11 @@ The platform provides native observability endpoints for cloud orchestrators (Ku
   "database": "connected",
   "uptimeSeconds": 2474,
   "memory": {
-    "heapUsedMB": 12.5,
-    "heapTotalMB": 13.5,
-    "rssMB": 76.9
+    "heapUsedMB": 14.2,
+    "heapTotalMB": 18.5,
+    "rssMB": 82.4
   },
-  "timestamp": "2026-09-25T12:56:00.000Z"
+  "timestamp": "2026-09-25T18:45:00.000Z"
 }
 ```
 
@@ -331,37 +431,22 @@ docker compose -f monitoring/docker-compose.monitoring.yml up -d
 
 Configure environment variables in `backend/.env` for local development or within your cloud provider dashboard for production:
 
-```env
-# Server Configuration
-PORT=5000
-NODE_ENV=production
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `PORT` | No | `5000` | Port for Express HTTP server and WebSockets |
+| `NODE_ENV` | No | `development` | Runtime mode (`production` or `development`) |
+| `JWT_SECRET` | **Yes (Prod)** | - | Secret key for signing admin authentication tokens (minimum 32 chars) |
+| `ADMIN_INITIAL_PASSWORD` | **Yes (Prod)** | - | Initial password seeded for admin accounts (minimum 12 chars) |
+| `DATABASE_URL` | No | `file:./dev.db` | Prisma database connection string |
+| `RESEND_API_KEY` | **Recommended** | - | Resend API key (`re_...`) for HTTPS email delivery over port 443 |
+| `RESEND_FROM` | No | `onboarding@resend.dev` | Sender address verified in Resend dashboard |
+| `ADMIN_ALERT_EMAIL` | No | - | Destination email(s) for exam alerts (comma-separated) |
+| `SMTP_HOST` | No | - | Fallback SMTP host (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | No | `587` | Fallback SMTP port (`587` or `465`) |
+| `SMTP_USER` | No | - | Fallback SMTP authentication username |
+| `SMTP_PASS` | No | - | Fallback SMTP app password |
 
-# Security & Authentication
-# Generate a private value -- never reuse one printed in documentation:
-#   openssl rand -base64 48
-# In production the server refuses to boot if JWT_SECRET is a value that has
-# appeared in this repository, or is shorter than 32 characters.
-JWT_SECRET=
-
-# Password for the two admin accounts created on an empty database.
-# Required in production, minimum 12 characters. Change it in the admin
-# portal (Settings -> Change password) after the first login.
-ADMIN_INITIAL_PASSWORD=
-
-# Database Connection
-DATABASE_URL="file:./dev.db"
-
-# SMTP Alert Delivery
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your_email@gmail.com
-SMTP_PASS=your_gmail_app_password
-ADMIN_ALERT_EMAIL=supervisor_recipient@gmail.com
-```
-
-> **Never commit real values for `JWT_SECRET`, `ADMIN_INITIAL_PASSWORD` or
-> `SMTP_PASS`.** A secret printed in a README is public: anyone who reads it
-> can forge an admin token against any deployment using it.
+> **Never commit real values for `JWT_SECRET`, `ADMIN_INITIAL_PASSWORD`, `RESEND_API_KEY`, or `SMTP_PASS`.** The server actively validates secret strength and rejects known repository template secrets in production.
 
 ---
 
@@ -423,69 +508,53 @@ git push origin main
 In your Railway Service dashboard, open the **Variables** tab and set:
 - `PORT` = `5000`
 - `NODE_ENV` = `production`
-- `JWT_SECRET` = `[your-random-secret-key]`
-- `SMTP_HOST` = `smtp.gmail.com`
-- `SMTP_PORT` = `587`
-- `SMTP_USER` = `[your-smtp-email]`
-- `SMTP_PASS` = `[your-smtp-app-password]`
-- `ADMIN_ALERT_EMAIL` = `[supervisor-email]`
+- `JWT_SECRET` = `[your-random-32+-char-secret]`
+- `ADMIN_INITIAL_PASSWORD` = `[your-secure-admin-password]`
+- `RESEND_API_KEY` = `re_[your-resend-api-key]` *(Recommended: 100% reliable HTTPS delivery)*
+- `ADMIN_ALERT_EMAIL` = `[supervisor-email@domain.com]`
 
-### 4. Attach Persistent Volumes (REQUIRED — both of them)
+### 4. Attach Persistent Volume (Single-Volume Architecture)
 
-The container filesystem is replaced on every deploy. **Two** volumes are
-needed, and neither is optional: without them a redeploy destroys every
-candidate, result and webcam recording, silently and irreversibly.
+Railway limits services to **one volume**. To guarantee that the database, answers, scores, and webcam videos survive all redeployments:
 
 1. In your service view on Railway, click the **Volumes** tab.
-2. Add a volume with **Mount Path** `/app/backend/uploads`
-   — the webcam recordings and identity snapshots.
-3. Add a second volume with **Mount Path** `/app/backend/prisma`
-   — the SQLite database file.
+2. Click **+ Add Volume**.
+3. Set **Mount Path**: `/app/backend/prisma`
 
-> The database path is **not** `/app/backend/dev.db`. Prisma resolves the
-> relative `DATABASE_URL` (`file:./dev.db`) against the directory holding
-> `schema.prisma`, so the file lives at `/app/backend/prisma/dev.db`.
-> `docker-compose.yml` uses different paths (`/app/prisma`, `/app/uploads`)
-> because `backend/Dockerfile` sets a different `WORKDIR` — do not copy the
-> compose paths into Railway.
+The system automatically initializes this volume on boot:
+- `schema.prisma` is automatically copied from template if the volume is newly attached.
+- `dev.db` is managed by Prisma inside `/app/backend/prisma/dev.db`.
+- Webcam uploads are automatically stored inside `/app/backend/prisma/uploads`.
 
-On boot the server logs the absolute paths it resolved:
-
-```
+On boot the server logs the resolved persistent paths:
+```text
 Database:  /app/backend/prisma/dev.db
-Uploads:   /app/backend/uploads
+Uploads:   /app/backend/prisma/uploads
 ```
-
-Check those against your mount paths in the deploy log.
-
-Note also that `CMD` runs `prisma db push` on every boot. That reconciles the
-live database to the schema without migrations, so a removed or renamed column
-drops its data with no prompt (ADR 007).
-
-### 5. Configured Production Domain
-- Production URL: [`https://mofarreh-exam-system.up.railway.app`](https://mofarreh-exam-system.up.railway.app)
 
 ---
 
-## Database Schema & Persistence
+## Database Schema & Models
 
-The Prisma schema defines 5 core models:
-- **`Question`**: Dynamic assessment questions, choices, categories, and correct indices.
-- **`ExamSetting`**: Global parameters (passing score %, duration minutes, sectors).
-- **`Candidate`**: Identity attributes, completion count, and `lastAttemptAt` for cooldown tracking.
-- **`ExamAttempt`**: Full audit submissions with `attemptNumber`, score, proctoring warnings, answers JSON, and video references.
-- **`AdminUser`**: Secure hashed credentials for administrative operations.
+The Prisma schema (`backend/prisma/schema.prisma`) defines 6 core models:
+
+- **`Question`**: Assessment questions, multi-choice options (JSON string), question category (`PART_A` or `PART_B`), and 0-indexed correct answer.
+- **`ExamSetting`**: Global assessment configuration (`id: "default-settings"`), pass percentage, duration minutes, sector badge, and supervisor notification email list.
+- **`Candidate`**: Identity attributes (full name, company ID, email), completion count, and `lastAttemptAt` for cooldown calculation.
+- **`ExamSession`**: Server-owned live sitting state, session token, started timestamp, warning counter bank, and derived proctoring status.
+- **`ExamAttempt`**: Full audit submissions with `attemptNumber`, score, proctoring warnings, answers JSON, video filename, and snapshot filename.
+- **`AdminUser`**: Secure hashed credentials and role (`SUPERADMIN` or `ADMIN`) for dashboard operations.
 
 ---
 
 ## Accessing the Platform
 
 - **Examinee Portal**: [`https://mofarreh-exam-system.up.railway.app/`](https://mofarreh-exam-system.up.railway.app/)
-  - Share with candidates for registration, proctored sitting, and pass/fail certification.
-- **Admin Command Portal**: [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin)
-  - Two accounts are created on an empty database: `mofarreh.admin` (SUPERADMIN) and `admin` (ADMIN), both initialized with `ADMIN_INITIAL_PASSWORD`.
+  - Candidate registration, camera verification, timed sitting, and pass/fail certification.
+- **Admin Command Center**: [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin)
+  - Default accounts: `mofarreh.admin` (SUPERADMIN) and `admin` (ADMIN), initialized with `ADMIN_INITIAL_PASSWORD`.
   - **Change password after first login** via Settings -> Change password.
-  - SUPERADMIN is required to reset the question bank or delete candidates and attempts.
+  - SUPERADMIN privileges required to reset the question bank or delete records.
 - **Liveness & Health Probe**: [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health)
 - **Prometheus Metrics Endpoint**: [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics)
 
