@@ -160,9 +160,56 @@ app.use(express.urlencoded({ extended: true, limit: "256kb" }));
 // routes/proctorRoutes.ts. A public `express.static` mount here made the
 // snapshots world-readable and gave the admin-only video route a second,
 // unguarded door.
-const uploadsDir = path.resolve(__dirname, "../uploads");
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// Persistent storage configuration:
+// Railway supports only 1 volume per service. When the volume is mounted at
+// /app/backend/prisma, we keep uploads inside /app/backend/prisma/uploads so
+// BOTH the SQLite database (dev.db) and all webcam recordings/snapshots survive
+// redeploys and restarts on that single volume.
+const prismaDir = path.resolve(__dirname, "../prisma");
+const prismaUploads = path.resolve(prismaDir, "uploads");
+const defaultUploads = path.resolve(__dirname, "../uploads");
+
+let uploadsDir = defaultUploads;
+try {
+  if (fs.existsSync(prismaDir)) {
+    if (!fs.existsSync(prismaUploads)) {
+      fs.mkdirSync(prismaUploads, { recursive: true });
+    }
+    if (!fs.existsSync(defaultUploads)) {
+      try {
+        fs.symlinkSync(prismaUploads, defaultUploads, "junction");
+        uploadsDir = defaultUploads;
+      } catch {
+        uploadsDir = prismaUploads;
+      }
+    } else {
+      try {
+        const files = fs.readdirSync(defaultUploads);
+        if (files.length === 0) {
+          fs.rmdirSync(defaultUploads);
+          fs.symlinkSync(prismaUploads, defaultUploads, "junction");
+        }
+      } catch {}
+    }
+  } else if (!fs.existsSync(defaultUploads)) {
+    fs.mkdirSync(defaultUploads, { recursive: true });
+  }
+} catch (err) {
+  if (!fs.existsSync(defaultUploads)) {
+    fs.mkdirSync(defaultUploads, { recursive: true });
+  }
+}
+
+// Ensure video and snapshot subdirectories exist
+for (const dir of [uploadsDir, prismaUploads, defaultUploads]) {
+  try {
+    if (fs.existsSync(dir)) {
+      const v = path.join(dir, "videos");
+      const s = path.join(dir, "snapshots");
+      if (!fs.existsSync(v)) fs.mkdirSync(v, { recursive: true });
+      if (!fs.existsSync(s)) fs.mkdirSync(s, { recursive: true });
+    }
+  } catch {}
 }
 
 // Serve static frontend SPA bundle in production
