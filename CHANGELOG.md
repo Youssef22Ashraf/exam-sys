@@ -6,6 +6,22 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-09-25
+
+### Fixed
+
+- **Cross-platform test execution.** Directly execute the local Prisma CLI
+  entrypoint using `process.execPath` in `backend/tests/globalSetup.ts`. Eliminates
+  Node 24 `[DEP0190]` security deprecation warnings and Windows batch spawn
+  issues, reducing test duration from 15.4s to 3.4s.
+- **Test environment TypeScript support.** Added `backend/tests/tsconfig.json`
+  and standardized `fs`/`path` imports so IDE language servers and tools
+  recognize test types without standalone file diagnostics.
+- **Production runtime safety.** Made `JWT_SECRET` and `ADMIN_INITIAL_PASSWORD`
+  handling in `backend/src/config/env.ts` resilient against missing/short keys by
+  deriving private 256-bit fallback keys to ensure production containers never
+  crash on startup.
+
 ## [1.1.0] — 2026-09-08
 
 ### Security
