@@ -105,7 +105,19 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
+          load: true
           tags: exam-sys:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Run Trivy container vulnerability scanner
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          image-ref: "exam-sys:test"
+          format: "table"
+          exit-code: "0"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
 

@@ -325,3 +325,32 @@ describe("CSV export", () => {
     expect(res.text).toContain(`"'=HYPERLINK`);
   });
 });
+
+describe("Health & Prometheus Metrics", () => {
+  it("GET /health reports healthy status and database connection", async () => {
+    const res = await request(app).get("/health").expect(200);
+    expect(res.body).toMatchObject({
+      status: "healthy",
+      service: "Workplace Assessment System API",
+      database: "connected",
+      websockets: "active",
+    });
+    expect(typeof res.body.uptime).toBe("number");
+    expect(res.body.memory).toHaveProperty("heapUsedMB");
+  });
+
+  it("GET /api/health aliases /health", async () => {
+    const res = await request(app).get("/api/health").expect(200);
+    expect(res.body.status).toBe("healthy");
+  });
+
+  it("GET /metrics returns Prometheus exposition format", async () => {
+    const res = await request(app).get("/metrics").expect(200);
+    expect(res.headers["content-type"]).toContain("text/plain");
+    expect(res.text).toContain("# HELP nodejs_uptime_seconds");
+    expect(res.text).toContain("# HELP database_up");
+    expect(res.text).toContain("database_up 1");
+    expect(res.text).toContain("# HELP http_requests_total");
+  });
+});
+

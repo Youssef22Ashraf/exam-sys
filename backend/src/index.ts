@@ -19,6 +19,12 @@ import questionRoutes from "./routes/questionRoutes";
 import examRoutes from "./routes/examRoutes";
 import proctorRoutes from "./routes/proctorRoutes";
 import settingRoutes from "./routes/settingRoutes";
+import {
+  metricsMiddleware,
+  getPrometheusMetrics,
+  checkDatabaseHealth,
+  registerSocketClientCounter,
+} from "./services/metrics";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -35,6 +41,7 @@ export const io = new SocketIOServer(httpServer, {
 });
 
 app.set("io", io);
+registerSocketClientCounter(() => io.engine?.clientsCount ?? 0);
 
 /**
  * Sockets presenting a valid admin JWT join the `admins` room; everyone else
@@ -128,6 +135,9 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Prometheus Metrics Middleware
+app.use(metricsMiddleware);
+
 // Middleware
 app.use(
   cors({
@@ -176,17 +186,44 @@ app.use("/api/exam", examRoutes);
 app.use("/api/proctor", proctorRoutes);
 app.use("/api/settings", settingRoutes);
 
-// Health Check Endpoint
-app.get("/api/health", (_req: Request, res: Response) => {
-  res.json({
-    status: "ok",
+// Comprehensive Health Check Endpoint
+const handleHealthCheck = async (_req: Request, res: Response) => {
+  const dbHealthy = await checkDatabaseHealth();
+  const memory = process.memoryUsage();
+  const status = dbHealthy ? "healthy" : "degraded";
+  const statusCode = dbHealthy ? 200 : 503;
+
+  res.status(statusCode).json({
+    status,
     service: "Workplace Assessment System API",
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
+    database: dbHealthy ? "connected" : "disconnected",
+    memory: {
+      heapUsedMB: Math.round((memory.heapUsed / 1024 / 1024) * 100) / 100,
+      rssMB: Math.round((memory.rss / 1024 / 1024) * 100) / 100,
+    },
     websockets: "active",
     frontendServed: Boolean(frontendDist),
   });
-});
+};
+
+app.get("/health", handleHealthCheck);
+app.get("/api/health", handleHealthCheck);
+
+// Prometheus / Grafana Metrics Endpoint
+const handleMetrics = async (_req: Request, res: Response) => {
+  try {
+    const metrics = await getPrometheusMetrics();
+    res.setHeader("Content-Type", "text/plain; version=0.0.4; charset=utf-8");
+    res.send(metrics);
+  } catch {
+    res.status(500).send("# Failed to scrape metrics\n");
+  }
+};
+
+app.get("/metrics", handleMetrics);
+app.get("/api/metrics", handleMetrics);
 
 // SPA Client-Side Routing Fallback (for React pages like /admin, /admin/login)
 if (frontendDist) {
@@ -194,7 +231,9 @@ if (frontendDist) {
     if (
       req.path.startsWith("/api") ||
       req.path.startsWith("/uploads") ||
-      req.path.startsWith("/socket.io")
+      req.path.startsWith("/socket.io") ||
+      req.path === "/health" ||
+      req.path === "/metrics"
     ) {
       return next();
     }
