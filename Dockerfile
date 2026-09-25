@@ -43,11 +43,8 @@ COPY --from=backend-builder /app/backend/prisma ./prisma
 # Copy compiled frontend assets to /app/frontend/dist for backend static serving
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
-# Ensure persistent uploads directory exists and set ownership for non-root user
-RUN mkdir -p /app/backend/uploads/videos /app/backend/uploads/snapshots \
-    && chown -R node:node /app
-
-USER node
+# Ensure persistent uploads directory exists
+RUN mkdir -p /app/backend/uploads/videos /app/backend/uploads/snapshots
 
 EXPOSE 5000
 

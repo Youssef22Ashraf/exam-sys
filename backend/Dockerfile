@@ -42,11 +42,8 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
-# Create upload directories for persistent storage and grant permissions to node user
-RUN mkdir -p /app/uploads/videos /app/uploads/snapshots \
-    && chown -R node:node /app
-
-USER node
+# Create upload directories for persistent storage
+RUN mkdir -p /app/uploads/videos /app/uploads/snapshots
 
 EXPOSE 5000
 
