@@ -1,6 +1,6 @@
 import { execFileSync } from "child_process";
-import fs from "fs";
-import path from "path";
+import * as fs from "fs";
+import * as path from "path";
 
 /**
  * Build a throwaway SQLite database for the suite.
@@ -18,7 +18,8 @@ function clean() {
 
 export async function setup() {
   clean();
-  execFileSync("npx", ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"], {
+  const prismaCli = path.resolve(__dirname, "../node_modules/prisma/build/index.js");
+  execFileSync(process.execPath, [prismaCli, "db", "push", "--skip-generate", "--accept-data-loss"], {
     cwd: path.resolve(__dirname, ".."),
     env: { ...process.env, DATABASE_URL: "file:./test.db" },
     stdio: "pipe",
