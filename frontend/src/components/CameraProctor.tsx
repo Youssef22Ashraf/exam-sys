@@ -34,6 +34,25 @@ export function CameraProctor({
   const [isRecording, setIsRecording] = useState(false);
   const chunkSeqRef = useRef(0);
 
+  const setVideoRef = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      if (node.srcObject !== streamRef.current) {
+        node.srcObject = streamRef.current;
+      }
+      node.play().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (hasPermission && videoRef.current && streamRef.current) {
+      if (videoRef.current.srcObject !== streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+      }
+      videoRef.current.play().catch(() => {});
+    }
+  }, [hasPermission]);
+
   // Initialize camera & background recording
   const startCamera = useCallback(async () => {
     try {
@@ -344,15 +363,18 @@ export function CameraProctor({
         </div>
 
         <div className="proctor-video-wrapper">
+          <video
+            ref={setVideoRef}
+            className="proctor-video"
+            autoPlay
+            playsInline
+            muted
+            onLoadedMetadata={() => videoRef.current?.play().catch(() => {})}
+            style={{ display: hasPermission ? "block" : "none" }}
+          />
+
           {hasPermission && (
             <>
-              <video
-                ref={videoRef}
-                className="proctor-video"
-                autoPlay
-                playsInline
-                muted
-              />
               <div className="face-target-guide" />
               <div className="proctor-overlay-meta">
                 <span>● {isRecording ? "REC (Video)" : "LIVE"}</span>

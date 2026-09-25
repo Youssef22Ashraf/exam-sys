@@ -30,6 +30,19 @@ function ExamInstructions({ onStart, candidateName }: ExamInstructionsProps) {
   const [checkedTabs, setCheckedTabs] = useState(false);
   const [checkedIntegrity, setCheckedIntegrity] = useState(false);
 
+  // Ensure live video stream is bound to DOM element
+  const setVideoRef = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      if (node.srcObject !== streamRef.current) {
+        node.srcObject = streamRef.current;
+      }
+      node.play().catch((err) => {
+        console.warn("Video play notice:", err);
+      });
+    }
+  }, []);
+
   // Request camera stream for preview verification
   const requestCamera = useCallback(async () => {
     if (!isMediaSupported) {
@@ -56,6 +69,7 @@ function ExamInstructions({ onStart, candidateName }: ExamInstructionsProps) {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {});
       }
       setCameraState("ready");
     } catch (err: unknown) {
@@ -91,6 +105,7 @@ function ExamInstructions({ onStart, candidateName }: ExamInstructionsProps) {
         registerActiveCameraStream(stream);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(() => {});
         }
         setCameraState("ready");
       })
@@ -117,6 +132,18 @@ function ExamInstructions({ onStart, candidateName }: ExamInstructionsProps) {
       releaseCamera();
     };
   }, [isMediaSupported]);
+
+  // Keep video element synced whenever camera reaches ready state
+  useEffect(() => {
+    if (cameraState === "ready" && videoRef.current && streamRef.current) {
+      if (videoRef.current.srcObject !== streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+      }
+      videoRef.current.play().catch((err) => {
+        console.warn("Video play error:", err);
+      });
+    }
+  }, [cameraState]);
 
   // Handle starting exam: release preview stream first so CameraProctor takes over cleanly
   const handleProceedToExam = () => {
@@ -226,15 +253,18 @@ function ExamInstructions({ onStart, candidateName }: ExamInstructionsProps) {
             </div>
 
             <div className="camera-preview-wrapper">
+              <video
+                ref={setVideoRef}
+                autoPlay
+                playsInline
+                muted
+                onLoadedMetadata={() => videoRef.current?.play().catch(() => {})}
+                className="camera-preview-video"
+                style={{ display: cameraState === "ready" ? "block" : "none" }}
+              />
+
               {cameraState === "ready" && (
                 <>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="camera-preview-video"
-                  />
                   <div className="camera-face-guide" />
                   <div className="camera-status-overlay camera-status-ready">
                     <span className="camera-status-dot" />
