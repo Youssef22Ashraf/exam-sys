@@ -25,9 +25,12 @@ router.get("/", async (_req: Request, res: Response) => {
       });
     }
 
-    const isSmtpConfigured = Boolean(
+    const hasResend = Boolean(process.env.RESEND_API_KEY);
+    const hasSmtp = Boolean(
       process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS
     );
+    const isSmtpConfigured = hasResend || hasSmtp;
+    const emailProvider = hasResend ? "resend" : hasSmtp ? "smtp" : "none";
 
     return res.json({
       examTitle: settings.examTitle,
@@ -37,7 +40,8 @@ router.get("/", async (_req: Request, res: Response) => {
       allowReviewAnswers: settings.allowReviewAnswers,
       notifyEmail: settings.notifyEmail,
       isSmtpConfigured,
-      smtpHost: process.env.SMTP_HOST || null,
+      emailProvider,
+      smtpHost: hasResend ? "Resend (HTTPS 443)" : (process.env.SMTP_HOST || null),
       adminAlertEmail: process.env.ADMIN_ALERT_EMAIL || null,
     });
   } catch (error) {

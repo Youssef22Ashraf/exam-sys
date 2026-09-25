@@ -1453,7 +1453,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     }}
                   >
                     <Icon name="check" size={14} />
-                    <span><strong>SMTP Provider Active ({tempSettings.smtpHost || "Connected"}):</strong> Real email alerts are dispatched when candidates enter and finish exams.</span>
+                    <span><strong>Email Alerts Active ({tempSettings.smtpHost || "Connected"}):</strong> Real email alerts are dispatched when examinees enter and complete assessments.</span>
                   </div>
                 ) : (
                   <div
@@ -1472,7 +1472,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   >
                     <Icon name="alert-triangle" size={16} style={{ marginTop: "1px", flexShrink: 0 }} />
                     <div>
-                      <strong>SMTP Credentials Missing in Railway:</strong> Real email alerts cannot be sent until <code>SMTP_HOST</code>, <code>SMTP_USER</code>, and <code>SMTP_PASS</code> are added to Railway Variables.
+                      <strong>Email Provider Missing in Railway:</strong> Real email alerts cannot be delivered until <code>RESEND_API_KEY</code> (recommended for Railway over HTTPS 443) or <code>SMTP_HOST</code>, <code>SMTP_USER</code>, and <code>SMTP_PASS</code> are added to Railway Variables.
                     </div>
                   </div>
                 )}

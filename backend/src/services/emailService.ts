@@ -46,7 +46,7 @@ export function parseRecipients(raw: string | undefined): string {
   return list.length > 0 ? list.join(", ") : (process.env.ADMIN_ALERT_EMAIL || "");
 }
 
-// Configured nodemailer transport supporting Gmail, Outlook / Office 365, Resend, SendGrid, etc.
+// Configured nodemailer transport supporting Gmail, Outlook / Office 365, etc.
 export const createTransporter = () => {
   if (
     process.env.SMTP_HOST &&
@@ -64,6 +64,9 @@ export const createTransporter = () => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      connectionTimeout: 8000,
+      greetingTimeout: 5000,
+      socketTimeout: 8000,
       // Certificate verification stays ON.
       ...(process.env.SMTP_INSECURE_TLS === "true"
         ? { tls: { rejectUnauthorized: false } }
@@ -72,6 +75,130 @@ export const createTransporter = () => {
   }
   return null;
 };
+
+export interface EmailDispatchPayload {
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}
+
+export interface EmailDispatchResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  provider: "resend" | "smtp" | "none";
+}
+
+/**
+ * Universal email dispatcher:
+ * 1. If RESEND_API_KEY is configured, sends via Resend HTTPS REST API over port 443
+ *    (guaranteed to bypass cloud provider SMTP port 587/465 blocks, e.g. on Railway).
+ * 2. Otherwise uses standard SMTP with explicit timeouts so requests never hang.
+ */
+export async function dispatchEmail(payload: EmailDispatchPayload): Promise<EmailDispatchResult> {
+  // 1. Resend HTTPS API (Port 443 — NEVER blocked by Railway or cloud firewalls)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const from = process.env.RESEND_FROM || "Workplace Assessment <onboarding@resend.dev>";
+      const recipients = payload.to
+        .split(/[,;]+/)
+        .map((e) => e.trim())
+        .filter(Boolean);
+
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to: recipients,
+          subject: payload.subject,
+          text: payload.text,
+          html: payload.html,
+        }),
+      });
+
+      const data: any = await res.json().catch(() => ({}));
+      if (res.ok) {
+        console.log(`[Email Alert Sent via Resend HTTPS] Delivered to: ${payload.to}`);
+        return {
+          success: true,
+          message: `Delivered via Resend to ${payload.to}`,
+          provider: "resend",
+        };
+      } else {
+        const errMsg = data?.message || `Resend HTTP error ${res.status}`;
+        console.error("[Email Resend Error]", errMsg);
+        return {
+          success: false,
+          error: errMsg,
+          provider: "resend",
+        };
+      }
+    } catch (err: any) {
+      console.error("[Email Resend Exception]", err);
+      return {
+        success: false,
+        error: err.message || "Failed to deliver via Resend HTTPS API",
+        provider: "resend",
+      };
+    }
+  }
+
+  // 2. Standard SMTP Transport (with 8s connection timeout)
+  const transporter = createTransporter();
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: `"Workplace Assessment System" <${process.env.SMTP_USER}>`,
+        to: payload.to,
+        subject: payload.subject,
+        text: payload.text,
+        html: payload.html,
+      });
+      console.log(`[Email Alert Sent via SMTP] Delivered to: ${payload.to}`);
+      return {
+        success: true,
+        message: `Delivered via SMTP to ${payload.to}`,
+        provider: "smtp",
+      };
+    } catch (err: any) {
+      const isTimeout =
+        err.code === "ETIMEDOUT" ||
+        err.code === "ECONNREFUSED" ||
+        err.code === "ESOCKET" ||
+        err.message?.includes("timeout");
+
+      if (isTimeout) {
+        console.warn(
+          `[Email Notice] SMTP connection to ${process.env.SMTP_HOST} timed out. ` +
+          `Railway blocks outbound SMTP ports (25, 465, 587, 2525) on Free/Hobby plans. ` +
+          `To send emails on Railway without port restrictions, configure RESEND_API_KEY in Railway Variables (HTTPS port 443).`
+        );
+      } else {
+        console.error("Failed to send email via SMTP:", err);
+      }
+
+      return {
+        success: false,
+        error: isTimeout
+          ? "SMTP connection timed out. Railway blocks outbound SMTP ports (587/465) on Free/Hobby plans. Use RESEND_API_KEY in Railway Variables for HTTPS delivery, or upgrade to Railway Pro."
+          : err.message || "Failed to send email via SMTP.",
+        provider: "smtp",
+      };
+    }
+  }
+
+  console.log(`[Email] No email provider configured; alert for ${payload.to} not sent.`);
+  return {
+    success: false,
+    error: "No email provider configured. Set RESEND_API_KEY or SMTP credentials in Railway Variables.",
+    provider: "none",
+  };
+}
 
 /**
  * Dispatches an immediate email alert to the admin/supervisor list
@@ -166,23 +293,12 @@ Started At:      ${(data.startedAt || new Date()).toISOString()}
   </html>
   `;
 
-  try {
-    const transporter = createTransporter();
-    if (transporter) {
-      await transporter.sendMail({
-        from: `"Workplace Assessment System" <${process.env.SMTP_USER}>`,
-        to: recipient,
-        subject,
-        text: textBody,
-        html: htmlBody,
-      });
-      console.log(`[Email Alert Sent] Exam start notification delivered to: ${recipient}`);
-    } else {
-      console.log(`[Email] No SMTP configured; exam start alert for ${recipient} not sent.`);
-    }
-  } catch (error) {
-    console.error("Failed to send exam start email alert:", error);
-  }
+  await dispatchEmail({
+    to: recipient,
+    subject,
+    text: textBody,
+    html: htmlBody,
+  });
 }
 
 export async function sendExamCompletionAlert(data: ExamCompletionEmailData) {
@@ -291,23 +407,12 @@ Submitted:       ${new Date().toISOString()}
     return;
   }
 
-  try {
-    const transporter = createTransporter();
-    if (transporter) {
-      await transporter.sendMail({
-        from: `"Workplace Assessment System" <${process.env.SMTP_USER}>`,
-        to: recipient,
-        subject,
-        text: textBody,
-        html: htmlBody,
-      });
-      console.log(`[Email Alert Sent] Notification delivered to: ${recipient}`);
-    } else {
-      console.log(`[Email] No SMTP configured; alert for ${recipient} not sent.`);
-    }
-  } catch (error) {
-    console.error("Failed to send email alert:", error);
-  }
+  await dispatchEmail({
+    to: recipient,
+    subject,
+    text: textBody,
+    html: htmlBody,
+  });
 }
 
 export async function sendTestEmailAlert(targetEmail?: string) {
@@ -322,6 +427,14 @@ export async function sendTestEmailAlert(targetEmail?: string) {
   } catch (err) {}
 
   const recipient = parseRecipients(rawRecipient);
+  if (!recipient) {
+    return {
+      success: false,
+      error: "NO_RECIPIENT",
+      message: "No recipient configured. Please enter a notification email address.",
+      simulated: true,
+    };
+  }
 
   const subject = `[Test Alert] Workplace Assessment System Email Verification`;
   const textBody = `This is a test notification verifying that your Admin Notification Email (${recipient}) is receiving alerts from Workplace Assessment System.`;
@@ -356,33 +469,21 @@ export async function sendTestEmailAlert(targetEmail?: string) {
   </html>
   `;
 
-  const transporter = createTransporter();
-  if (transporter) {
-    try {
-      await transporter.sendMail({
-        from: `"Workplace Assessment System" <${process.env.SMTP_USER}>`,
-        to: recipient,
-        subject,
-        text: textBody,
-        html: htmlBody,
-      });
-      return { success: true, message: `✓ Test email successfully dispatched to ${recipient}`, simulated: false };
-    } catch (err: any) {
-      console.error("SMTP Delivery Error:", err);
-      return {
-        success: false,
-        error: `SMTP Error (${err.code || "AUTH"}): ${err.message}`,
-        message: "Failed to send email via SMTP server.",
-        simulated: false,
-      };
-    }
-  } else {
-    console.log(`📧 [Simulated Test Email logged for ${recipient} - SMTP not configured]`);
-    return {
-      success: false,
-      error: "SMTP_NOT_CONFIGURED",
-      message: `SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) are not configured in Railway environment variables. The server cannot send real emails until these variables are added in your Railway dashboard.`,
-      simulated: true,
-    };
-  }
+  const dispatchRes = await dispatchEmail({
+    to: recipient,
+    subject,
+    text: textBody,
+    html: htmlBody,
+  });
+
+  return {
+    success: dispatchRes.success,
+    message:
+      dispatchRes.message ||
+      (dispatchRes.success
+        ? `✓ Test email successfully dispatched to ${recipient}`
+        : `Failed to dispatch test email: ${dispatchRes.error}`),
+    error: dispatchRes.error,
+    simulated: dispatchRes.provider === "none",
+  };
 }
