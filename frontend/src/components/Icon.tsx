@@ -32,6 +32,7 @@ const PATHS: Record<string, string> = {
   lock: "M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4",
   eye: "M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12zm11-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
   "eye-off": "M17.9 17.9A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a20 20 0 0 1 5.1-5.9m3.8-1.8A9.6 9.6 0 0 1 12 5c7 0 11 7 11 7a20 20 0 0 1-2.2 3.2M1 1l22 22M9.9 9.9a3 3 0 0 0 4.2 4.2",
+  "external-link": "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3",
 };
 
 export type IconName = keyof typeof PATHS;

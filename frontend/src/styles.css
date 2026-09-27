@@ -183,13 +183,21 @@ button:disabled {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   white-space: nowrap;
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
 }
 
 .powered-by-tag:hover {
   background: #ffffff;
-  border-color: #cbd5e1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: #93c5fd;
+  color: #1e293b;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.14);
+  transform: translateY(-1px);
+}
+
+.powered-by-tag:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
 
 .powered-by-icon {
@@ -203,17 +211,36 @@ button:disabled {
   color: #ffffff;
   font-size: 10px;
   font-weight: bold;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.powered-by-tag:hover .powered-by-icon {
+  transform: scale(1.08);
 }
 
 .powered-by-prefix {
-  color: #94a3b8;
+  color: #64748b;
   font-weight: 500;
 }
 
 .powered-by-name {
-  color: #1e293b;
+  color: #0f172a;
   font-weight: 700;
   letter-spacing: 0.01em;
+}
+
+.powered-by-ext {
+  display: inline-flex;
+  align-items: center;
+  color: #94a3b8;
+  margin-left: 1px;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.powered-by-tag:hover .powered-by-ext {
+  color: #2563eb;
+  transform: translate(1px, -1px);
 }
 
 /* =========================

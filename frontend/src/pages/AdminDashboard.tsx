@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { Icon } from "../components/Icon";
+import { PoweredBy } from "../components/PoweredBy";
 import {
   ExamStorage,
   onStorageSync,
@@ -572,11 +573,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
         </div>
 
         <div className="admin-header-actions">
-          <div className="powered-by-tag">
-            <span className="powered-by-icon"><Icon name="zap" /></span>
-            <span className="powered-by-prefix">Powered by</span>
-            <span className="powered-by-name">Eng. Youssef Ashraf</span>
-          </div>
+          <PoweredBy />
           <button className="secondary-button" onClick={onLogout}>
             Logout
           </button>
@@ -2348,11 +2345,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </div>
           <span>Mofarreh Group • Assessment Management Command Center</span>
         </div>
-        <div className="powered-by-tag">
-          <span className="powered-by-icon"><Icon name="zap" /></span>
-          <span className="powered-by-prefix">Architected & Powered by</span>
-          <span className="powered-by-name">Eng. Youssef Ashraf</span>
-        </div>
+        <PoweredBy prefix="Architected & Powered by" />
       </footer>
     </div>
   );

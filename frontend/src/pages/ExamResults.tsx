@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Icon } from "../components/Icon";
+import { PoweredBy } from "../components/PoweredBy";
 import { ExamStorage, type ExamResult } from "../services/storage";
 import { releaseCamera } from "../services/camera";
 import "./ExamResults.css";
@@ -51,11 +52,7 @@ function ExamResults({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div className="powered-by-tag">
-            <span className="powered-by-icon"><Icon name="zap" /></span>
-            <span className="powered-by-prefix">Powered by</span>
-            <span className="powered-by-name">Eng. Youssef Ashraf</span>
-          </div>
+          <PoweredBy />
 
           <button className="secondary-button" onClick={onReturnHome}>
             Exit Assessment
@@ -365,11 +362,7 @@ function ExamResults({
           <span>Mofarreh Group • Engineering & Construction Assessment Portal</span>
         </div>
         <div className="footer-right">
-          <div className="powered-by-tag">
-            <span className="powered-by-icon"><Icon name="zap" /></span>
-            <span className="powered-by-prefix">System Engineered & Powered by</span>
-            <span className="powered-by-name">Eng. Youssef Ashraf</span>
-          </div>
+          <PoweredBy prefix="System Engineered & Powered by" />
         </div>
       </footer>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { Icon } from "./components/Icon";
+import { PoweredBy } from "./components/PoweredBy";
 
 import ExamRegistration from "./pages/ExamRegistration";
 import ExamInstructions from "./pages/ExamInstructions";
@@ -386,11 +387,7 @@ function AppHeader() {
         </div>
       </div>
 
-      <div className="powered-by-tag">
-        <span className="powered-by-icon"><Icon name="zap" /></span>
-        <span className="powered-by-prefix">Powered by</span>
-        <span className="powered-by-name">Eng. Youssef Ashraf</span>
-      </div>
+      <PoweredBy />
     </header>
   );
 }
@@ -405,11 +402,7 @@ function AppFooter() {
         <span>Mofarreh Group • Engineering & Construction Assessment Portal</span>
       </div>
       <div className="footer-right">
-        <div className="powered-by-tag">
-          <span className="powered-by-icon"><Icon name="zap" /></span>
-          <span className="powered-by-prefix">System Engineered & Powered by</span>
-          <span className="powered-by-name">Eng. Youssef Ashraf</span>
-        </div>
+        <PoweredBy prefix="System Engineered & Powered by" />
       </div>
     </footer>
   );

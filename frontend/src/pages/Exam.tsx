@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Icon } from "../components/Icon";
+import { PoweredBy } from "../components/PoweredBy";
 import {
   ExamStorage,
   type ExamResult,
@@ -609,11 +610,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-          <div className="powered-by-tag">
-            <span className="powered-by-icon"><Icon name="zap" /></span>
-            <span className="powered-by-prefix">Powered by</span>
-            <span className="powered-by-name">Eng. Youssef Ashraf</span>
-          </div>
+          <PoweredBy />
 
           <div className={`timer ${isLowTime ? "timer-warning" : ""}`}>
             <span>Time Remaining</span>
@@ -909,11 +906,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
           </div>
           <span>Mofarreh Group • Engineering & Construction Proctored Assessment</span>
         </div>
-        <div className="powered-by-tag">
-          <span className="powered-by-icon"><Icon name="zap" /></span>
-          <span className="powered-by-prefix">Powered by</span>
-          <span className="powered-by-name">Eng. Youssef Ashraf</span>
-        </div>
+        <PoweredBy />
       </footer>
     </div>
   );

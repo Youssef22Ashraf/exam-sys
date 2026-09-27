@@ -16,6 +16,9 @@
     "assessment"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "puppeteer-core": "^25.12.0"
+  }
 }
-
