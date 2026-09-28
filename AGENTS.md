@@ -19,7 +19,7 @@ Two npm packages in one repo, one process in production.
 
 ```
 backend/                     Express 4 + TypeScript + Prisma 5 + Socket.io
-├── prisma/schema.prisma     Candidate · Question · ExamAttempt · ExamSetting · AdminUser · ExamSession (all indexed)
+├── prisma/schema.prisma     Candidate · Question · ExamAttempt · ExamSetting · AdminUser · ExamSession · LectureAttendance · LectureProgress (all indexed)
 ├── prisma/seed.ts           40 questions + admin users (ADMIN_INITIAL_PASSWORD) + default settings
 └── src/
     ├── index.ts             app + http server + Socket.io + static SPA + /api/* mounts
@@ -40,6 +40,7 @@ backend/                     Express 4 + TypeScript + Prisma 5 + Socket.io
 frontend/                    React 19 + Vite + TypeScript, no router lib, no state lib
 └── src/
     ├── App.tsx              page state machine: home → registration → instructions → exam → results;
+    │                        /#lectures → lectures-login | lectures-portal;
     │                        /admin (pathname, #admin hash, or Ctrl+Shift+A) → admin-login | admin-dashboard
     │                        (both admin pages are React.lazy chunks; an exam in
     │                        progress is restored from sessionStorage on mount)
