@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { useTheme } from "../hooks/useTheme";
 
 interface CompanyLogoProps {
   height?: number | string;
@@ -17,36 +18,33 @@ export function CompanyLogo({
   badgeStyle,
   title = "Mofarreh Group — Engineering & Construction",
 }: CompanyLogoProps) {
+  const [theme] = useTheme();
+  const isDark = theme === "dark";
   const h = typeof height === "number" ? `${height}px` : height;
 
-  const images = (
-    <>
-      <img
-        src="/mofarreh-logo-light.png"
-        alt="Mofarreh Group Logo"
-        className={`company-logo-img logo-light-only ${className}`}
-        style={{ height: h, width: "auto", objectFit: "contain", ...style }}
-      />
-      <img
-        src="/mofarreh-logo-dark.png"
-        alt="Mofarreh Group Logo"
-        className={`company-logo-img logo-dark-only ${className}`}
-        style={{ height: h, width: "auto", objectFit: "contain", ...style }}
-      />
-    </>
+  // Use the original authentic logo for light mode, and dark mode logo for dark mode
+  const logoSrc = isDark ? "/mofarreh-logo-dark.png" : "/mofarreh-logo.png";
+
+  const image = (
+    <img
+      src={logoSrc}
+      alt="Mofarreh Group Logo"
+      className={`company-logo-img ${className}`}
+      style={{ height: h, width: "auto", objectFit: "contain", display: "block", ...style }}
+    />
   );
 
   if (!showBadge) {
     return (
       <div className="company-logo-wrap" style={{ display: "inline-flex", alignItems: "center" }}>
-        {images}
+        {image}
       </div>
     );
   }
 
   return (
     <div className="company-logo-badge" title={title} style={badgeStyle}>
-      {images}
+      {image}
     </div>
   );
 }

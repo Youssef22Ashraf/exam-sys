@@ -140,20 +140,6 @@ button:disabled {
   gap: 14px;
 }
 
-/* Logo Adaptive Display */
-.logo-light-only {
-  display: block;
-}
-.logo-dark-only {
-  display: none;
-}
-
-[data-theme="dark"] .logo-light-only {
-  display: none !important;
-}
-[data-theme="dark"] .logo-dark-only {
-  display: block !important;
-}
 
 .company-logo-badge {
   display: inline-flex;
