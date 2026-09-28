@@ -76,5 +76,6 @@ If targeting DevOps / SRE / Cloud Platform Engineering roles:
 
 ## 🔗 Links for Post / Comments
 
-- **Live Production URL**: https://mofarreh-exam-system.up.railway.app
-- **GitHub Repository**: https://github.com/Youssef22Ashraf/exam-sys
+- 🌐 **Live Portfolio**: https://portfolio-five-rosy-60.vercel.app/
+- 🚀 **Live Production URL**: https://mofarreh-exam-system.up.railway.app
+- 📦 **GitHub Repository**: https://github.com/Youssef22Ashraf/exam-sys

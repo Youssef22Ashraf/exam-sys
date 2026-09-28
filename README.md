@@ -8,11 +8,11 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)](https://mofarreh-exam-system.up.railway.app)
 [![CI](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml/badge.svg)](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/Youssef22Ashraf/exam-sys/releases/tag/v1.2.0)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Youssef22Ashraf/exam-sys/releases/tag/v2.0.0)
 [![Security: Trivy](https://img.shields.io/badge/security-Trivy%20Scanned-green.svg)](https://aquasecurity.github.io/trivy/)
 [![Observability](https://img.shields.io/badge/Observability-Prometheus%20%26%20Grafana-orange?logo=prometheus&logoColor=white)](monitoring/README.md)
 
-An enterprise-grade, web-based examination and proctoring platform engineered to evaluate workplace and industrial competency before granting site or operational access. Features interactive pre-exam camera verification, live webcam recording with IndexedDB chunk streaming, window/tab blur auditing, multi-attempt tracking with 48-hour retest lockouts, dual-engine email delivery (Resend HTTPS + SMTP fallback), dynamic administrative exam orchestration, containerized CVE auditing, and native Prometheus/Grafana observability.
+An enterprise-grade, web-based examination, learning, and proctoring platform engineered to train and evaluate workplace and industrial competency before granting site or operational access. Features an interactive **Workplace Lectures & Briefings Portal** with authentic high-definition PowerPoint slide deck streaming and procedure readiness checklists, live webcam recording with IndexedDB chunk streaming, window/tab blur auditing, department identity management, multi-attempt tracking with 48-hour retest lockouts, dual-engine email delivery (Resend HTTPS + SMTP fallback), dynamic administrative exam orchestration, global high-contrast Dark & Light theme engine, containerized CVE auditing, and native Prometheus/Grafana observability.
 
 ---
 
@@ -21,7 +21,8 @@ An enterprise-grade, web-based examination and proctoring platform engineered to
 | Service | Public URL | Description |
 |---|---|---|
 | **Examinee Portal** | [`https://mofarreh-exam-system.up.railway.app/`](https://mofarreh-exam-system.up.railway.app/) | Candidate registration, hardware check, timed exam & certificate |
-| **Admin Command Center** | [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin) | Supervisor live oversight, question editor, video stream audit |
+| **Lectures & Briefings Portal** | [`https://mofarreh-exam-system.up.railway.app/#lectures`](https://mofarreh-exam-system.up.railway.app/#lectures) | Interactive video briefings, authentic slide deck viewer, procedure checklist |
+| **Admin Command Center** | [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin) | Supervisor live oversight, lecture attendance audit, question editor, video stream review |
 | **Health Probe** | [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health) | Liveness & readiness probe with DB connectivity status |
 | **Prometheus Metrics** | [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics) | Standard Prometheus scrape target for telemetry |
 
@@ -32,10 +33,12 @@ An enterprise-grade, web-based examination and proctoring platform engineered to
 - [System Design & Architecture](#system-design--architecture)
 - [Workflow & Candidate Lifecycle](#workflow--candidate-lifecycle)
 - [Key Features](#key-features)
+  - [Interactive Workplace Lectures & Briefings Portal (`/#lectures`)](#interactive-workplace-lectures--briefings-portal-lectures)
   - [Examinee Experience & Assessment Flow](#examinee-experience--assessment-flow)
   - [Anti-Cheating & Proctoring Engine](#anti-cheating--proctoring-engine)
   - [48-Hour Cooldown & Multi-Attempt Enforcement](#48-hour-cooldown--multi-attempt-enforcement)
   - [Administrative Command Center (`/admin`)](#administrative-command-center-admin)
+  - [Global Dark & Light Theme Engine](#global-dark--light-theme-engine)
   - [Dual-Engine Email Alerting System](#dual-engine-email-alerting-system)
   - [Single-Volume Persistence Architecture](#single-volume-persistence-architecture)
 - [Directory Structure](#directory-structure)
@@ -57,57 +60,61 @@ An enterprise-grade, web-based examination and proctoring platform engineered to
 ## System Design & Architecture
 
 ```text
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                           CLIENT LAYER                                           │
-│                                                                                                  │
-│   ┌──────────────────────────────────────────────┐  ┌────────────────────────────────────────┐   │
-│   │     Examinee Portal (React 19 + Vite)        │  │      Supervisor Command (/admin)       │   │
-│   │   - Interactive Camera Check & Face Guide    │  │   - Live WebSocket Candidate Feed      │   │
-│   │   - Mandatory Anti-Cheating Checklist        │  │   - Proctor Video Playback Audit       │   │
-│   │   - MediaRecorder + IndexedDB Chunking       │  │   - Question Bank CRUD & Pass % Editor │   │
-│   │   - Tab Switch & Blur Event Detection        │  │   - Cooldown Unlock & CSV Export       │   │
-│   │   - Absolute Deadline Clock (ADR 008)        │  │   - Instant Email Alert Dispatch Tool  │   │
-│   └──────────────────────┬───────────────────────┘  └───────────────────┬────────────────────┘   │
-└──────────────────────────┼──────────────────────────────────────────────┼────────────────────────┘
-                           │ HTTPS / REST / Socket.io                     │
-                           ▼                                              ▼
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                             UNIFIED PRODUCTION CONTAINER (Port :5000)                            │
-│                                                                                                  │
-│   ┌──────────────────────────────────────────────────────────────────────────────────────────┐   │
-│   │                                  Express 4 + TypeScript                                  │   │
-│   │   - Static SPA Distribution (/dist) with fallback routing                                │   │
-│   │   - Authenticated REST APIs (/api/candidates, /api/exam, /api/questions, /api/settings)  │   │
-│   │   - Server-Owned Exam Sessions (Deterministic clock, warning counter bank)               │   │
-│   │   - Pure Scoring Engine (Scores evaluated solely on server against DB keys)              │   │
-│   │   - Socket.io Server (Admins room segregation with JWT handshake verification)           │   │
-│   │   - Dual-Engine Notification Dispatcher (Resend HTTPS port 443 + Nodemailer SMTP)       │   │
-│   │   - Prometheus Telemetry & Liveness Engine (/health, /metrics)                           │   │
-│   └──────────────────────────────┬──────────────────────────────┬────────────────────────────┘   │
-└──────────────────────────────────┼──────────────────────────────┼────────────────────────────────┘
-                                   │                              │
-                                   ▼                              ▼
-                 ┌──────────────────────────────────────────────────────────────┐
-                 │          SINGLE PERSISTENT VOLUME: /app/backend/prisma       │
-                 │                                                              │
-                 │   - dev.db (SQLite database: candidates, attempts, scores)   │
-                 │   - schema.prisma (Auto-restored from template on boot)      │
-                 │   - uploads/ (Symlinked: webcam recordings & snapshots)      │
-                 │                                                              │
-                 │   * Fully survives redeployments and container restarts *    │
-                 └──────────────────────────────────────────────────────────────┘
-                                   ▲
-                                   │ Scrapes `/metrics` every 5s
-┌──────────────────────────────────┴───────────────────────────────────────────────────────────────┐
-│                                OBSERVABILITY & MONITORING STACK                                  │
-│                                                                                                  │
-│   ┌──────────────────────────────────────────────┐  ┌────────────────────────────────────────┐   │
-│   │              Prometheus (:9090)              │  │             Grafana (:3000)            │   │
-│   │   - Scrapes Railway Production (:443)        │──▶   - Real-time Production Dashboards    │   │
-│   │   - Scrapes Local Dev Container (:5000)      │  │   - Database Health, Memory Profiles   │   │
-│   │   - Time-series metric retention & alerts    │  │   - WebSocket Concurrency & Latency    │   │
-│   └──────────────────────────────────────────────┘  └────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                                   CLIENT LAYER                                                   │
+│                                                                                                                  │
+│   ┌────────────────────────────────┐  ┌────────────────────────────────┐  ┌──────────────────────────────────┐   │
+│   │   Examinee Portal (React 19)   │  │   Lectures & Briefings Portal  │  │    Supervisor Command Center     │   │
+│   │ - Department identity capture  │  │ - Video briefing + subtitles   │  │ - Live candidate WebSocket feed  │   │
+│   │ - Interactive Camera Face Guide│  │ - Authentic 89-slide PPTX deck │  │ - Proctor video playback audit   │   │
+│   │ - MediaRecorder + IndexedDB    │  │ - Procedure Readiness Checklist│  │ - Lectures & Attendance Audit    │   │
+│   │ - Tab switch & blur detection  │  │ - Fullscreen presentation mode │  │ - Learner progress & Excel export│   │
+│   │ - Absolute Deadline Clock      │  │ - Quick exam jump callout      │  │ - Question CRUD & Pass % Editor  │   │
+│   └───────────────┬────────────────┘  └───────────────┬────────────────┘  └────────────────┬─────────────────┘   │
+│                   │                                   │                                    │                     │
+│                   └───────────────────────────────────┼────────────────────────────────────┘                     │
+└───────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────┘
+                                                        │ HTTPS / REST / WebSockets
+                                                        ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                     UNIFIED PRODUCTION CONTAINER (Port :5000)                                    │
+│                                                                                                                  │
+│   ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────┐   │
+│   │                                          Express 4 + TypeScript                                          │   │
+│   │   - Static SPA Distribution (/dist) with single-page fallback routing                                    │   │
+│   │   - Authenticated REST APIs (/api/candidates, /api/exam, /api/questions, /api/settings, /api/lectures)  │   │
+│   │   - Authentic PowerPoint Slide Streamer (89 HD slide image renders + offline .pptx download)             │   │
+│   │   - Learner Attendance & Heartbeat Engine (Tracks durations, playback events, and checklists)           │   │
+│   │   - Server-Owned Exam Sessions (Deterministic clock, warning counter bank)                               │   │
+│   │   - Pure Scoring Engine (Scores evaluated solely on server against DB keys)                              │   │
+│   │   - Socket.io Server (Admins room segregation with JWT handshake verification)                           │   │
+│   │   - Dual-Engine Notification Dispatcher (Resend HTTPS port 443 + Nodemailer SMTP)                       │   │
+│   │   - Prometheus Telemetry & Liveness Engine (/health, /metrics)                                           │   │
+│   └──────────────────────────────────────┬───────────────────────────────┬───────────────────────────────────┘   │
+└──────────────────────────────────────────┼───────────────────────────────┼───────────────────────────────────────┘
+                                           │                               │
+                                           ▼                               ▼
+                         ┌──────────────────────────────────────────────────────────────┐
+                         │          SINGLE PERSISTENT VOLUME: /app/backend/prisma       │
+                         │                                                              │
+                         │   - dev.db (SQLite database: candidates, attempts, progress) │
+                         │   - schema.prisma (Auto-restored from template on boot)      │
+                         │   - uploads/ (Symlinked: webcam recordings & snapshots)      │
+                         │                                                              │
+                         │   * Fully survives redeployments and container restarts *    │
+                         └──────────────────────────────────────────────────────────────┘
+                                           ▲
+                                           │ Scrapes `/metrics` every 5s
+┌──────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────┐
+│                                        OBSERVABILITY & MONITORING STACK                                          │
+│                                                                                                                  │
+│   ┌──────────────────────────────────────────────┐          ┌────────────────────────────────────────┐           │
+│   │              Prometheus (:9090)              │          │             Grafana (:3000)            │           │
+│   │   - Scrapes Railway Production (:443)        │──────────▶   - Real-time Production Dashboards    │           │
+│   │   - Scrapes Local Dev Container (:5000)      │          │   - Database Health, Memory Profiles   │           │
+│   │   - Time-series metric retention & alerts    │          │   - WebSocket Concurrency & Latency    │           │
+│   └──────────────────────────────────────────────┘          └────────────────────────────────────────┘           │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Architectural Decisions & Core Tenets
@@ -119,7 +126,10 @@ An enterprise-grade, web-based examination and proctoring platform engineered to
 2. **Absolute Deadline Clock**:
    - The examination timer is an absolute server-anchored deadline timestamp, not a decrementing countdown counter.
    - Candidates cannot bypass the timer by pausing browser execution, switching tabs, or refreshing the page.
-3. **Single Process, Unified Port**:
+3. **Authentic Learning & Procedure Verification Engine**:
+   - Training modules provide official high-definition PowerPoint slide deck streaming and synchronized subtitles alongside video briefings.
+   - Procedure readiness is multi-factored: learners are tracked across video consumption, slide reviews, offline references, and key procedure takeaways.
+4. **Single Process, Unified Port**:
    - Built via a multi-stage Docker container. The Express backend serves the pre-compiled React 19 SPA static assets alongside the API, WebSockets, and health checks on port `5000`.
 
 ---
@@ -205,6 +215,28 @@ The platform enforces a strict, guided 6-step lifecycle for every examinee:
 
 ## Key Features
 
+### Interactive Workplace Lectures & Briefings Portal (`/#lectures`)
+- **Integrated Multimedia Briefing Modules**:
+  - Covers critical industrial protocols, including *Interface Management Procedure* and *Stakeholder Management Procedure*.
+  - Full HTML5 video playback with synchronized English subtitles (`.srt` / `.vtt`).
+  - Procedure governance references (`DOC REF`, `POLICY REF`) linked directly to operational standards.
+- **Authentic PowerPoint Slide Deck Viewer Engine**:
+  - Server extracts and streams all 89 authentic PowerPoint slides as crystal-clear high-definition images (`GET /api/lectures/:id/slides-images/:slideNum`).
+  - Interactive slide carousel thumbnails, quick-jump dropdown, and keyboard navigation.
+  - Fullscreen presentation mode with auto-hiding navigation for immersive classroom-style review.
+  - Direct 1-click download of the official `.pptx` presentation deck for offline field reference.
+- **Procedure Readiness & Multi-Factor Checklist Matrix**:
+  - Automatically calculates overall module readiness score (0% to 100%) based on weighted checkpoints:
+    - **Video Briefing (35% weight)**: Auto-checks upon viewing 80%+ of the briefing video.
+    - **Slide Deck Review (35% weight)**: Verified when examinees inspect slides in the deck viewer.
+    - **Offline Deck Download (10% weight)**: Confirms retention of field reference materials.
+    - **Key Procedure Takeaways (20% weight)**: Essential compliance and governance checkpoints.
+  - Live progress synchronization via persistent heartbeat telemetry (`POST /api/lectures/:id/progress`).
+- **Learner Department Capture & Autocomplete**:
+  - Writable department field with interactive suggestions (Interface Management, Stakeholder Management, Civil Engineering, Quality Assurance, Safety & Health) across both exam registration and lecture authentication.
+- **Seamless Exam Bridge**:
+  - Ergonomic "Ready to certify? Start Exam Now →" shortcut callout in the sidebar allows prepared learners to immediately transition to the proctored assessment.
+
 ### Examinee Experience & Assessment Flow
 - **Modern Responsive Design System**: Built with modern CSS custom properties, accessible contrast ratios, and clean typography.
 - **Question Flagging & Navigation Grid**: Examinees can bookmark questions for review and jump across the 40-question matrix effortlessly.
@@ -227,6 +259,11 @@ The platform enforces a strict, guided 6-step lifecycle for every examinee:
   - View full chronological attempt history (`Attempt #1`, `Attempt #2`, etc.).
   - Inspect individual answer sheets question-by-question with candidate vs. correct answer comparisons.
   - In-browser playback of archived proctor webcam videos.
+- **Lectures & Attendance Oversight (`/admin` -> Lectures & Attendance)**:
+  - **Learner Checklists & Progress**: Real-time audit table tracking learner names, company IDs, workplace departments, module briefing names, completion percentages, and milestone status pills (Video, Slides, Checkpoints, PPTX).
+  - **Detailed Activity & Attendance Log**: Complete timestamped audit trail tracking heartbeats, video play/pause events, slide reviews, and checklist changes.
+  - **Department & Module Filtering**: Instant filtering by workplace department (Construction, Engineering, QA/QC, Safety, Interface) and lecture briefing.
+  - **One-Click Excel / CSV Export**: Instant export of all lecture attendance and procedure checklist completion records (`GET /api/lectures/admin/export-csv`) with injection-safe formatting.
 - **Live Question Bank Management**:
   - Add, edit, or delete questions on the fly.
   - Changes instantly propagate to new candidate sessions without server restarts.
@@ -234,6 +271,11 @@ The platform enforces a strict, guided 6-step lifecycle for every examinee:
   - Modify passing percentage threshold (e.g., 70% to 60%) anytime.
   - Adjust exam duration minutes, exam title, and supervisor notification email list.
 - **Audit Reporting & Export**: 1-click export of all candidate records, scores, timestamps, and integrity logs to Excel / CSV format.
+
+### Global Dark & Light Theme Engine
+- **Persistent Dual-Mode Styling**: Seamless switching between Dark Mode (deep navy command center `#0b1120`) and Light Mode (clean workplace interface `#f4f6fa`).
+- **Authentic Dual-Mode Branding**: Dynamically renders the original full-color corporate logo (`/mofarreh-logo.png`) in Light Mode and the high-contrast white-text logo (`/mofarreh-logo-dark.png`) in Dark Mode with zero layout shifts.
+- **WCAG-Compliant High Contrast**: All text, badges, cards, progress dials, and buttons are built on CSS custom properties (`var(--surface)`, `var(--text)`, `var(--border)`), guaranteeing crystal-clear contrast and readability in both themes.
 
 ### Dual-Engine Email Alerting System
 - **Resend REST API over HTTPS (Port 443)**: Bypasses cloud host and ISP outbound SMTP port blocks (ports 25, 465, 587, 2525 blocked on Railway Hobby plans). Uses native Node.js `fetch` with zero third-party dependencies.
@@ -256,7 +298,7 @@ exam-system/
 │       └── ci.yml                 # GitHub Actions: Vitest, lint, typecheck, Trivy CVE scan
 ├── backend/
 │   ├── prisma/
-│   │   ├── schema.prisma          # Prisma relational models
+│   │   ├── schema.prisma          # Prisma relational models (Candidate, Lectures, Attempts)
 │   │   └── seed.ts                # Initial 40 questions & default admin seed
 │   ├── src/
 │   │   ├── config/
@@ -269,6 +311,7 @@ exam-system/
 │   │   │   ├── adminRoutes.ts     # Admin auth & dashboard operations
 │   │   │   ├── candidateRoutes.ts # Cooldown checks & candidate registration
 │   │   │   ├── examRoutes.ts      # Exam start, submit, scoring, results
+│   │   │   ├── lectureRoutes.ts   # Video briefings, HD slides, progress sync & CSV export
 │   │   │   ├── metricsRoutes.ts   # Prometheus /metrics and /health probes
 │   │   │   ├── proctorRoutes.ts   # Secure video/snapshot uploads & streaming
 │   │   │   ├── questionRoutes.ts  # Live Question Bank CRUD operations
@@ -289,17 +332,24 @@ exam-system/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── CameraProctor.tsx  # MediaStream capture, snapshot, IndexedDB buffer
+│   │   │   ├── CompanyLogo.tsx    # Dynamic dual-mode logo renderer (SVG/PNG)
 │   │   │   ├── ErrorBoundary.tsx  # React UI error boundary
-│   │   │   └── Icon.tsx           # Inline SVG icon system (currentColor)
+│   │   │   ├── Icon.tsx           # Inline SVG icon system (currentColor)
+│   │   │   ├── PoweredBy.tsx      # Platform attribution badge & external link
+│   │   │   └── ThemeToggle.tsx    # Accessible dark/light mode toggle switch
+│   │   ├── hooks/
+│   │   │   └── useTheme.ts        # Global theme state & DOM synchronization
 │   │   ├── pages/
-│   │   │   ├── AdminDashboard.tsx # Comprehensive admin management portal
+│   │   │   ├── AdminDashboard.tsx # Comprehensive admin command center
 │   │   │   ├── AdminLogin.tsx     # JWT authentication screen
 │   │   │   ├── Exam.tsx           # Interactive 40-question proctored exam
 │   │   │   ├── ExamInstructions.tsx # Camera check & assessment rules
-│   │   │   ├── ExamRegistration.tsx # Registration & 48-hour cooldown lockout
-│   │   │   └── ExamResults.tsx    # Detailed score certificate & retest policy
+│   │   │   ├── ExamRegistration.tsx # Registration, department input & 48h lockout
+│   │   │   ├── ExamResults.tsx    # Detailed score certificate & retest policy
+│   │   │   ├── LecturesLogin.tsx  # Learner department identity entry
+│   │   │   └── LecturesPortal.tsx # Multimedia training portal & PPTX slide viewer
 │   │   ├── services/
-│   │   │   ├── api.ts             # REST client with offline fallback
+│   │   │   ├── api.ts             # REST client with offline fallback & lecture endpoints
 │   │   │   ├── camera.ts          # Camera hardware release manager
 │   │   │   ├── socket.ts          # WebSocket client for real-time sync
 │   │   │   ├── storage.ts         # Local synchronization & state schemas
@@ -536,13 +586,15 @@ Uploads:   /app/backend/prisma/uploads
 
 ## Database Schema & Models
 
-The Prisma schema (`backend/prisma/schema.prisma`) defines 6 core models:
+The Prisma schema (`backend/prisma/schema.prisma`) defines 8 core models:
 
 - **`Question`**: Assessment questions, multi-choice options (JSON string), question category (`PART_A` or `PART_B`), and 0-indexed correct answer.
 - **`ExamSetting`**: Global assessment configuration (`id: "default-settings"`), pass percentage, duration minutes, sector badge, and supervisor notification email list.
-- **`Candidate`**: Identity attributes (full name, company ID, email), completion count, and `lastAttemptAt` for cooldown calculation.
+- **`Candidate`**: Identity attributes (full name, company ID, email, optional department), completion count, and `lastAttemptAt` for cooldown calculation.
 - **`ExamSession`**: Server-owned live sitting state, session token, started timestamp, warning counter bank, and derived proctoring status.
 - **`ExamAttempt`**: Full audit submissions with `attemptNumber`, score, proctoring warnings, answers JSON, video filename, and snapshot filename.
+- **`LectureAttendance`**: Granular learner audit log recording candidate access and interaction events (`PORTAL_ACCESS`, `VIDEO_WATCHED`, `SLIDES_VIEWED`, `SLIDES_DOWNLOADED`) with watch duration seconds, completion percentage, milestone checklist items JSON, IP address, and user-agent string.
+- **`LectureProgress`**: Persistent per-candidate per-lecture progress state tracking video completion, slide deck review, downloaded status, overall completion percentage, and completed checklist milestones array.
 - **`AdminUser`**: Secure hashed credentials and role (`SUPERADMIN` or `ADMIN`) for dashboard operations.
 
 ---
@@ -551,9 +603,12 @@ The Prisma schema (`backend/prisma/schema.prisma`) defines 6 core models:
 
 - **Examinee Portal**: [`https://mofarreh-exam-system.up.railway.app/`](https://mofarreh-exam-system.up.railway.app/)
   - Candidate registration, camera verification, timed sitting, and pass/fail certification.
+- **Lectures & Briefings Portal**: [`https://mofarreh-exam-system.up.railway.app/#lectures`](https://mofarreh-exam-system.up.railway.app/#lectures)
+  - Candidate identification (Name, Company ID, Email, Department), HD briefing video with subtitles, authentic 89-slide PPTX deck viewer, offline download, and interactive completion checklist.
 - **Admin Command Center**: [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin)
   - Default accounts: `mofarreh.admin` (SUPERADMIN) and `admin` (ADMIN), initialized with `ADMIN_INITIAL_PASSWORD`.
   - **Change password after first login** via Settings -> Change password.
+  - Dedicated **Lectures & Attendance** tab for tracking attendee records, viewing milestone checklists, and exporting audit logs to CSV.
   - SUPERADMIN privileges required to reset the question bank or delete records.
 - **Liveness & Health Probe**: [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health)
 - **Prometheus Metrics Endpoint**: [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics)

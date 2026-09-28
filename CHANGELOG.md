@@ -6,6 +6,54 @@ Changelog](https://keepachangelog.com/en/1.1.0/) format. Versions follow
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-09-29
+
+### Added
+
+- **Interactive Workplace Lectures & Briefings Portal (`/#lectures` / `LecturesPortal.tsx`).**
+  Comprehensive multimedia training portal supporting video briefings, synchronized
+  English subtitles (`.srt`/`.vtt`), and procedure document reference linkage.
+- **Authentic PowerPoint Slide Deck Viewer Engine.**
+  Server-backed presentation rendering extracting all 89 authentic PowerPoint slides
+  into pixel-perfect high-definition image streams (`GET /api/lectures/:id/slides-images/:slideNum`).
+  Features interactive slide carousel thumbnails, slide jump dropdown, keyboard navigation,
+  fullscreen presentation mode, and direct offline `.pptx` file download.
+- **Procedure Readiness & Multi-Factor Checklist Matrix.**
+  Weighted procedure readiness engine (Video Briefing 35%, Slide Review 35%, PPTX
+  Download 10%, Key Procedure Checkpoints 20%) with dynamic percentage dial and
+  automated progress synchronization.
+- **Candidate & Learner Department Management.**
+  Added free writable department fields with interactive suggestion chips across
+  both Exam Registration (`ExamRegistration.tsx`) and Lecture Authentication (`LecturesLogin.tsx`).
+- **Supervisor Lectures & Attendance Command Center (`/admin`).**
+  New primary navigation module with two dedicated audit sub-views:
+  - *Learner Checklists & Progress*: Real-time monitoring table with department filters,
+    search, module selectors, and visual milestone status pills (Video, Slides, Checkpoints, PPTX).
+  - *Detailed Activity & Attendance Log*: Timestamped telemetry tracking heartbeats,
+    video play/pause events, slide reviews, and checklist changes.
+  - *One-Click Excel / CSV Export*: Dedicated export endpoint (`GET /api/lectures/admin/export-csv`)
+    generating complete supervisor attendance and compliance reports with injection-safe formatting.
+- **Global Dark & Light Theme Engine.**
+  Native theme toggle (`ThemeToggle.tsx`, `useTheme.ts`) with persistent preference,
+  dynamic CSS tokens (`var(--surface)`, `var(--text)`, `var(--border)`), authentic
+  high-contrast company branding (`mofarreh-logo.png` in Light Mode, `mofarreh-logo-dark.png`
+  in Dark Mode), and verified contrast ratios.
+- **Database Schema Models (`prisma/schema.prisma`).**
+  Added `LectureAttendance` (event telemetry & watch durations) and `LectureProgress`
+  (per-user persistent checklist progress) relational models; extended `Candidate`
+  with indexed `department` column.
+
+### Fixed
+
+- **Light Mode Sidebar Exam Callout.** Resolved white-on-light heading contrast by
+  applying high-contrast slate navy typography (`#0f172a`), emerald gradient borders,
+  and rich amber icons.
+- **Dark Mode "Powered By" Attribution.** Replaced hardcoded `#0f172a` text color with
+  dynamic `var(--text)` tokens, adding glassmorphism styling and blue accent glow.
+- **Admin Dashboard Dark Mode Consistency.** Replaced hardcoded white background
+  on the footer with standardized `app-footer` styling, and eliminated hardcoded
+  white backgrounds on question section filter buttons (`All`, `Part A`, `Part B`).
+
 ## [1.1.1] — 2026-09-25
 
 ### Fixed

@@ -1,5 +1,5 @@
 const puppeteer = require('puppeteer-core');
-const { PDFDocument } = require('pdf-lib');
+const { PDFDocument, PDFName, PDFString } = require('pdf-lib');
 const fs = require('fs');
 const path = require('path');
 
@@ -308,23 +308,30 @@ const htmlContent = `
       color: #ffffff;
       margin-bottom: 4px;
     }
+    .author-name a, .author-role a, .author-info a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .portfolio-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(37, 99, 235, 0.25);
+      border: 1px solid #3b82f6;
+      color: #93c5fd;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      margin-bottom: 4px;
+      text-decoration: none;
+    }
     .author-role {
       font-size: 15px;
       color: #94a3b8;
     }
     .author-status {
       text-align: right;
-    }
-    .status-badge {
-      display: inline-block;
-      background: rgba(16, 185, 129, 0.2);
-      border: 1px solid #10b981;
-      color: #34d399;
-      font-weight: 700;
-      font-size: 13px;
-      padding: 6px 14px;
-      border-radius: 9999px;
-      margin-bottom: 4px;
     }
     .status-sub {
       font-size: 12px;
@@ -391,12 +398,18 @@ const htmlContent = `
 
     <div class="author-card">
       <div>
-        <div class="author-name">Eng. Youssef Ashraf</div>
-        <div class="author-role">Full-Stack & DevOps Engineer</div>
+        <div class="author-name">
+          <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link" style="color:#60a5fa;display:inline-flex;align-items:center;gap:8px;">
+            Eng. Youssef Ashraf <span style="font-size:18px;">↗</span>
+          </a>
+        </div>
+        <div class="author-role">Full-Stack & DevOps Engineer • <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link" style="color:#38bdf8;text-decoration:underline;">portfolio-five-rosy-60.vercel.app</a></div>
       </div>
       <div class="author-status">
-        <div class="status-badge">Available for Hire in 2 Months</div>
-        <div class="status-sub">Finishing Mandatory Military Service</div>
+        <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link">
+          <div class="portfolio-badge">View Live Portfolio ↗</div>
+        </a>
+        <div class="status-sub">Available for Hire in 2 Months (Post-Military)</div>
       </div>
     </div>
 
@@ -443,7 +456,13 @@ const htmlContent = `
     </div>
 
     <div class="footer">
-      <div class="author-info">Eng. Youssef Ashraf • <span>Workplace Examination System</span></div>
+      <div class="author-info">
+        <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link" style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="color:#60a5fa;font-weight:700;">Eng. Youssef Ashraf ↗</span>
+          <span style="color:#64748b;font-size:13px;">(portfolio-five-rosy-60.vercel.app)</span>
+        </a>
+        • <span>Workplace Examination System</span>
+      </div>
       <div class="slide-num">02 / 08</div>
     </div>
   </div>
@@ -485,7 +504,13 @@ const htmlContent = `
     </div>
 
     <div class="footer">
-      <div class="author-info">Eng. Youssef Ashraf • <span>Workplace Examination System</span></div>
+      <div class="author-info">
+        <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link" style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="color:#60a5fa;font-weight:700;">Eng. Youssef Ashraf ↗</span>
+          <span style="color:#64748b;font-size:13px;">(portfolio-five-rosy-60.vercel.app)</span>
+        </a>
+        • <span>Workplace Examination System</span>
+      </div>
       <div class="slide-num">03 / 08</div>
     </div>
   </div>
@@ -527,7 +552,13 @@ const htmlContent = `
     </div>
 
     <div class="footer">
-      <div class="author-info">Eng. Youssef Ashraf • <span>Workplace Examination System</span></div>
+      <div class="author-info">
+        <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link" style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="color:#60a5fa;font-weight:700;">Eng. Youssef Ashraf ↗</span>
+          <span style="color:#64748b;font-size:13px;">(portfolio-five-rosy-60.vercel.app)</span>
+        </a>
+        • <span>Workplace Examination System</span>
+      </div>
       <div class="slide-num">04 / 08</div>
     </div>
   </div>
@@ -569,7 +600,13 @@ const htmlContent = `
     </div>
 
     <div class="footer">
-      <div class="author-info">Eng. Youssef Ashraf • <span>Workplace Examination System</span></div>
+      <div class="author-info">
+        <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link" style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="color:#60a5fa;font-weight:700;">Eng. Youssef Ashraf ↗</span>
+          <span style="color:#64748b;font-size:13px;">(portfolio-five-rosy-60.vercel.app)</span>
+        </a>
+        • <span>Workplace Examination System</span>
+      </div>
       <div class="slide-num">05 / 08</div>
     </div>
   </div>
@@ -611,7 +648,13 @@ const htmlContent = `
     </div>
 
     <div class="footer">
-      <div class="author-info">Eng. Youssef Ashraf • <span>Workplace Examination System</span></div>
+      <div class="author-info">
+        <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link" style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="color:#60a5fa;font-weight:700;">Eng. Youssef Ashraf ↗</span>
+          <span style="color:#64748b;font-size:13px;">(portfolio-five-rosy-60.vercel.app)</span>
+        </a>
+        • <span>Workplace Examination System</span>
+      </div>
       <div class="slide-num">06 / 08</div>
     </div>
   </div>
@@ -653,7 +696,13 @@ const htmlContent = `
     </div>
 
     <div class="footer">
-      <div class="author-info">Eng. Youssef Ashraf • <span>Workplace Examination System</span></div>
+      <div class="author-info">
+        <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link" style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="color:#60a5fa;font-weight:700;">Eng. Youssef Ashraf ↗</span>
+          <span style="color:#64748b;font-size:13px;">(portfolio-five-rosy-60.vercel.app)</span>
+        </a>
+        • <span>Workplace Examination System</span>
+      </div>
       <div class="slide-num">07 / 08</div>
     </div>
   </div>
@@ -695,7 +744,13 @@ const htmlContent = `
     </div>
 
     <div class="footer">
-      <div class="author-info">Eng. Youssef Ashraf • <span>Available for Hire in 2 Months</span></div>
+      <div class="author-info">
+        <a href="https://portfolio-five-rosy-60.vercel.app/" target="_blank" class="portfolio-link" style="display:inline-flex;align-items:center;gap:6px;">
+          <span style="color:#34d399;font-weight:700;">Eng. Youssef Ashraf ↗</span>
+          <span style="color:#64748b;font-size:13px;">(portfolio-five-rosy-60.vercel.app)</span>
+        </a>
+        • <span>Available for Hire in 2 Months</span>
+      </div>
       <div class="slide-num">08 / 08</div>
     </div>
   </div>
@@ -747,6 +802,41 @@ const htmlContent = `
       width: 1080,
       height: 1350
     });
+    // Add real PDF link annotations for portfolio links on each page
+    const linkElements = await slide.$$('.portfolio-link, .author-card, .author-info');
+    const slideBox = await slide.boundingBox();
+    const annots = [];
+
+    for (const el of linkElements) {
+      const box = await el.boundingBox();
+      if (!box || box.width === 0 || box.height === 0) continue;
+
+      const relX = box.x - slideBox.x;
+      const relY = box.y - slideBox.y;
+
+      // In PDF coordinates: origin (0,0) is bottom-left of the 1080x1350 page
+      const pdfX1 = relX;
+      const pdfY1 = 1350 - (relY + box.height);
+      const pdfX2 = relX + box.width;
+      const pdfY2 = 1350 - relY;
+
+      const linkAnnot = pdfDoc.context.obj({
+        Type: 'Annot',
+        Subtype: 'Link',
+        Rect: [pdfX1, pdfY1, pdfX2, pdfY2],
+        Border: [0, 0, 0],
+        A: {
+          Type: 'Action',
+          S: 'URI',
+          URI: PDFString.of('https://portfolio-five-rosy-60.vercel.app/'),
+        },
+      });
+      annots.push(pdfDoc.context.register(linkAnnot));
+    }
+
+    if (annots.length > 0) {
+      pdfPage.node.set(PDFName.of('Annots'), pdfDoc.context.obj(annots));
+    }
   }
 
   const pdfBytes = await pdfDoc.save();
