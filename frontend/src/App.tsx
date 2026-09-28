@@ -6,6 +6,8 @@ import ExamRegistration from "./pages/ExamRegistration";
 import ExamInstructions from "./pages/ExamInstructions";
 import Exam from "./pages/Exam";
 import ExamResults from "./pages/ExamResults";
+import LecturesLogin, { type LectureUserData } from "./pages/LecturesLogin";
+import LecturesPortal from "./pages/LecturesPortal";
 import { ExamStorage, type ExamResult } from "./services/storage";
 import { api, ADMIN_SESSION_EXPIRED_EVENT } from "./services/api";
 import { releaseCamera } from "./services/camera";
@@ -34,6 +36,7 @@ interface UserData {
   name: string;
   email: string;
   companyId: string;
+  department?: string;
 }
 
 /** Marks an exam the candidate has actually started, so a refresh can resume it. */
@@ -74,6 +77,14 @@ function App() {
   const [page, setPage] = useState(restoredExam ? "exam" : "home");
   const [userData, setUserData] = useState<UserData | null>(restoredExam);
   const [examResult, setExamResult] = useState<ExamResult | null>(null);
+  const [lectureUser, setLectureUser] = useState<LectureUserData | null>(() => {
+    try {
+      const raw = sessionStorage.getItem("lecture_user_session");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Synchronize latest exam settings & questions from backend on launch
   useEffect(() => {
@@ -94,8 +105,8 @@ function App() {
       .catch((err) => console.warn("Could not sync the question bank:", err));
   }, []);
 
-  // Dedicated route listener for Admin Portal:
-  // Access via URL pathname (/admin, /admin/login) or URL hash (#admin, #admin-login)
+  // Dedicated route listener for Admin Portal and Lectures Portal:
+  // Access via URL pathname (/admin, /lectures) or URL hash (#admin, #lectures)
   useEffect(() => {
     function handleRouting() {
       const pathname = window.location.pathname.toLowerCase();
@@ -106,12 +117,29 @@ function App() {
         hash === "#admin" ||
         hash === "#admin-login";
 
+      const isLecturesRoute =
+        pathname === "/lectures" ||
+        pathname.startsWith("/lectures/") ||
+        hash === "#lectures";
+
       if (isAdminRoute) {
         const token = sessionStorage.getItem("adminToken");
         if (token) {
           setPage("admin-dashboard");
         } else {
           setPage("admin-login");
+        }
+      } else if (isLecturesRoute) {
+        const savedUser = sessionStorage.getItem("lecture_user_session");
+        if (savedUser) {
+          try {
+            setLectureUser(JSON.parse(savedUser));
+            setPage("lectures-hub");
+          } catch {
+            setPage("lectures-login");
+          }
+        } else {
+          setPage("lectures-login");
         }
       }
     }
@@ -207,6 +235,37 @@ function App() {
     setPage("home");
   }
 
+  function openLectures() {
+    window.history.pushState(null, "", "/lectures");
+    if (lectureUser) {
+      setPage("lectures-hub");
+    } else {
+      setPage("lectures-login");
+    }
+  }
+
+  function handleLectureLogin(lUser: LectureUserData) {
+    setLectureUser(lUser);
+    try {
+      sessionStorage.setItem("lecture_user_session", JSON.stringify(lUser));
+    } catch {
+      // Ignore sessionStorage quota or disabled error
+    }
+    setPage("lectures-hub");
+  }
+
+  function handleStartExamFromLectures() {
+    if (lectureUser) {
+      setUserData({
+        name: lectureUser.name,
+        email: lectureUser.email,
+        companyId: lectureUser.companyId,
+        department: lectureUser.department,
+      });
+    }
+    setPage("registration");
+  }
+
   function openAdminDashboard() {
     window.history.pushState(null, "", "/admin");
     setPage("admin-dashboard");
@@ -222,12 +281,45 @@ function App() {
     setPage("home");
   }
 
+  if (page === "lectures-login") {
+    return (
+      <div className="app">
+        <AppHeader
+          onGoHome={openCandidateHome}
+          onGoLectures={openLectures}
+          onGoExam={startExam}
+        />
+        <LecturesLogin
+          onLoginSuccess={handleLectureLogin}
+          onBack={openCandidateHome}
+        />
+        <AppFooter />
+      </div>
+    );
+  }
+
+  if (page === "lectures-hub" && lectureUser) {
+    return (
+      <LecturesPortal
+        user={lectureUser}
+        onStartExam={handleStartExamFromLectures}
+        onExit={openCandidateHome}
+      />
+    );
+  }
+
   if (page === "registration") {
     return (
       <div className="app">
-        <AppHeader />
+        <AppHeader
+          onGoHome={openCandidateHome}
+          onGoLectures={openLectures}
+        />
 
-        <ExamRegistration onContinue={handleRegistration} />
+        <ExamRegistration
+          onContinue={handleRegistration}
+          initialData={userData || undefined}
+        />
 
         <AppFooter />
       </div>
@@ -291,7 +383,11 @@ function App() {
 
   return (
     <div className="app">
-      <AppHeader />
+      <AppHeader
+        onGoHome={openCandidateHome}
+        onGoLectures={openLectures}
+        onGoExam={startExam}
+      />
 
       <main className="page-container home-page">
         <section className="home-hero">
@@ -300,22 +396,41 @@ function App() {
               <div className="company-logo-badge" title="Mofarreh Group — Engineering & Construction">
                 <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" />
               </div>
-              <div className="hero-badge">WORKPLACE ASSESSMENT</div>
+              <div className="hero-badge">WORKPLACE ASSESSMENT & LEARNING</div>
             </div>
 
             <h1>
               Employee & Workplace
               <br />
-              Examination System
+              Examination & Training
             </h1>
 
             <p>
-              Complete your required assessment before workplace or site access.
+              Review official procedure briefings, watch recorded lectures, and complete
+              your required examination before workplace or site access.
             </p>
 
-            <div className="hero-actions">
+            <div className="hero-actions" style={{ display: "flex", gap: "14px", flexWrap: "wrap", alignItems: "center" }}>
               <button className="primary-button" onClick={startExam}>
                 Start Assessment →
+              </button>
+              <button
+                className="secondary-button"
+                onClick={openLectures}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "12px 20px",
+                  fontWeight: 700,
+                  fontSize: "14px",
+                  background: "rgba(37, 99, 235, 0.12)",
+                  color: "#60a5fa",
+                  border: "1px solid rgba(59, 130, 246, 0.35)",
+                }}
+              >
+                <Icon name="video" size={17} />
+                <span>Training Lectures & Recordings</span>
               </button>
             </div>
           </div>
@@ -323,47 +438,47 @@ function App() {
           <div className="hero-panel">
             <div className="hero-panel-icon"><Icon name="check" /></div>
 
-            <h3>Secure Assessment</h3>
+            <h3>Secure Assessment & Learning</h3>
 
             <p>
-              Your examination is timed and your results are recorded for
-              authorized management review.
+              Your examination is timed and results are recorded. Training lectures and
+              slide decks are accessible with department attendance tracking.
             </p>
 
             <div className="hero-feature">
               <span><Icon name="check" /></span>
-              Timed examination
+              Timed proctored examination
+            </div>
+
+            <div className="hero-feature">
+              <span><Icon name="video" /></span>
+              Official procedure briefings & recordings
             </div>
 
             <div className="hero-feature">
               <span><Icon name="check" /></span>
-              Multiple question types
-            </div>
-
-            <div className="hero-feature">
-              <span><Icon name="check" /></span>
-              Automated scoring
+              Automated scoring & department auditing
             </div>
           </div>
         </section>
 
         <section className="home-info">
-          <div className="info-card">
+          <div className="info-card" onClick={openLectures} style={{ cursor: "pointer" }} title="Click to view lectures">
             <strong>01</strong>
-            <h3>Register</h3>
-            <p>Enter your identification and contact information.</p>
+            <h3>Procedure Briefings</h3>
+            <p>Study Interface, Stakeholder & Logistics Management video lectures and slides.</p>
           </div>
 
           <div className="info-card">
             <strong>02</strong>
-            <h3>Complete Assessment</h3>
-            <p>Answer all required questions within the allocated time.</p>
+            <h3>Register & Verify</h3>
+            <p>Enter your employee credentials and verify workplace clearance.</p>
           </div>
 
           <div className="info-card">
             <strong>03</strong>
-            <h3>Submit</h3>
-            <p>Your result is calculated after submitting the examination.</p>
+            <h3>Proctored Assessment</h3>
+            <p>Complete the timed 40-question technical examination under auditing.</p>
           </div>
         </section>
       </main>
@@ -373,21 +488,77 @@ function App() {
   );
 }
 
-function AppHeader() {
+function AppHeader({
+  onGoHome,
+  onGoLectures,
+  onGoExam,
+}: {
+  onGoHome?: () => void;
+  onGoLectures?: () => void;
+  onGoExam?: () => void;
+} = {}) {
   return (
     <header className="app-header">
-      <div className="brand">
+      <div className="brand" onClick={onGoHome} style={{ cursor: onGoHome ? "pointer" : "default" }}>
         <div className="company-logo-badge" title="Mofarreh Group — Engineering & Construction">
           <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" />
         </div>
 
         <div className="brand-text">
-          <span className="brand-title">EXAM SYSTEM</span>
-          <span className="brand-subtitle">Workplace Assessment Portal</span>
+          <span className="brand-title">EXAM & LEARNING SYSTEM</span>
+          <span className="brand-subtitle">Workplace Assessment & Training Portal</span>
         </div>
       </div>
 
-      <PoweredBy />
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        {onGoLectures && (
+          <button
+            type="button"
+            className="header-nav-btn"
+            onClick={onGoLectures}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(56, 189, 248, 0.1)",
+              border: "1px solid rgba(56, 189, 248, 0.3)",
+              color: "#38bdf8",
+              padding: "6px 14px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="video" size={14} />
+            <span>Lectures & Briefings</span>
+          </button>
+        )}
+        {onGoExam && (
+          <button
+            type="button"
+            className="header-nav-btn"
+            onClick={onGoExam}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(16, 185, 129, 0.12)",
+              border: "1px solid rgba(16, 185, 129, 0.35)",
+              color: "#10b981",
+              padding: "6px 14px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            <Icon name="check" size={14} />
+            <span>Take Assessment</span>
+          </button>
+        )}
+        <PoweredBy />
+      </div>
     </header>
   );
 }

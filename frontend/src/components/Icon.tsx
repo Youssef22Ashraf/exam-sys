@@ -22,6 +22,8 @@ const PATHS: Record<string, string> = {
   repeat: "M17 2l4 4-4 4M3 11V9a4 4 0 0 1 4-4h14M7 22l-4-4 4-4m14-3v2a4 4 0 0 1-4 4H3",
   "rotate-ccw": "M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5",
   video: "M15 8l6-3v14l-6-3zM3 6h12v12H3z",
+  play: "M5 3l14 9-14 9V3z",
+  book: "M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5z",
   camera: "M4 8h3l2-3h6l2 3h3v12H4zm8 3a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z",
   mail: "M4 5h16v14H4zm0 2 8 6 8-6",
   unlock: "M7 11V7a5 5 0 0 1 9.9-1M5 11h14v10H5z",

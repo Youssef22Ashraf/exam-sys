@@ -15,6 +15,7 @@ model Candidate {
   name           String
   email          String        @unique
   companyId      String
+  department     String?
   registeredAt   DateTime      @default(now())
   status         String        @default("Registered") // Registered | In Progress | Completed
   totalAttempts  Int           @default(0)
@@ -121,4 +122,29 @@ model ExamSession {
 
   @@index([candidateEmail])
   @@index([startedAt])
+}
+
+/// Tracks candidate and employee engagement with training lectures and recordings.
+/// Logs when users enter the portal, view recordings, interact with slides, or download briefings.
+model LectureAttendance {
+  id                   String    @id @default(uuid())
+  candidateName        String
+  candidateEmail       String
+  companyId            String
+  department           String
+  lectureId            String    // e.g. "interface-management", "stakeholder-management", "comparison", "logistics"
+  lectureTitle         String
+  action               String    // "PORTAL_ACCESS" | "VIDEO_WATCHED" | "SLIDES_DOWNLOADED" | "SLIDES_VIEWED"
+  watchDurationSeconds Int       @default(0)
+  maxProgressPercent   Float     @default(0)
+  ipAddress            String?
+  userAgent            String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([candidateEmail])
+  @@index([companyId])
+  @@index([department])
+  @@index([lectureId])
+  @@index([createdAt])
 }

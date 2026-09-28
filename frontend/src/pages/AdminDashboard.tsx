@@ -8,6 +8,8 @@ import {
   type ExamResult,
   type Question,
   type ExamSettings,
+  type LectureAttendanceRecord,
+  type AdminLectureStats,
 } from "../services/storage";
 import { VideoStorage } from "../services/videoStorage";
 import { socketService } from "../services/socket";
@@ -18,7 +20,7 @@ interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-type TabType = "overview" | "candidates" | "results" | "exams";
+type TabType = "overview" | "candidates" | "results" | "exams" | "lectures";
 
 function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>("overview");
@@ -54,6 +56,15 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   const [questionSectionFilter, setQuestionSectionFilter] = useState("All");
   const [questionSearch, setQuestionSearch] = useState("");
+
+  // Lectures Attendance states & filters
+  const [lectureAttendance, setLectureAttendance] = useState<LectureAttendanceRecord[]>([]);
+  const [lectureStats, setLectureStats] = useState<AdminLectureStats | null>(null);
+  const [loadingLectures, setLoadingLectures] = useState(false);
+  const [lectureSearch, setLectureSearch] = useState("");
+  const [lectureDeptFilter, setLectureDeptFilter] = useState("All");
+  const [lectureTopicFilter, setLectureTopicFilter] = useState("All");
+  const [lectureActionFilter, setLectureActionFilter] = useState("All");
 
   // Modals state
   const [selectedResult, setSelectedResult] = useState<ExamResult | null>(null);
@@ -165,6 +176,29 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     setSettings(ExamStorage.getSettings());
   }
 
+  const fetchLectureAttendance = useCallback(async () => {
+    try {
+      setLoadingLectures(true);
+      const data = await api.getAdminLectureAttendance({
+        search: lectureSearch,
+        department: lectureDeptFilter,
+        lectureId: lectureTopicFilter,
+        action: lectureActionFilter,
+      });
+      setLectureAttendance(data.attendance);
+      setLectureStats(data.stats);
+    } catch (err) {
+      console.warn("Could not fetch lecture attendance:", err);
+    } finally {
+      setLoadingLectures(false);
+    }
+  }, [lectureSearch, lectureDeptFilter, lectureTopicFilter, lectureActionFilter]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchLectureAttendance();
+  }, [fetchLectureAttendance]);
+
   /**
    * Pull from the server.
    *
@@ -183,7 +217,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
     if (r.status === "fulfilled" && r.value) setResults(r.value);
     if (q.status === "fulfilled" && q.value) setQuestions(q.value);
     if (st.status === "fulfilled" && st.value) setSettings(st.value);
-  }, []);
+    fetchLectureAttendance();
+  }, [fetchLectureAttendance]);
 
   useEffect(() => {
     // refreshFromServer is async and only sets state once the requests
@@ -224,6 +259,14 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       });
     });
 
+    const unSubLecture = socketService.onAdminLectureAccess((data) => {
+      fetchLectureAttendance();
+      setLiveSocketToast({
+        message: `Training Portal: ${data.candidateName} (${data.department}) accessed ${data.lectureTitle}`,
+        type: "info",
+      });
+    });
+
     // Was a 2-second localStorage re-read that re-rendered this whole
     // component and recomputed every filter. Sockets already push the events
     // that matter; this is just a slow safety net.
@@ -237,9 +280,10 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       unSubSubmit();
       unSubWarn();
       unSubStart();
+      unSubLecture();
       clearInterval(interval);
     };
-  }, [refreshFromServer]);
+  }, [refreshFromServer, fetchLectureAttendance]);
 
   // Auto-dismiss live socket toast
   useEffect(() => {
@@ -633,6 +677,14 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
           >
             <Icon name="settings" /> Exam Management
             <span className="tab-badge">{questions.length} Qs</span>
+          </button>
+
+          <button
+            className={`admin-tab-btn ${activeTab === "lectures" ? "active" : ""}`}
+            onClick={() => setActiveTab("lectures")}
+          >
+            <Icon name="video" /> Lectures & Attendance
+            <span className="tab-badge">{lectureAttendance.length}</span>
           </button>
         </nav>
 
@@ -1576,6 +1628,344 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
               >
                 {pwBusy ? "Updating…" : "Change Password"}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================
+            TAB 5: LECTURES & ATTENDANCE AUDITING
+        ========================================= */}
+        {activeTab === "lectures" && (
+          <div>
+            {/* Stats Grid */}
+            <section className="stats-grid">
+              <div className="stat-card">
+                <span>Unique Attendees</span>
+                <strong>{lectureStats?.totalAttendees || 0}</strong>
+                <small>Employees & candidates</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Total Engagements</span>
+                <strong>{lectureStats?.totalEngagements || 0}</strong>
+                <small>Viewing & study sessions</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Total Learning Time</span>
+                <strong>{lectureStats?.totalWatchHours || 0} hrs</strong>
+                <small>{Math.round((lectureStats?.totalWatchSeconds || 0) / 60)} minutes total</small>
+              </div>
+
+              <div className="stat-card">
+                <span>Top Department</span>
+                <strong style={{ fontSize: "18px", color: "var(--primary)" }}>
+                  {lectureStats?.topDepartment || "None"}
+                </strong>
+                <small>Highest portal engagement</small>
+              </div>
+            </section>
+
+            {/* Department Breakdown Pill Bar */}
+            {lectureStats && lectureStats.departments && lectureStats.departments.length > 0 && (
+              <div
+                className="dashboard-card"
+                style={{ marginBottom: "24px", padding: "16px 20px" }}
+              >
+                <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase", marginBottom: "10px" }}>
+                  Attendance by Department ("Where they are from")
+                </div>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  {lectureStats.departments.map((dept) => (
+                    <button
+                      key={dept.department}
+                      type="button"
+                      onClick={() => setLectureDeptFilter(dept.department)}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        background: lectureDeptFilter === dept.department ? "var(--primary)" : "var(--surface-2)",
+                        color: lectureDeptFilter === dept.department ? "#ffffff" : "var(--text)",
+                        border: "1px solid var(--border)",
+                        padding: "6px 12px",
+                        borderRadius: "20px",
+                        fontSize: "12px",
+                        fontWeight: 650,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span>{dept.department}</span>
+                      <span
+                        style={{
+                          background: lectureDeptFilter === dept.department ? "rgba(255,255,255,0.25)" : "var(--border)",
+                          padding: "1px 6px",
+                          borderRadius: "10px",
+                          fontSize: "11px",
+                        }}
+                      >
+                        {dept.uniqueUsers} users
+                      </span>
+                    </button>
+                  ))}
+                  {lectureDeptFilter !== "All" && (
+                    <button
+                      type="button"
+                      onClick={() => setLectureDeptFilter("All")}
+                      style={{
+                        background: "transparent",
+                        border: "1px dashed var(--border)",
+                        color: "var(--text-3)",
+                        padding: "6px 12px",
+                        borderRadius: "20px",
+                        fontSize: "12px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Clear Filter (Show All)
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Data Table Card */}
+            <div className="dashboard-card">
+              <div className="table-controls">
+                <input
+                  className="search-input"
+                  type="text"
+                  placeholder="Search attendee, email, ID, or department..."
+                  value={lectureSearch}
+                  onChange={(e) => setLectureSearch(e.target.value)}
+                />
+
+                <div className="table-filters" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  <select
+                    className="filter-select"
+                    value={lectureDeptFilter}
+                    onChange={(e) => setLectureDeptFilter(e.target.value)}
+                  >
+                    <option value="All">All Departments</option>
+                    {lectureStats?.departments.map((d) => (
+                      <option key={d.department} value={d.department}>
+                        {d.department} ({d.uniqueUsers})
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    className="filter-select"
+                    value={lectureTopicFilter}
+                    onChange={(e) => setLectureTopicFilter(e.target.value)}
+                  >
+                    <option value="All">All Lecture Modules</option>
+                    <option value="interface-management">Interface Management Procedure</option>
+                    <option value="stakeholder-management">Stakeholder Management Procedure</option>
+                    <option value="interface-vs-stakeholder">Interface vs Stakeholder Comparison</option>
+                    <option value="logistics-management">Logistics Management Procedure</option>
+                    <option value="portal">General Portal Access</option>
+                  </select>
+
+                  <select
+                    className="filter-select"
+                    value={lectureActionFilter}
+                    onChange={(e) => setLectureActionFilter(e.target.value)}
+                  >
+                    <option value="All">All Actions</option>
+                    <option value="VIDEO_WATCHED">Video Watched</option>
+                    <option value="VIDEO_COMPLETED">Video Completed</option>
+                    <option value="SLIDES_DOWNLOADED">Slides Downloaded</option>
+                    <option value="PORTAL_ACCESS">Portal Entry</option>
+                    <option value="LECTURE_VIEWED">Lecture Selected</option>
+                  </select>
+                </div>
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                    className="secondary-button"
+                    style={{ padding: "9px 14px", fontSize: "13px" }}
+                    onClick={fetchLectureAttendance}
+                    title="Refresh attendance records"
+                    disabled={loadingLectures}
+                  >
+                    <Icon name="rotate-ccw" />
+                  </button>
+
+                  <button
+                    className="primary-button"
+                    style={{ padding: "9px 18px", fontSize: "13px", display: "inline-flex", alignItems: "center", gap: "8px" }}
+                    onClick={() => {
+                      window.open(api.getLectureExportUrl(), "_blank");
+                    }}
+                    title="Export all lecture attendance data to an Excel-compatible spreadsheet"
+                  >
+                    <Icon name="download" />
+                    <span>Export Attendance to Excel / CSV</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Attendee Name</th>
+                      <th>Email Address</th>
+                      <th>Company ID</th>
+                      <th>Department (From Where)</th>
+                      <th>Lecture / Briefing</th>
+                      <th>Activity Type</th>
+                      <th>Duration / Progress</th>
+                      <th>Date & Time</th>
+                      <th>Device / IP</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingLectures ? (
+                      <tr>
+                        <td colSpan={10} style={{ textAlign: "center", padding: "35px" }}>
+                          Loading attendance records...
+                        </td>
+                      </tr>
+                    ) : lectureAttendance.length === 0 ? (
+                      <tr>
+                        <td colSpan={10} style={{ textAlign: "center", padding: "35px" }}>
+                          No lecture attendance records found matching filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      lectureAttendance.map((rec) => {
+                        const mins = Math.floor(rec.watchDurationSeconds / 60);
+                        const secs = rec.watchDurationSeconds % 60;
+                        const durationStr = `${mins}m ${secs}s`;
+
+                        return (
+                          <tr key={rec.id}>
+                            <td>
+                              <strong>{rec.candidateName}</strong>
+                            </td>
+                            <td style={{ color: "var(--text-3)", fontSize: "12px" }}>
+                              {rec.candidateEmail}
+                            </td>
+                            <td>
+                              <span className="badge" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
+                                {rec.companyId}
+                              </span>
+                            </td>
+                            <td>
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  padding: "3px 8px",
+                                  borderRadius: "6px",
+                                  background: "rgba(37, 99, 235, 0.12)",
+                                  color: "var(--primary)",
+                                  fontWeight: 650,
+                                  fontSize: "12px",
+                                }}
+                              >
+                                {rec.department}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontWeight: 600 }}>{rec.lectureTitle}</span>
+                            </td>
+                            <td>
+                              <span
+                                className="badge"
+                                style={{
+                                  background:
+                                    rec.action === "VIDEO_COMPLETED"
+                                      ? "var(--success-soft)"
+                                      : rec.action === "SLIDES_DOWNLOADED"
+                                      ? "rgba(56, 189, 248, 0.15)"
+                                      : "var(--surface-2)",
+                                  color:
+                                    rec.action === "VIDEO_COMPLETED"
+                                      ? "var(--success)"
+                                      : rec.action === "SLIDES_DOWNLOADED"
+                                      ? "#0284c7"
+                                      : "var(--text-2)",
+                                }}
+                              >
+                                {rec.action === "SLIDES_DOWNLOADED"
+                                  ? "Slides Downloaded"
+                                  : rec.action === "VIDEO_COMPLETED"
+                                  ? "Video Completed"
+                                  : rec.action === "VIDEO_WATCHED"
+                                  ? "Video Watched"
+                                  : rec.action === "PORTAL_ACCESS"
+                                  ? "Portal Entry"
+                                  : rec.action}
+                              </span>
+                            </td>
+                            <td>
+                              {rec.watchDurationSeconds > 0 ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                                  <span style={{ fontSize: "12px", fontWeight: 600 }}>{durationStr}</span>
+                                  {rec.maxProgressPercent > 0 && (
+                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                      <div
+                                        style={{
+                                          width: "60px",
+                                          height: "5px",
+                                          background: "var(--border)",
+                                          borderRadius: "3px",
+                                          overflow: "hidden",
+                                        }}
+                                      >
+                                        <div
+                                          style={{
+                                            width: `${Math.min(100, rec.maxProgressPercent)}%`,
+                                            height: "100%",
+                                            background: "var(--success)",
+                                          }}
+                                        />
+                                      </div>
+                                      <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                                        {Math.round(rec.maxProgressPercent)}%
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span style={{ color: "var(--text-3)", fontSize: "12px" }}>—</span>
+                              )}
+                            </td>
+                            <td style={{ fontSize: "12px", whiteSpace: "nowrap" }}>
+                              {new Date(rec.createdAt).toLocaleString()}
+                            </td>
+                            <td style={{ fontSize: "11px", color: "var(--text-3)", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${rec.ipAddress || "127.0.0.1"} • ${rec.userAgent || ""}`}>
+                              {rec.ipAddress || "127.0.0.1"}
+                            </td>
+                            <td>
+                              <button
+                                className="btn-sm"
+                                style={{ color: "var(--danger)", background: "transparent", border: "none", cursor: "pointer" }}
+                                onClick={async () => {
+                                  if (window.confirm(`Delete attendance record for ${rec.candidateName}?`)) {
+                                    try {
+                                      await api.deleteLectureAttendance(rec.id);
+                                      fetchLectureAttendance();
+                                    } catch (err: unknown) {
+                                      alert(err instanceof Error ? err.message : "Failed to delete record.");
+                                    }
+                                  }
+                                }}
+                                title="Delete attendance record"
+                              >
+                                <Icon name="x" size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

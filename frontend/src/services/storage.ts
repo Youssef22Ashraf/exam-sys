@@ -17,6 +17,7 @@ export interface Candidate {
   name: string;
   email: string;
   companyId: string;
+  department?: string;
   registeredAt: string;
   status: "Registered" | "In Progress" | "Completed";
   totalAttempts: number;
@@ -61,6 +62,57 @@ export interface ExamSettings {
   isSmtpConfigured?: boolean;
   smtpHost?: string | null;
   adminAlertEmail?: string | null;
+}
+
+export interface LectureOutlineItem {
+  slideNumber: number;
+  title: string;
+  summary?: string;
+}
+
+export interface LectureItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  category: string;
+  docRef: string;
+  policyRef?: string;
+  description: string;
+  durationSeconds: number;
+  durationFormatted: string;
+  slideCount: number;
+  keyTopics: string[];
+  outline?: LectureOutlineItem[];
+  hasVideo?: boolean;
+  hasSlides?: boolean;
+  hasSubtitles?: boolean;
+}
+
+export interface LectureAttendanceRecord {
+  id: string;
+  candidateName: string;
+  candidateEmail: string;
+  companyId: string;
+  department: string;
+  lectureId: string;
+  lectureTitle: string;
+  action: string;
+  watchDurationSeconds: number;
+  maxProgressPercent: number;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface AdminLectureStats {
+  totalAttendees: number;
+  totalEngagements: number;
+  totalWatchSeconds: number;
+  totalWatchHours: number;
+  topDepartment: string;
+  departments: Array<{ department: string; totalEngagements: number; uniqueUsers: number }>;
+  lectureBreakdown: Record<string, { views: number; downloads: number; watchSecs: number }>;
 }
 
 const DEFAULT_SETTINGS: ExamSettings = {

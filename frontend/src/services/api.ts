@@ -3,6 +3,9 @@ import {
   type Candidate,
   type ExamResult,
   type ExamSettings,
+  type LectureItem,
+  type LectureAttendanceRecord,
+  type AdminLectureStats,
   storage,
   notifyStorageChange,
 } from "./storage";
@@ -622,5 +625,167 @@ export const api = {
         message: "Backend offline.",
       };
     }
+  },
+
+  /* ========================================================================
+     LECTURES & LEARNING PORTAL ENDPOINTS
+     ======================================================================== */
+
+  /**
+   * Get list of all available lectures with metadata
+   */
+  async getLectures(): Promise<LectureItem[]> {
+    try {
+      const res = await fetch(`${API_BASE}/lectures`, { method: "GET" });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn("Could not fetch lectures from API, returning local fallbacks:", err);
+    }
+    return [];
+  },
+
+  /**
+   * Get single lecture details with outline
+   */
+  async getLectureDetails(id: string): Promise<LectureItem | null> {
+    try {
+      const res = await fetch(`${API_BASE}/lectures/${id}`, { method: "GET" });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (err) {
+      console.warn(`Could not fetch lecture ${id}:`, err);
+    }
+    return null;
+  },
+
+  /**
+   * Record portal or lecture access attendance
+   */
+  async recordLectureAccess(data: {
+    name: string;
+    email: string;
+    companyId: string;
+    department: string;
+    lectureId?: string;
+    action?: string;
+  }): Promise<{ success: boolean; attendanceId?: string; error?: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/lectures/access`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        return { success: false, error: result.error || "Could not record access" };
+      }
+      return result;
+    } catch (err: unknown) {
+      console.warn("Failed to reach lecture access endpoint:", err);
+      return { success: false, error: err instanceof Error ? err.message : "Network error" };
+    }
+  },
+
+  /**
+   * Periodic heartbeat or progress update while watching lecture video
+   */
+  async trackLectureProgress(data: {
+    attendanceId?: string;
+    name?: string;
+    email: string;
+    companyId: string;
+    department: string;
+    lectureId: string;
+    action?: string;
+    watchDurationSeconds: number;
+    maxProgressPercent: number;
+  }): Promise<{ success: boolean }> {
+    try {
+      const res = await fetch(`${API_BASE}/lectures/track`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      return await res.json();
+    } catch {
+      return { success: false };
+    }
+  },
+
+  /**
+   * Admin: Get all attendance logs & statistics
+   */
+  async getAdminLectureAttendance(params?: {
+    search?: string;
+    department?: string;
+    lectureId?: string;
+    action?: string;
+  }): Promise<{
+    attendance: LectureAttendanceRecord[];
+    totalCount: number;
+    stats: AdminLectureStats;
+  }> {
+    const url = new URL(`${API_BASE}/lectures/admin/attendance`);
+    if (params?.search) url.searchParams.set("search", params.search);
+    if (params?.department) url.searchParams.set("department", params.department);
+    if (params?.lectureId) url.searchParams.set("lectureId", params.lectureId);
+    if (params?.action) url.searchParams.set("action", params.action);
+
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    if (res.status === 401) {
+      handleUnauthorized();
+    }
+    if (!res.ok) {
+      throw new AdminActionError("Could not fetch lecture attendance.", res.status);
+    }
+    return await res.json();
+  },
+
+  /**
+   * Admin: Delete an attendance record
+   */
+  async deleteLectureAttendance(id: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/lectures/admin/attendance/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    await assertMutationOk(res, "delete attendance record");
+  },
+
+  /**
+   * Helpers to get URLs for media, captions, and slide downloads
+   */
+  getLectureVideoUrl(id: string): string {
+    return `${API_BASE}/lectures/${id}/video`;
+  },
+
+  getLectureSubtitlesUrl(id: string): string {
+    return `${API_BASE}/lectures/${id}/subtitles`;
+  },
+
+  getLectureSlidesUrl(
+    id: string,
+    userInfo?: { name: string; email: string; companyId: string; department: string }
+  ): string {
+    const url = new URL(`${API_BASE}/lectures/${id}/slides`);
+    if (userInfo) {
+      url.searchParams.set("name", userInfo.name);
+      url.searchParams.set("email", userInfo.email);
+      url.searchParams.set("companyId", userInfo.companyId);
+      url.searchParams.set("department", userInfo.department);
+    }
+    return url.toString();
+  },
+
+  getLectureExportUrl(): string {
+    const token = sessionStorage.getItem("adminToken");
+    return `${API_BASE}/lectures/admin/export?token=${encodeURIComponent(token || "")}`;
   },
 };

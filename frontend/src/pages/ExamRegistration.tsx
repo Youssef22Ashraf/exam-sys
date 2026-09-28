@@ -3,17 +3,25 @@ import { Icon } from "../components/Icon";
 import { api } from "../services/api";
 
 interface ExamRegistrationProps {
+  initialData?: {
+    name?: string;
+    email?: string;
+    companyId?: string;
+    department?: string;
+  };
   onContinue: (userData: {
     name: string;
     email: string;
     companyId: string;
+    department?: string;
   }) => void;
 }
 
-function ExamRegistration({ onContinue }: ExamRegistrationProps) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [companyId, setCompanyId] = useState("");
+function ExamRegistration({ onContinue, initialData }: ExamRegistrationProps) {
+  const [name, setName] = useState(initialData?.name || "");
+  const [email, setEmail] = useState(initialData?.email || "");
+  const [companyId, setCompanyId] = useState(initialData?.companyId || "");
+  const [department, setDepartment] = useState(initialData?.department || "");
   const [isChecking, setIsChecking] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [emailFormatError, setEmailFormatError] = useState<string | null>(null);
@@ -90,6 +98,7 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
       name: trimmedName,
       email: trimmedEmail,
       companyId: trimmedCompanyId,
+      department: department.trim() || undefined,
     });
   }
 
@@ -245,6 +254,17 @@ function ExamRegistration({ onContinue }: ExamRegistrationProps) {
             placeholder="Enter your unique company / employee ID"
             value={companyId}
             onChange={(event) => handleFieldChange(setCompanyId, event.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Department / Unit (Optional)</label>
+          <input
+            className="form-input"
+            type="text"
+            placeholder="e.g. Interface Management, Logistics, Operations, Site Team"
+            value={department}
+            onChange={(event) => handleFieldChange(setDepartment, event.target.value)}
           />
         </div>
 

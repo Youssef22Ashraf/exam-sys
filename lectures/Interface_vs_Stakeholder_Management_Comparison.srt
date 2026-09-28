@@ -1,0 +1,192 @@
+1
+00:00:00,700 --> 00:00:02,026
+Good morning everyone.
+
+2
+00:00:02,576 --> 00:00:09,742
+This short briefing compares two complementary MAH governance systems: Interface Management and Stakeholder Management.
+
+3
+00:00:10,292 --> 00:00:20,477
+We will look at how the Engineering and Construction Sector coordinates technical connection points on one side, and stakeholder relationships on the other, across the full delivery of a project.
+
+4
+00:00:22,177 --> 00:00:23,793
+Here is how we will go through it.
+
+5
+00:00:24,343 --> 00:00:27,411
+First, the core distinction between the two disciplines.
+
+6
+00:00:27,961 --> 00:00:30,727
+Then their scope and structure, side by side.
+
+7
+00:00:31,277 --> 00:00:35,726
+Next, the two roles compared directly, and where the two systems intersect.
+
+8
+00:00:36,276 --> 00:00:38,833
+After that, why they sit in separate departments.
+
+9
+00:00:39,383 --> 00:00:44,273
+We will close with the key takeaways and the controlled documents this comparison is based on.
+
+10
+00:00:45,973 --> 00:00:49,505
+Both disciplines coordinate people, but they control different risks.
+
+11
+00:00:50,055 --> 00:00:54,679
+Interface Management asks: what must connect, align or close?
+
+12
+00:00:55,229 --> 00:01:04,600
+Its focus is boundaries, dependencies, design integration and field coordination at physical, functional and organizational connection points.
+
+13
+00:01:05,150 --> 00:01:11,423
+If it is ignored, we get clashes, handoff gaps, rework and unresolved technical dependencies.
+
+14
+00:01:11,973 --> 00:01:17,687
+Stakeholder Management asks a different question: who can affect the project, and how should we engage them?
+
+15
+00:01:18,237 --> 00:01:25,775
+Its focus is the influence, interest and expectations of the people and parties around the project, mapped on a Power-Interest Matrix.
+
+16
+00:01:26,325 --> 00:01:34,896
+If it is ignored, we face resistance, non-response, conflicting expectations, reputational impact and pressure to deviate from policy.
+
+17
+00:01:36,596 --> 00:01:39,977
+Here are the same five dimensions, answered two different ways.
+
+18
+00:01:40,527 --> 00:01:46,427
+The unit of analysis for interfaces is an interface point; for stakeholders, it is a stakeholder.
+
+19
+00:01:46,977 --> 00:01:58,752
+Interfaces are split simply into internal and external points, while stakeholders are categorized on the Power-Interest Matrix: manage closely, keep satisfied, keep informed, or monitor.
+
+20
+00:01:59,302 --> 00:02:08,953
+Each system has its own core register, its own issue log, and its own owning role: the Interface Manager on one side, and the Stakeholder Manager on the other.
+
+21
+00:02:10,653 --> 00:02:12,710
+Now the two roles compared directly.
+
+22
+00:02:13,260 --> 00:02:21,634
+The Interface Manager controls connection points: clashes, holding areas, and every place where scopes, systems and work zones meet.
+
+23
+00:02:22,184 --> 00:02:26,378
+The key question is: where do our works meet, and is every point resolved?
+
+24
+00:02:26,928 --> 00:02:34,268
+The Stakeholder Manager controls relationships: the influence, interest and expectations of the people and parties around the project.
+
+25
+00:02:34,818 --> 00:02:39,070
+The key question is: who matters, what do they expect, and are they on board?
+
+26
+00:02:39,620 --> 00:02:50,083
+The tools, records, success measures and governing procedures are different: PRO-001 for interfaces and PRO-002 for stakeholders.
+
+27
+00:02:50,633 --> 00:02:53,805
+That is why these two roles cannot be merged into one title.
+
+28
+00:02:54,355 --> 00:03:00,279
+The Interface Manager closes the technical point, and the Stakeholder Manager secures the agreement behind it.
+
+29
+00:03:01,979 --> 00:03:03,584
+So where do they intersect?
+
+30
+00:03:04,134 --> 00:03:07,190
+The answer is: they are connected, but not merged.
+
+31
+00:03:07,740 --> 00:03:17,750
+The Interface Manager keeps the Interface Points Register, the Interface Matrix, design and field coordination, and technical RFIs and clashes.
+
+32
+00:03:18,300 --> 00:03:27,196
+The Stakeholder Manager keeps the Stakeholder Register, the Power-Interest Matrix, the engagement and communication plan, and relationship-level conflicts.
+
+33
+00:03:27,746 --> 00:03:31,615
+Each role keeps its own owner, register, RACI and procedure.
+
+34
+00:03:32,165 --> 00:03:39,911
+The Interface Manager supports the Stakeholder Manager's communication flow, and both registers are aligned after every coordination meeting.
+
+35
+00:03:40,461 --> 00:03:54,198
+Escalation also stays separate but aligned: interface conflicts follow the PRO-001 route, stakeholder disagreements follow the PRO-002 escalation matrix, and both feed the same governance chain.
+
+36
+00:03:55,898 --> 00:04:01,880
+This leads to organizational separation: two disciplines, two departments, not one combined role.
+
+37
+00:04:02,430 --> 00:04:11,059
+Interface Management is a technical and engineering function, accountable for physical and design coordination across disciplines and contractors.
+
+38
+00:04:11,609 --> 00:04:17,695
+Stakeholder Management is accountable for client, authority and stakeholder engagement and communication.
+
+39
+00:04:18,245 --> 00:04:34,804
+Merging them carries a real risk: technical coordination gets diluted by negotiation, slowing clash resolution and design sign-off, while stakeholder engagement gets diluted by day-to-day technical firefighting, weakening client and authority relationships.
+
+40
+00:04:35,354 --> 00:04:42,462
+The recommendation is clear: keep them as two separate departments, each with its own manager, register and RACI ownership.
+
+41
+00:04:44,162 --> 00:04:45,337
+To summarize.
+
+42
+00:04:45,887 --> 00:04:57,604
+First, different roles, different owners: the Interface Manager controls connection points, the Stakeholder Manager controls relationships, and each has its own register, matrix, RACI and procedure.
+
+43
+00:04:58,154 --> 00:05:07,224
+Second, aligned, not combined: the two registers are aligned after every coordination meeting, giving two accountable owners and one coordinated picture.
+
+44
+00:05:07,774 --> 00:05:22,022
+Third, escalate to the right depth: technical clashes go through the three-level interface escalation, while relationship, contractual or reputational issues go onto the six-level stakeholder matrix, up to Legal and Corporate Governance.
+
+45
+00:05:23,722 --> 00:05:42,405
+This comparison is drawn from four controlled MAH documents: the Interface Management Policy and the Projects Interface Management Procedure, issued in October 2025, and the Stakeholder Management Policy and the Projects Stakeholder Management Procedure, issued in November 2025.
+
+46
+00:05:42,955 --> 00:05:49,529
+All four were checked and approved by the same governance chain, up to the VP of the Engineering and Construction Sector.
+
+47
+00:05:50,079 --> 00:05:50,825
+Thank you.
+
+48
+00:05:51,375 --> 00:05:53,676
+The floor is now open for questions.
+

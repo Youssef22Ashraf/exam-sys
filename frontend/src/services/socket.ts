@@ -1,4 +1,4 @@
-﻿import { io, Socket } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 
 let socket: Socket | null = null;
 const broadcastChannel =
@@ -223,6 +223,30 @@ export const socketService = {
       }
       if (broadcastChannel) {
         broadcastChannel.removeEventListener("message", bcHandler);
+      }
+    };
+  },
+
+  onAdminLectureAccess(callback: (data: {
+    attendanceId: string;
+    candidateName: string;
+    candidateEmail: string;
+    companyId: string;
+    department: string;
+    lectureId: string;
+    lectureTitle: string;
+    action: string;
+    timestamp: string;
+  }) => void) {
+    const s = getSocket();
+
+    if (s) {
+      s.on("admin:lecture_access", callback);
+    }
+
+    return () => {
+      if (s) {
+        s.off("admin:lecture_access", callback);
       }
     };
   },

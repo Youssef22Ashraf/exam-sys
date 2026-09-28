@@ -19,6 +19,7 @@ import questionRoutes from "./routes/questionRoutes";
 import examRoutes from "./routes/examRoutes";
 import proctorRoutes from "./routes/proctorRoutes";
 import settingRoutes from "./routes/settingRoutes";
+import lectureRoutes from "./routes/lectureRoutes";
 import {
   metricsMiddleware,
   getPrometheusMetrics,
@@ -232,6 +233,7 @@ app.use("/api/questions", questionRoutes);
 app.use("/api/exam", examRoutes);
 app.use("/api/proctor", proctorRoutes);
 app.use("/api/settings", settingRoutes);
+app.use("/api/lectures", lectureRoutes);
 
 // Comprehensive Health Check Endpoint
 const handleHealthCheck = async (_req: Request, res: Response) => {

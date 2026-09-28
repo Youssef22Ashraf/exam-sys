@@ -1,0 +1,368 @@
+1
+00:00:00,700 --> 00:00:04,568
+Good morning everyone, and thank you for joining.
+
+2
+00:00:05,118 --> 00:00:25,570
+Today we are briefing the Projects Stakeholder Management Procedure, MAH-ENC-CNS-PM-PRO-002, issued under the Stakeholder Management Policy POL-002, together with its RACI matrix, the Stakeholder Engagement Plan template and the process map.
+
+3
+00:00:26,120 --> 00:00:36,944
+By the end of this session everyone should know who our stakeholders are, how we prioritize them, who owns the engagement, and how and when to escalate.
+
+4
+00:00:38,644 --> 00:00:42,820
+Six sections: purpose and policy principles.
+
+5
+00:00:43,370 --> 00:00:47,710
+stakeholder categories and the Power-Interest analysis.
+
+6
+00:00:48,260 --> 00:00:52,291
+roles and responsibilities including the RACI.
+
+7
+00:00:52,841 --> 00:00:56,922
+the process, engagement planning and meetings.
+
+8
+00:00:57,472 --> 00:01:01,653
+the six-level escalation matrix and KPIs.
+
+9
+00:01:02,203 --> 00:01:06,994
+and finally governance priority, exceptions and closeout.
+
+10
+00:01:08,694 --> 00:01:15,444
+Let's start with why this procedure exists and the few rules that apply on every project.
+
+11
+00:01:17,144 --> 00:01:32,686
+The procedure gives us one structured framework to identify, analyse, engage and communicate with internal and external stakeholders in design, procurement, construction, testing and handover.
+
+12
+00:01:33,236 --> 00:01:49,958
+It follows the five principles of the policy: identify early and register; analyse power and interest; communicate through a structured engagement plan; monitor and report; and capture lessons learned at close-out.
+
+13
+00:01:51,658 --> 00:01:55,064
+These seven principles are non-negotiable.
+
+14
+00:01:55,614 --> 00:01:59,851
+Everyone is in the register with an owner and a priority.
+
+15
+00:02:00,401 --> 00:02:02,712
+No verbal-only commitments.
+
+16
+00:02:03,262 --> 00:02:06,897
+No commitment beyond your delegated authority.
+
+17
+00:02:07,447 --> 00:02:15,465
+Governance comes first: satisfying a stakeholder never overrides policy, contract or law.
+
+18
+00:02:16,015 --> 00:02:19,768
+Authority engagement goes through the GRO.
+
+19
+00:02:20,318 --> 00:02:23,831
+Nothing is closed without evidence and sign-off.
+
+20
+00:02:24,381 --> 00:02:31,901
+And policy deviations are exceptions only, justified and approved at executive level.
+
+21
+00:02:33,601 --> 00:02:38,170
+Now, who our stakeholders are and how we analyse them.
+
+22
+00:02:39,870 --> 00:02:47,890
+A stakeholder is any internal or external party that affects, or is affected by, project activities.
+
+23
+00:02:48,440 --> 00:02:56,957
+The Stakeholder Register is the controlled list of all of them, with their influence and interest and the actions agreed.
+
+24
+00:02:57,507 --> 00:03:04,024
+The Stakeholder Engagement Plan defines how often and how we communicate with each one.
+
+25
+00:03:04,574 --> 00:03:10,586
+The Power-Interest Matrix is the model that decides the communication priority.
+
+26
+00:03:12,286 --> 00:03:19,331
+Internal stakeholders are our management, departments, project teams and site staff.
+
+27
+00:03:19,881 --> 00:03:32,833
+External stakeholders are the Client, PMC and consultants, authorities and utility owners, subcontractors, vendors, service providers and the community.
+
+28
+00:03:33,383 --> 00:03:45,337
+Stakeholder management works at three levels: project, program under the Projects Director, and sector under the VP E&C with the PMO and Risk Manager.
+
+29
+00:03:47,037 --> 00:03:51,561
+Every stakeholder is placed on the Power-Interest Matrix.
+
+30
+00:03:52,111 --> 00:03:58,797
+High power and high interest: manage closely, with regular meetings and direct coordination.
+
+31
+00:03:59,347 --> 00:04:04,662
+High power, low interest: keep satisfied with targeted updates.
+
+32
+00:04:05,212 --> 00:04:10,676
+Low power, high interest: keep informed through routine communication.
+
+33
+00:04:11,226 --> 00:04:15,930
+Low power, low interest: monitor with minimal engagement.
+
+34
+00:04:16,480 --> 00:04:26,837
+The classification also considers internal or external, and the impact on cost, schedule, quality, safety and compliance.
+
+35
+00:04:27,387 --> 00:04:33,283
+The matrix is reviewed periodically and whenever scope or stakeholders change.
+
+36
+00:04:34,983 --> 00:04:41,025
+Now, who owns what, from the sector level down to subcontractors and the Client.
+
+37
+00:04:42,725 --> 00:04:59,148
+The Stakeholder Manager leads the plan, the register and the engagement plan, runs the analysis, chairs the coordination meetings and issues minutes within 48 hours, tracks KPIs and escalates critical issues.
+
+38
+00:04:59,698 --> 00:05:12,686
+The Project Manager integrates stakeholder management into the Project Execution Plan, approves the plan and allocates resources, and decides on escalated issues.
+
+39
+00:05:13,236 --> 00:05:22,002
+The Interface Manager coordinates interface points and keeps the interface register aligned with stakeholder actions.
+
+40
+00:05:23,702 --> 00:05:33,768
+The Technical or Engineering Manager reviews IFC drawings for stakeholder requirements and gives timely technical responses.
+
+41
+00:05:34,318 --> 00:05:42,114
+The Planning Engineer puts engagement milestones into the schedule and reports delays and dependencies.
+
+42
+00:05:42,664 --> 00:05:57,256
+The Contract and Claim Manager identifies stakeholders linked to claims and variations, keeps that communication formal and traceable, and assesses the contractual and financial impact.
+
+43
+00:05:58,956 --> 00:06:22,815
+Eight more parties complete the picture: department heads, QA/QC, procurement, the commercial manager, the Government Relations Officer, subcontractors and vendors, and on the external side the Consultant or PMC, who reviews and approves the plan, and the Client, who endorses the approach and gives timely decisions.
+
+44
+00:06:24,515 --> 00:06:39,893
+The Stakeholder Manager sits at the centre: Client, PMC, authorities through the GRO, subcontractors and vendors, the Interface Manager, community and third parties, and our own project team.
+
+45
+00:06:40,443 --> 00:06:47,697
+Each link needs an owner, a channel and a frequency, as defined in the engagement plan.
+
+46
+00:06:49,397 --> 00:06:54,436
+This is the RACI matrix from template TMP-002.
+
+47
+00:06:54,986 --> 00:07:07,837
+At sector level the VP E&C is accountable for the policy, the KPIs and performance monitoring, with the Projects Director and Stakeholder Manager responsible.
+
+48
+00:07:08,387 --> 00:07:30,010
+At business-unit and project level, the Project Manager and the Stakeholder Manager are both accountable and responsible for plans, meetings, registers, identification, classification, tracking, closure and lessons learned, and the Projects Director takes major escalations.
+
+49
+00:07:30,560 --> 00:07:39,020
+On site, subcontractors and the technical engineer are also accountable and responsible for resolving issues.
+
+50
+00:07:40,720 --> 00:07:48,883
+Next, the process every stakeholder issue follows, how we plan engagement, and the meetings that drive it.
+
+51
+00:07:50,583 --> 00:07:55,375
+Six steps at project level: identify and register.
+
+52
+00:07:55,925 --> 00:07:58,508
+categorize and analyse.
+
+53
+00:07:59,058 --> 00:08:04,837
+communicate and coordinate through meetings, RFIs and authority follow-ups.
+
+54
+00:08:05,387 --> 00:08:12,299
+resolve through technical, planning, commercial, QA/QC and HSE coordination.
+
+55
+00:08:12,849 --> 00:08:14,796
+verify and validate.
+
+56
+00:08:15,346 --> 00:08:17,349
+and close and report.
+
+57
+00:08:17,899 --> 00:08:22,588
+The Project Manager approves each closure against evidence.
+
+58
+00:08:23,138 --> 00:08:27,414
+If it is not approved, the issue goes back to coordination.
+
+59
+00:08:27,964 --> 00:08:31,018
+These are the records every project keeps.
+
+60
+00:08:32,718 --> 00:08:35,788
+The same process runs at three levels.
+
+61
+00:08:36,338 --> 00:08:40,650
+At project level it is the ten-step map we just saw.
+
+62
+00:08:41,200 --> 00:08:55,675
+At program level the Lead Interface Manager consolidates stakeholders affecting several projects, the Projects Director validates the classification, and KPIs are reported monthly.
+
+63
+00:08:56,225 --> 00:09:11,958
+At sector level the Lead Stakeholder Manager flags strategic or reputational risks, the Risk Manager assesses them, the VP approves mitigation, and the PMO monitors it until the risk is acceptable.
+
+64
+00:09:13,658 --> 00:09:29,737
+For each stakeholder we plan the method, frequency, responsible person and information to share; we choose the channel; we record every communication in the action tracker; and we review the plan at each stage change.
+
+65
+00:09:30,287 --> 00:09:48,207
+The timing rules come from the procedure: 48 hours notice for internal meetings, 72 hours for external invitations through official channels, minutes within 48 hours, and the register updated after every meeting.
+
+66
+00:09:49,907 --> 00:10:03,821
+We hold a kick-off once, weekly or bi-weekly coordination meetings, a monthly review with management, the Client and the PMC, and special meetings for urgent issues or authority approvals.
+
+67
+00:10:04,371 --> 00:10:09,462
+Every issue in the register moves from Open to Under Review to Closed.
+
+68
+00:10:10,012 --> 00:10:17,703
+Each meeting produces minutes, an updated register, the action tracker and the engagement dashboard.
+
+69
+00:10:19,403 --> 00:10:30,745
+Internal meetings cover attendance, the previous minutes, register updates, new issues, design, schedule and permit dependencies, risks and actions.
+
+70
+00:10:31,295 --> 00:10:45,375
+External meetings with the Client, PMC, authorities and subcontractors cover open issues, permits and NOCs through the GRO, access, utilities and upcoming submissions.
+
+71
+00:10:45,925 --> 00:10:54,537
+Every issue is logged, owners acknowledge their actions, and overdue items go to the Project Manager and PMC.
+
+72
+00:10:56,237 --> 00:11:02,600
+Now the escalation matrix with its response times, and how we measure engagement.
+
+73
+00:11:04,300 --> 00:11:16,289
+Level 1 is the project level, one to three working days: routine issues, handled by the Project Manager or Interface Manager and recorded in the register.
+
+74
+00:11:16,839 --> 00:11:25,781
+Level 2 is the project management review, three to five days, with internal coordination and a formal response.
+
+75
+00:11:26,331 --> 00:11:38,394
+Level 3 is the contract and commercial review, five to seven days, when a solution conflicts with policy or contract, or has financial implications.
+
+76
+00:11:40,094 --> 00:11:50,834
+Level 4 is the program level, seven to ten days, led by the Projects Director for multi-project, authority-level or high-risk issues.
+
+77
+00:11:51,384 --> 00:12:03,683
+Level 5 is the sector or executive level, as required and urgent, for non-compliant requests, deadlocks with authorities or critical reputational risk.
+
+78
+00:12:04,233 --> 00:12:13,833
+Level 6 is legal and corporate governance for legal exposure, regulatory non-compliance or contractual disputes.
+
+79
+00:12:15,533 --> 00:12:23,916
+The procedure's example target is at least 85 percent of stakeholder issues resolved on time.
+
+80
+00:12:24,466 --> 00:12:45,701
+The other targets are proposed: all meetings held as scheduled, minutes within 48 hours, at least 90 percent of feedback actions closed by target date, a satisfaction score of four out of five, and a monthly KPI dashboard and summary report to management.
+
+81
+00:12:47,401 --> 00:12:52,699
+Last section: governance priority, exceptions and closeout.
+
+82
+00:12:54,399 --> 00:12:58,953
+Every decision stays within MAH's governance framework.
+
+83
+00:12:59,503 --> 00:13:18,487
+Routine coordination is decided by the Stakeholder Manager, technical workarounds by the Project Manager, contract and cost impact by the Commercial Manager, authority matters by the Program Director, and high-risk or reputational matters by sector management.
+
+84
+00:13:19,037 --> 00:13:27,272
+The resolution flow is engage, assess compliance, respond, escalate if needed, decide and record.
+
+85
+00:13:27,822 --> 00:13:40,483
+High impact means more than 30 days delay, a major budget impact, a specification or critical safety risk, or an authority or public reputation concern.
+
+86
+00:13:42,183 --> 00:13:53,637
+Exceptions need a formal request with the issue, the policy constraint, the risks and the mitigation, and written executive approval before any deviation.
+
+87
+00:13:54,187 --> 00:13:59,919
+Approved deviations are limited in scope and time and never set a precedent.
+
+88
+00:14:00,469 --> 00:14:09,462
+Awareness sessions are held at key stages, and lessons learned are captured for every exception and at close-out.
+
+89
+00:14:10,012 --> 00:14:15,120
+Stakeholder satisfaction never overrides governance compliance.
+
+90
+00:14:16,820 --> 00:14:18,902
+That is the full procedure.
+
+91
+00:14:19,452 --> 00:14:26,157
+The floor is open for questions on any role, meeting, escalation level or record.
+
+92
+00:14:26,707 --> 00:14:35,425
+If something is missing for your project, raise it now so we can include it in the project Stakeholder Management Plan.
+

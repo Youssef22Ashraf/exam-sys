@@ -1,0 +1,372 @@
+1
+00:00:00,600 --> 00:00:03,646
+Good morning everyone, and thank you for joining.
+
+2
+00:00:03,996 --> 00:00:15,820
+Today we are briefing the Projects Interface Management Procedure of the E&C Sector Operation Department, issued under the Interface Management Policy MAH-ENC-INT-OP-POL-001.
+
+3
+00:00:16,170 --> 00:00:24,659
+By the end of this session everyone should know what an interface point is, who owns it, how we track it to closure, and when and how to escalate.
+
+4
+00:00:26,159 --> 00:00:29,927
+Six sections: the purpose and the rules we never bend.
+
+5
+00:00:30,277 --> 00:00:33,325
+definitions and types of interfaces.
+
+6
+00:00:33,675 --> 00:00:37,415
+roles and responsibilities including the RACI matrix.
+
+7
+00:00:37,765 --> 00:00:40,417
+the process flow, meetings and tools.
+
+8
+00:00:40,767 --> 00:00:45,059
+escalation, links to schedule and risk, and our KPIs.
+
+9
+00:00:45,409 --> 00:00:49,059
+and finally third-party assets, awareness and closure.
+
+10
+00:00:49,409 --> 00:00:52,548
+Please stop me at any time with questions.
+
+11
+00:00:54,048 --> 00:01:01,348
+Let's start with why this procedure exists and the few rules that apply on every project, whatever the schedule pressure.
+
+12
+00:01:02,848 --> 00:01:11,505
+The procedure gives us one framework to identify, classify, manage and close interface points on every E&C project.
+
+13
+00:01:11,855 --> 00:01:17,769
+In practice that means five things: identify early and register every interface point.
+
+14
+00:01:18,119 --> 00:01:20,963
+give each one a named owner and target date.
+
+15
+00:01:21,313 --> 00:01:24,640
+coordinate regularly through meetings and workshops.
+
+16
+00:01:24,990 --> 00:01:28,889
+track every point until it is verified and closed with evidence.
+
+17
+00:01:29,239 --> 00:01:33,823
+and capture lessons learned for the next phase and the next project.
+
+18
+00:01:35,323 --> 00:01:38,456
+These seven principles are non-negotiable.
+
+19
+00:01:38,806 --> 00:01:41,896
+Everything goes in the register with an owner and a date.
+
+20
+00:01:42,246 --> 00:01:44,575
+Nothing is agreed verbally only.
+
+21
+00:01:44,925 --> 00:01:49,000
+Nothing is closed without evidence and sign-off by all parties.
+
+22
+00:01:49,350 --> 00:01:53,166
+Nothing stays overdue without formal escalation.
+
+23
+00:01:53,516 --> 00:01:58,887
+Authority coordination goes through the GRO with a valid Client authorization letter.
+
+24
+00:01:59,237 --> 00:02:03,410
+Escalation is fact-based and never replaces coordination.
+
+25
+00:02:03,760 --> 00:02:09,369
+And safety-related interface issues can be escalated immediately to any level.
+
+26
+00:02:10,869 --> 00:02:17,485
+Now some definitions, so we all use the same language, and a look at where interfaces arise.
+
+27
+00:02:18,985 --> 00:02:28,086
+An interface point is a location, activity or information flow where two or more parties, systems or scopes meet and need coordination.
+
+28
+00:02:28,436 --> 00:02:33,816
+The interface owner is the person or department responsible for managing and closing it.
+
+29
+00:02:34,166 --> 00:02:38,457
+Interfaces are physical, functional or organizational.
+
+30
+00:02:38,807 --> 00:02:45,876
+Managing them well reduces conflicts, avoids delays and cost overruns, and supports timely decisions.
+
+31
+00:02:47,376 --> 00:03:02,096
+Interfaces are internal, between our own departments; external, with the Client, consultant, subcontractors, authorities, utilities and adjacent contractors; and between MAH and sister companies in the group.
+
+32
+00:03:02,446 --> 00:03:14,744
+For sister companies we hold a dedicated coordination meeting and jointly sign a Responsibility Matrix covering scope boundaries, roles, decision authority and escalation channels.
+
+33
+00:03:15,094 --> 00:03:18,532
+Nothing deviates from it without formal re-issue.
+
+34
+00:03:20,032 --> 00:03:26,886
+Interfaces change through the life cycle: scope boundaries and design clashes at tender and design.
+
+35
+00:03:27,236 --> 00:03:30,576
+long-lead items and vendor approvals at procurement.
+
+36
+00:03:30,926 --> 00:03:36,509
+work-zone handovers, sequencing and authority dependencies during construction.
+
+37
+00:03:36,859 --> 00:03:40,939
+and integration, as-builts and final approvals at handover.
+
+38
+00:03:41,289 --> 00:03:55,137
+At the bottom are the communication timing rules from the procedure: 48 hours notice for internal meetings, 72 hours for external ones, minutes within 48 hours and the register updated after every meeting.
+
+39
+00:03:56,637 --> 00:04:02,266
+Now, who owns what — from the E&C Sector level down to our subcontractors.
+
+40
+00:04:03,766 --> 00:04:11,085
+The Projects Director approves the interface plans, registers and issue logs and takes Level 2 escalations.
+
+41
+00:04:11,435 --> 00:04:20,909
+The Project Manager ensures alignment across teams, approves resolutions with cost or schedule impact and makes sure decisions are implemented on site.
+
+42
+00:04:21,259 --> 00:04:33,819
+The Interface Manager runs the system day to day: the register, matrix and issue log, the coordination meetings and minutes, and coordination with the Client, PMC and authorities through the GRO.
+
+43
+00:04:35,319 --> 00:04:43,377
+The Technical or Design Manager identifies interface points in the IFC drawings and answers interface RFIs.
+
+44
+00:04:43,727 --> 00:04:53,373
+The Construction Manager coordinates disciplines working in adjacent zones, keeps sequences within the agreed boundaries and reports clashes immediately.
+
+45
+00:04:53,723 --> 00:05:01,955
+The Planning Engineer puts interface milestones into the schedule and treats permits and third-party dependencies as predecessors.
+
+46
+00:05:03,455 --> 00:05:23,253
+Eight support functions make the system work: QA/QC, HSE, the survey team, procurement, commercial and contracts, the Government Relations Officer, our subcontractors and vendors, and on the external side the Consultant or PMC and the Client, who approve resolutions and major decisions.
+
+47
+00:05:24,753 --> 00:05:40,071
+The Interface Manager sits at the centre of all these relationships: Client, PMC, authorities through the GRO, subcontractors and vendors, utilities, third parties and adjacent contractors, and our own project team.
+
+48
+00:05:40,421 --> 00:05:47,391
+If any one of these links fails, the interface fails — which is why coordination is the job, not an extra.
+
+49
+00:05:48,891 --> 00:05:52,495
+This is the RACI matrix from template MAH-ENC-CNS-PM-TMP-001.
+
+50
+00:05:52,845 --> 00:05:59,467
+At sector level the VP E&C is accountable for policy, KPIs and performance monitoring.
+
+51
+00:05:59,817 --> 00:06:10,534
+At business-unit level the Projects Director is accountable for plans, registers and escalations, with the Interface Manager accountable for coordination meetings.
+
+52
+00:06:10,884 --> 00:06:22,948
+At project level the Project Manager is accountable and the Interface Manager is both accountable and responsible for identifying, tracking, closing and uploading evidence to Aconex.
+
+53
+00:06:23,298 --> 00:06:26,241
+Lessons learned are owned by the Risk Manager.
+
+54
+00:06:27,741 --> 00:06:34,281
+Next, the process every interface point follows, the meetings that drive it, and the three tools we use.
+
+55
+00:06:35,781 --> 00:06:48,835
+Six steps: identify and classify; register and assign an owner; coordinate through meetings or RFIs; resolve with an agreed action; verify with evidence; and close with sign-off by all concerned parties.
+
+56
+00:06:49,185 --> 00:06:55,189
+A point stays open until it is verified and signed off, and the evidence goes into Aconex.
+
+57
+00:06:55,539 --> 00:07:02,152
+These are the records every project must keep, from the Interface Points Register to the RACI matrix.
+
+58
+00:07:03,652 --> 00:07:15,509
+We hold a kick-off meeting once to agree roles and templates, weekly or bi-weekly coordination meetings, a monthly review with management and the Client, and special meetings for urgent items.
+
+59
+00:07:15,859 --> 00:07:23,517
+Every point in the register moves from Open to Under Review to Closed, and these are the fields the register must contain.
+
+60
+00:07:25,017 --> 00:07:27,437
+Three tools with three different jobs.
+
+61
+00:07:27,787 --> 00:07:31,652
+The Interface Matrix defines where coordination is needed.
+
+62
+00:07:32,002 --> 00:07:36,996
+The Interface Points Register tracks progress of each point week by week.
+
+63
+00:07:37,346 --> 00:07:45,871
+And the Interface Issue Log records what happens when coordination fails, which gives us the record we need for notices, claims and risk.
+
+64
+00:07:47,371 --> 00:07:54,578
+Now how we escalate, how interfaces link to schedule, risk and contract, and how we measure performance.
+
+65
+00:07:56,078 --> 00:07:58,470
+Internally there are three levels.
+
+66
+00:07:58,820 --> 00:08:05,494
+Level 1: the Interface Manager escalates to the Project Manager within 2 to 5 working days.
+
+67
+00:08:05,844 --> 00:08:16,697
+Level 2: the Project Manager escalates to the Projects Director or Head of Interface within 5 to 8 days when schedule, cost, quality or safety is affected.
+
+68
+00:08:17,047 --> 00:08:24,698
+Level 3: the Projects Director escalates critical issues to the VP E&C Sector for immediate decision.
+
+69
+00:08:26,198 --> 00:08:34,986
+Externally: Level 1 is coordination with the consultant or subcontractor, 3 to 5 days, and then the PMC team leader.
+
+70
+00:08:35,336 --> 00:08:41,698
+Level 2 is the Client level for milestones, approvals and permits, 7 to 14 days.
+
+71
+00:08:42,048 --> 00:08:51,466
+Level 3 is authority or executive level for permits, NOCs and statutory compliance, handled by the Project Director and GRO.
+
+72
+00:08:51,816 --> 00:08:57,591
+All authority-related escalations go through the GRO and are supported by written records.
+
+73
+00:08:59,091 --> 00:09:03,238
+Interface management is linked to the rest of project controls.
+
+74
+00:09:03,588 --> 00:09:09,823
+Interface milestones are in the schedule, and permits and third-party dependencies are predecessors.
+
+75
+00:09:10,173 --> 00:09:13,440
+Critical interfaces are in the risk register.
+
+76
+00:09:13,790 --> 00:09:21,604
+And escalation is always fact-based, with the Contract and Claims Manager issuing timely notices to protect our rights.
+
+77
+00:09:23,104 --> 00:09:28,299
+These are proposed targets to measure the system: every point has an owner and a date.
+
+78
+00:09:28,649 --> 00:09:32,001
+at least 90 percent closed by target date.
+
+79
+00:09:32,351 --> 00:09:34,616
+minutes within 48 hours.
+
+80
+00:09:34,966 --> 00:09:37,641
+every closure evidenced in Aconex.
+
+81
+00:09:37,991 --> 00:09:41,000
+zero overdue items without escalation.
+
+82
+00:09:41,350 --> 00:09:44,108
+and at least four awareness sessions a year.
+
+83
+00:09:45,608 --> 00:09:50,407
+Last section: third-party assets, awareness, and how we close out.
+
+84
+00:09:51,907 --> 00:09:59,870
+Many interfaces involve assets that are not ours: cables, pipelines, networks, roads and neighbouring property.
+
+85
+00:10:00,220 --> 00:10:08,872
+Prevention comes first — detection, trial pits, marking, permits, risk assessments and coordination with utility owners.
+
+86
+00:10:09,222 --> 00:10:17,984
+If damage happens: stop, secure, protect, notify, record, and resume only with written approval from project management.
+
+87
+00:10:18,334 --> 00:10:27,860
+External communication is only by authorized management, in line with the incident reporting procedure MAH-ENC-HSE-HE-PRO-008.
+
+88
+00:10:29,360 --> 00:10:39,820
+Awareness sessions are held quarterly and after major changes, delivered by HSE with the Interface Manager, and the Project Manager makes sure everyone attends.
+
+89
+00:10:40,170 --> 00:10:47,673
+Avoid the common mistakes: verbal-only coordination, no owner, no follow-up, closure without evidence.
+
+90
+00:10:48,023 --> 00:10:55,847
+We manage interfaces as an integrated project-control function, and management provides the resources to make it work.
+
+91
+00:10:57,347 --> 00:10:59,133
+That is the full procedure.
+
+92
+00:10:59,483 --> 00:11:05,217
+The floor is open — questions on any role, meeting, escalation level or tool.
+
+93
+00:11:05,567 --> 00:11:12,904
+If something is missing for your project, raise it now so we can include it in the project Interface Management Plan.
+
