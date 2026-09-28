@@ -9,12 +9,51 @@ import {
   type Question,
   type ExamSettings,
   type LectureAttendanceRecord,
+  type LectureProgressRecord,
   type AdminLectureStats,
 } from "../services/storage";
 import { VideoStorage } from "../services/videoStorage";
 import { socketService } from "../services/socket";
 import { api } from "../services/api";
 import "./AdminDashboard.css";
+
+const LECTURE_TITLES: Record<string, string> = {
+  "interface-management": "Interface Management Procedure",
+  "stakeholder-management": "Stakeholder Management Procedure",
+  "interface-vs-stakeholder": "Interface vs Stakeholder Comparison",
+  "logistics-management": "Logistics Management Procedure",
+};
+
+const LECTURE_CHECKPOINTS_META: Record<string, { id: string; label: string; description: string }[]> = {
+  "interface-management": [
+    { id: "ip_identification", label: "Interface Point (IP) Definition & Boundary Types", description: "Understand Physical, Functional, and Organizational boundary definitions." },
+    { id: "ipr_principles", label: "Interface Points Register (IPR) Non-Negotiables", description: "Zero unregistered interfaces, named owners, and target dates." },
+    { id: "raci_matrix", label: "Roles, Responsibilities & RACI Governance", description: "Mandates for Interface Manager, Leads, Subcontractors, and PM." },
+    { id: "escalation_matrix", label: "Escalation Matrix & SLA Timelines", description: "3-tier escalation framework for unresolved interfaces." },
+    { id: "closeout_criteria", label: "Formal Interface Closeout Sign-Off", description: "Technical sign-off with verification evidence and closeout transmittals." },
+  ],
+  "stakeholder-management": [
+    { id: "power_interest_matrix", label: "Power–Interest Matrix Quadrants", description: "4 quadrants: Manage Closely, Keep Satisfied, Keep Informed, and Monitor." },
+    { id: "engagement_planning", label: "Stakeholder Engagement Plan (SEP)", description: "Communication strategies, frequency, and verified channels." },
+    { id: "gro_authority", label: "Government Coordination via GRO", description: "Direct municipal and regulatory interactions through GRO." },
+    { id: "grievance_disputes", label: "Grievance Mechanism & Issue Logging", description: "Systematic logging, investigation, escalation, and resolution." },
+    { id: "sentiment_audit", label: "Stakeholder Audit & Sentiment Tracking", description: "Proactive relationship health checks and register maintenance." },
+  ],
+  "interface-vs-stakeholder": [
+    { id: "core_distinction", label: "Technical vs. Relational Distinction", description: "Interface controls physical clashes; Stakeholder controls human expectations." },
+    { id: "mandate_separation", label: "Organizational & Departmental Separation", description: "Independent reporting lines protect technical integrity." },
+    { id: "intersection_rules", label: "Technical Trigger vs. Relational Execution", description: "Workflow when physical interfaces touch external parties." },
+    { id: "raci_overlap", label: "Independent RACI & Reporting Structures", description: "Dual-matrix governance safeguarding corporate reputation." },
+    { id: "governance_synergy", label: "Dual System Project Shielding", description: "Complementary frameworks prevent construction delays." },
+  ],
+  "logistics-management": [
+    { id: "supply_chain_inbound", label: "Inbound Supply Chain & Delivery Windows", description: "Scheduled delivery windows and verified site gate clearances." },
+    { id: "laydown_preservation", label: "Laydown Management & Material Preservation", description: "Staging zones, environmental protection, and preservation protocols." },
+    { id: "crane_rigging", label: "Handling Equipment & Rigging Safety", description: "Certified rigging plans and crane exclusion zones." },
+    { id: "heavy_transport_permits", label: "Oversized Cargo & Heavy Route Permits", description: "Highway permits, police escorts, and bridge capacity clearances." },
+    { id: "traffic_control", label: "Site Traffic Routing & Gate Logistics", description: "One-way traffic circulation and pedestrian segregation." },
+  ],
+};
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -57,8 +96,11 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [questionSectionFilter, setQuestionSectionFilter] = useState("All");
   const [questionSearch, setQuestionSearch] = useState("");
 
-  // Lectures Attendance states & filters
+  // Lectures Attendance & Checklist states
   const [lectureAttendance, setLectureAttendance] = useState<LectureAttendanceRecord[]>([]);
+  const [lectureUserProgress, setLectureUserProgress] = useState<LectureProgressRecord[]>([]);
+  const [inspectedProgress, setInspectedProgress] = useState<LectureProgressRecord | null>(null);
+  const [lectureSubTab, setLectureSubTab] = useState<"checklist" | "attendance">("checklist");
   const [lectureStats, setLectureStats] = useState<AdminLectureStats | null>(null);
   const [loadingLectures, setLoadingLectures] = useState(false);
   const [lectureSearch, setLectureSearch] = useState("");
@@ -186,6 +228,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
         action: lectureActionFilter,
       });
       setLectureAttendance(data.attendance);
+      if (data.userProgress) {
+        setLectureUserProgress(data.userProgress);
+      }
       setLectureStats(data.stats);
     } catch (err) {
       console.warn("Could not fetch lecture attendance:", err);
@@ -193,6 +238,29 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       setLoadingLectures(false);
     }
   }, [lectureSearch, lectureDeptFilter, lectureTopicFilter, lectureActionFilter]);
+
+  const filteredUserProgress = useMemo(() => {
+    return lectureUserProgress.filter((prog) => {
+      const q = lectureSearch.toLowerCase().trim();
+      const matchesSearch =
+        !q ||
+        prog.candidateName.toLowerCase().includes(q) ||
+        prog.candidateEmail.toLowerCase().includes(q) ||
+        prog.companyId.toLowerCase().includes(q) ||
+        prog.department.toLowerCase().includes(q) ||
+        (LECTURE_TITLES[prog.lectureId] || prog.lectureId).toLowerCase().includes(q);
+
+      const matchesDept =
+        lectureDeptFilter === "All" ||
+        prog.department.toLowerCase() === lectureDeptFilter.toLowerCase();
+
+      const matchesTopic =
+        lectureTopicFilter === "All" ||
+        prog.lectureId === lectureTopicFilter;
+
+      return matchesSearch && matchesDept && matchesTopic;
+    });
+  }, [lectureUserProgress, lectureSearch, lectureDeptFilter, lectureTopicFilter]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -267,6 +335,14 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       });
     });
 
+    const unSubLectureChecklist = socketService.onAdminLectureChecklist((data) => {
+      fetchLectureAttendance();
+      setLiveSocketToast({
+        message: `Checklist Update: ${data.candidateName} (${data.department}) is ${data.completionPercent}% complete on ${LECTURE_TITLES[data.lectureId] || data.lectureId}`,
+        type: "info",
+      });
+    });
+
     // Was a 2-second localStorage re-read that re-rendered this whole
     // component and recomputed every filter. Sockets already push the events
     // that matter; this is just a slow safety net.
@@ -281,6 +357,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
       unSubWarn();
       unSubStart();
       unSubLecture();
+      unSubLectureChecklist();
       clearInterval(interval);
     };
   }, [refreshFromServer, fetchLectureAttendance]);
@@ -1729,13 +1806,71 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
               </div>
             )}
 
+            {/* Sub-Navigation: Learner Checklists vs Attendance Activity Stream */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                marginBottom: "20px",
+                borderBottom: "1px solid var(--border)",
+                paddingBottom: "14px",
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setLectureSubTab("checklist")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: lectureSubTab === "checklist" ? "var(--primary)" : "var(--surface-2)",
+                  color: lectureSubTab === "checklist" ? "#ffffff" : "var(--text)",
+                  fontWeight: 650,
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  boxShadow: lectureSubTab === "checklist" ? "0 2px 6px rgba(37, 99, 235, 0.25)" : "none",
+                }}
+              >
+                <Icon name="check-square" size={15} />
+                <span>Learner Checklists & Progress ({filteredUserProgress.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLectureSubTab("attendance")}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 18px",
+                  borderRadius: "10px",
+                  border: "none",
+                  background: lectureSubTab === "attendance" ? "var(--primary)" : "var(--surface-2)",
+                  color: lectureSubTab === "attendance" ? "#ffffff" : "var(--text)",
+                  fontWeight: 650,
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  boxShadow: lectureSubTab === "attendance" ? "0 2px 6px rgba(37, 99, 235, 0.25)" : "none",
+                }}
+              >
+                <Icon name="clock" size={15} />
+                <span>Detailed Activity & Attendance Log ({lectureAttendance.length})</span>
+              </button>
+            </div>
+
             {/* Data Table Card */}
             <div className="dashboard-card">
               <div className="table-controls">
                 <input
                   className="search-input"
                   type="text"
-                  placeholder="Search attendee, email, ID, or department..."
+                  placeholder="Search learner, email, company ID, or department..."
                   value={lectureSearch}
                   onChange={(e) => setLectureSearch(e.target.value)}
                 />
@@ -1764,21 +1899,24 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     <option value="stakeholder-management">Stakeholder Management Procedure</option>
                     <option value="interface-vs-stakeholder">Interface vs Stakeholder Comparison</option>
                     <option value="logistics-management">Logistics Management Procedure</option>
-                    <option value="portal">General Portal Access</option>
+                    {lectureSubTab === "attendance" && <option value="portal">General Portal Access</option>}
                   </select>
 
-                  <select
-                    className="filter-select"
-                    value={lectureActionFilter}
-                    onChange={(e) => setLectureActionFilter(e.target.value)}
-                  >
-                    <option value="All">All Actions</option>
-                    <option value="VIDEO_WATCHED">Video Watched</option>
-                    <option value="VIDEO_COMPLETED">Video Completed</option>
-                    <option value="SLIDES_DOWNLOADED">Slides Downloaded</option>
-                    <option value="PORTAL_ACCESS">Portal Entry</option>
-                    <option value="LECTURE_VIEWED">Lecture Selected</option>
-                  </select>
+                  {lectureSubTab === "attendance" && (
+                    <select
+                      className="filter-select"
+                      value={lectureActionFilter}
+                      onChange={(e) => setLectureActionFilter(e.target.value)}
+                    >
+                      <option value="All">All Actions</option>
+                      <option value="CHECKLIST_UPDATED">Checklist Updated</option>
+                      <option value="VIDEO_WATCHED">Video Watched</option>
+                      <option value="VIDEO_COMPLETED">Video Completed</option>
+                      <option value="SLIDES_DOWNLOADED">Slides Downloaded</option>
+                      <option value="PORTAL_ACCESS">Portal Entry</option>
+                      <option value="LECTURE_VIEWED">Lecture Selected</option>
+                    </select>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", gap: "10px" }}>
@@ -1786,7 +1924,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     className="secondary-button"
                     style={{ padding: "9px 14px", fontSize: "13px" }}
                     onClick={fetchLectureAttendance}
-                    title="Refresh attendance records"
+                    title="Refresh data"
                     disabled={loadingLectures}
                   >
                     <Icon name="rotate-ccw" />
@@ -1798,174 +1936,387 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     onClick={() => {
                       window.open(api.getLectureExportUrl(), "_blank");
                     }}
-                    title="Export all lecture attendance data to an Excel-compatible spreadsheet"
+                    title="Export all lecture attendance & checklist completion data to an Excel-compatible spreadsheet"
                   >
                     <Icon name="download" />
-                    <span>Export Attendance to Excel / CSV</span>
+                    <span>Export to Excel / CSV</span>
                   </button>
                 </div>
               </div>
 
-              <div className="admin-table-container">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Attendee Name</th>
-                      <th>Email Address</th>
-                      <th>Company ID</th>
-                      <th>Department (From Where)</th>
-                      <th>Lecture / Briefing</th>
-                      <th>Activity Type</th>
-                      <th>Duration / Progress</th>
-                      <th>Date & Time</th>
-                      <th>Device / IP</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loadingLectures ? (
+              {/* VIEW 1: LEARNER CHECKLISTS & MODULE PROGRESS */}
+              {lectureSubTab === "checklist" && (
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
                       <tr>
-                        <td colSpan={10} style={{ textAlign: "center", padding: "35px" }}>
-                          Loading attendance records...
-                        </td>
+                        <th>Learner Name</th>
+                        <th>Email Address</th>
+                        <th>Company ID</th>
+                        <th>Department</th>
+                        <th>Module Briefing</th>
+                        <th style={{ minWidth: "150px" }}>Checklist Progress</th>
+                        <th>Milestone Status</th>
+                        <th>Last Active</th>
+                        <th>Actions</th>
                       </tr>
-                    ) : lectureAttendance.length === 0 ? (
-                      <tr>
-                        <td colSpan={10} style={{ textAlign: "center", padding: "35px" }}>
-                          No lecture attendance records found matching filters.
-                        </td>
-                      </tr>
-                    ) : (
-                      lectureAttendance.map((rec) => {
-                        const mins = Math.floor(rec.watchDurationSeconds / 60);
-                        const secs = rec.watchDurationSeconds % 60;
-                        const durationStr = `${mins}m ${secs}s`;
+                    </thead>
+                    <tbody>
+                      {loadingLectures ? (
+                        <tr>
+                          <td colSpan={9} style={{ textAlign: "center", padding: "35px" }}>
+                            Loading learner checklist records...
+                          </td>
+                        </tr>
+                      ) : filteredUserProgress.length === 0 ? (
+                        <tr>
+                          <td colSpan={9} style={{ textAlign: "center", padding: "35px" }}>
+                            No learner checklist records found matching filters.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredUserProgress.map((prog) => {
+                          const pct = prog.completionPercent || 0;
+                          const isFullyDone = pct === 100;
 
-                        return (
-                          <tr key={rec.id}>
-                            <td>
-                              <strong>{rec.candidateName}</strong>
-                            </td>
-                            <td style={{ color: "var(--text-3)", fontSize: "12px" }}>
-                              {rec.candidateEmail}
-                            </td>
-                            <td>
-                              <span className="badge" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
-                                {rec.companyId}
-                              </span>
-                            </td>
-                            <td>
-                              <span
-                                style={{
-                                  display: "inline-block",
-                                  padding: "3px 8px",
-                                  borderRadius: "6px",
-                                  background: "rgba(37, 99, 235, 0.12)",
-                                  color: "var(--primary)",
-                                  fontWeight: 650,
-                                  fontSize: "12px",
-                                }}
-                              >
-                                {rec.department}
-                              </span>
-                            </td>
-                            <td>
-                              <span style={{ fontWeight: 600 }}>{rec.lectureTitle}</span>
-                            </td>
-                            <td>
-                              <span
-                                className="badge"
-                                style={{
-                                  background:
-                                    rec.action === "VIDEO_COMPLETED"
-                                      ? "var(--success-soft)"
-                                      : rec.action === "SLIDES_DOWNLOADED"
-                                      ? "rgba(56, 189, 248, 0.15)"
-                                      : "var(--surface-2)",
-                                  color:
-                                    rec.action === "VIDEO_COMPLETED"
-                                      ? "var(--success)"
-                                      : rec.action === "SLIDES_DOWNLOADED"
-                                      ? "#0284c7"
-                                      : "var(--text-2)",
-                                }}
-                              >
-                                {rec.action === "SLIDES_DOWNLOADED"
-                                  ? "Slides Downloaded"
-                                  : rec.action === "VIDEO_COMPLETED"
-                                  ? "Video Completed"
-                                  : rec.action === "VIDEO_WATCHED"
-                                  ? "Video Watched"
-                                  : rec.action === "PORTAL_ACCESS"
-                                  ? "Portal Entry"
-                                  : rec.action}
-                              </span>
-                            </td>
-                            <td>
-                              {rec.watchDurationSeconds > 0 ? (
-                                <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                                  <span style={{ fontSize: "12px", fontWeight: 600 }}>{durationStr}</span>
-                                  {rec.maxProgressPercent > 0 && (
-                                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                      <div
-                                        style={{
-                                          width: "60px",
-                                          height: "5px",
-                                          background: "var(--border)",
-                                          borderRadius: "3px",
-                                          overflow: "hidden",
-                                        }}
-                                      >
+                          return (
+                            <tr key={`${prog.candidateEmail}_${prog.lectureId}`}>
+                              <td>
+                                <strong>{prog.candidateName}</strong>
+                              </td>
+                              <td style={{ color: "var(--text-3)", fontSize: "12px" }}>
+                                {prog.candidateEmail}
+                              </td>
+                              <td>
+                                <span className="badge" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
+                                  {prog.companyId}
+                                </span>
+                              </td>
+                              <td>
+                                <span
+                                  style={{
+                                    display: "inline-block",
+                                    padding: "3px 8px",
+                                    borderRadius: "6px",
+                                    background: "rgba(37, 99, 235, 0.12)",
+                                    color: "var(--primary)",
+                                    fontWeight: 650,
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  {prog.department}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ fontWeight: 600 }}>
+                                  {LECTURE_TITLES[prog.lectureId] || prog.lectureId}
+                                </span>
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", fontWeight: 700 }}>
+                                    <span style={{ color: isFullyDone ? "var(--success)" : "var(--primary)" }}>
+                                      {pct}%
+                                    </span>
+                                    <span style={{ color: "var(--text-3)", fontSize: "11px" }}>
+                                      {isFullyDone ? "Completed" : "In Progress"}
+                                    </span>
+                                  </div>
+                                  <div
+                                    style={{
+                                      width: "100%",
+                                      height: "6px",
+                                      background: "var(--border)",
+                                      borderRadius: "3px",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        width: `${Math.min(100, Math.max(0, pct))}%`,
+                                        height: "100%",
+                                        background: isFullyDone ? "var(--success)" : "var(--primary)",
+                                        borderRadius: "3px",
+                                        transition: "width 0.3s ease",
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              </td>
+                              <td>
+                                <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      background: prog.videoCompleted ? "var(--success-soft)" : "var(--surface-2)",
+                                      color: prog.videoCompleted ? "var(--success)" : "var(--text-3)",
+                                      border: `1px solid ${prog.videoCompleted ? "var(--success-border)" : "var(--border)"}`,
+                                      fontSize: "11px",
+                                      padding: "2px 6px",
+                                    }}
+                                    title={prog.videoCompleted ? "Video Briefing Completed (35%)" : "Video Briefing Incomplete"}
+                                  >
+                                    <Icon name={prog.videoCompleted ? "check-circle" : "square"} size={11} /> Video
+                                  </span>
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      background: prog.slidesViewed ? "var(--success-soft)" : "var(--surface-2)",
+                                      color: prog.slidesViewed ? "var(--success)" : "var(--text-3)",
+                                      border: `1px solid ${prog.slidesViewed ? "var(--success-border)" : "var(--border)"}`,
+                                      fontSize: "11px",
+                                      padding: "2px 6px",
+                                    }}
+                                    title={prog.slidesViewed ? "Slide Deck Reviewed (35%)" : "Slide Deck Pending"}
+                                  >
+                                    <Icon name={prog.slidesViewed ? "check-circle" : "square"} size={11} /> Slides
+                                  </span>
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      background: prog.checkpointsFinished ? "var(--success-soft)" : "var(--surface-2)",
+                                      color: prog.checkpointsFinished ? "var(--success)" : "var(--text-3)",
+                                      border: `1px solid ${prog.checkpointsFinished ? "var(--success-border)" : "var(--border)"}`,
+                                      fontSize: "11px",
+                                      padding: "2px 6px",
+                                    }}
+                                    title={prog.checkpointsFinished ? "All Key Checkpoints Finished (20%)" : "Key Checkpoints Incomplete"}
+                                  >
+                                    <Icon name={prog.checkpointsFinished ? "check-circle" : "square"} size={11} /> Checkpoints
+                                  </span>
+                                  <span
+                                    className="badge"
+                                    style={{
+                                      background: prog.slidesDownloaded ? "rgba(56, 189, 248, 0.15)" : "var(--surface-2)",
+                                      color: prog.slidesDownloaded ? "#0284c7" : "var(--text-3)",
+                                      border: `1px solid ${prog.slidesDownloaded ? "rgba(56, 189, 248, 0.3)" : "var(--border)"}`,
+                                      fontSize: "11px",
+                                      padding: "2px 6px",
+                                    }}
+                                    title={prog.slidesDownloaded ? "PPTX Slides Downloaded (10%)" : "PPTX Slides Not Downloaded"}
+                                  >
+                                    <Icon name={prog.slidesDownloaded ? "download" : "square"} size={11} /> PPTX
+                                  </span>
+                                </div>
+                              </td>
+                              <td style={{ fontSize: "12px", whiteSpace: "nowrap" }}>
+                                {prog.updatedAt ? new Date(prog.updatedAt).toLocaleString() : "—"}
+                              </td>
+                              <td>
+                                <button
+                                  className="btn-sm secondary-button"
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    fontSize: "12px",
+                                    padding: "5px 10px",
+                                  }}
+                                  onClick={() => setInspectedProgress(prog)}
+                                  title="Inspect individual checklist items and completion breakdown"
+                                >
+                                  <Icon name="eye" size={13} />
+                                  <span>Inspect</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* VIEW 2: DETAILED ATTENDANCE ACTIVITY STREAM */}
+              {lectureSubTab === "attendance" && (
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Attendee Name</th>
+                        <th>Email Address</th>
+                        <th>Company ID</th>
+                        <th>Department</th>
+                        <th>Lecture / Briefing</th>
+                        <th>Activity Type</th>
+                        <th>Duration / Progress</th>
+                        <th>Checklist %</th>
+                        <th>Date & Time</th>
+                        <th>Device / IP</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loadingLectures ? (
+                        <tr>
+                          <td colSpan={11} style={{ textAlign: "center", padding: "35px" }}>
+                            Loading attendance records...
+                          </td>
+                        </tr>
+                      ) : lectureAttendance.length === 0 ? (
+                        <tr>
+                          <td colSpan={11} style={{ textAlign: "center", padding: "35px" }}>
+                            No lecture attendance records found matching filters.
+                          </td>
+                        </tr>
+                      ) : (
+                        lectureAttendance.map((rec) => {
+                          const mins = Math.floor(rec.watchDurationSeconds / 60);
+                          const secs = rec.watchDurationSeconds % 60;
+                          const durationStr = `${mins}m ${secs}s`;
+
+                          return (
+                            <tr key={rec.id}>
+                              <td>
+                                <strong>{rec.candidateName}</strong>
+                              </td>
+                              <td style={{ color: "var(--text-3)", fontSize: "12px" }}>
+                                {rec.candidateEmail}
+                              </td>
+                              <td>
+                                <span className="badge" style={{ background: "var(--surface-2)", color: "var(--text)" }}>
+                                  {rec.companyId}
+                                </span>
+                              </td>
+                              <td>
+                                <span
+                                  style={{
+                                    display: "inline-block",
+                                    padding: "3px 8px",
+                                    borderRadius: "6px",
+                                    background: "rgba(37, 99, 235, 0.12)",
+                                    color: "var(--primary)",
+                                    fontWeight: 650,
+                                    fontSize: "12px",
+                                  }}
+                                >
+                                  {rec.department}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ fontWeight: 600 }}>{rec.lectureTitle}</span>
+                              </td>
+                              <td>
+                                <span
+                                  className="badge"
+                                  style={{
+                                    background:
+                                      rec.action === "CHECKLIST_UPDATED"
+                                        ? "rgba(16, 185, 129, 0.15)"
+                                        : rec.action === "VIDEO_COMPLETED"
+                                        ? "var(--success-soft)"
+                                        : rec.action === "SLIDES_DOWNLOADED"
+                                        ? "rgba(56, 189, 248, 0.15)"
+                                        : "var(--surface-2)",
+                                    color:
+                                      rec.action === "CHECKLIST_UPDATED"
+                                        ? "#059669"
+                                        : rec.action === "VIDEO_COMPLETED"
+                                        ? "var(--success)"
+                                        : rec.action === "SLIDES_DOWNLOADED"
+                                        ? "#0284c7"
+                                        : "var(--text-2)",
+                                  }}
+                                >
+                                  {rec.action === "CHECKLIST_UPDATED"
+                                    ? "Checklist Updated"
+                                    : rec.action === "SLIDES_DOWNLOADED"
+                                    ? "Slides Downloaded"
+                                    : rec.action === "VIDEO_COMPLETED"
+                                    ? "Video Completed"
+                                    : rec.action === "VIDEO_WATCHED"
+                                    ? "Video Watched"
+                                    : rec.action === "PORTAL_ACCESS"
+                                    ? "Portal Entry"
+                                    : rec.action}
+                                </span>
+                              </td>
+                              <td>
+                                {rec.watchDurationSeconds > 0 ? (
+                                  <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                                    <span style={{ fontSize: "12px", fontWeight: 600 }}>{durationStr}</span>
+                                    {rec.maxProgressPercent > 0 && (
+                                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                         <div
                                           style={{
-                                            width: `${Math.min(100, rec.maxProgressPercent)}%`,
-                                            height: "100%",
-                                            background: "var(--success)",
+                                            width: "60px",
+                                            height: "5px",
+                                            background: "var(--border)",
+                                            borderRadius: "3px",
+                                            overflow: "hidden",
                                           }}
-                                        />
+                                        >
+                                          <div
+                                            style={{
+                                              width: `${Math.min(100, rec.maxProgressPercent)}%`,
+                                              height: "100%",
+                                              background: "var(--success)",
+                                            }}
+                                          />
+                                        </div>
+                                        <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
+                                          {Math.round(rec.maxProgressPercent)}%
+                                        </span>
                                       </div>
-                                      <span style={{ fontSize: "11px", color: "var(--text-3)" }}>
-                                        {Math.round(rec.maxProgressPercent)}%
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <span style={{ color: "var(--text-3)", fontSize: "12px" }}>—</span>
-                              )}
-                            </td>
-                            <td style={{ fontSize: "12px", whiteSpace: "nowrap" }}>
-                              {new Date(rec.createdAt).toLocaleString()}
-                            </td>
-                            <td style={{ fontSize: "11px", color: "var(--text-3)", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${rec.ipAddress || "127.0.0.1"} • ${rec.userAgent || ""}`}>
-                              {rec.ipAddress || "127.0.0.1"}
-                            </td>
-                            <td>
-                              <button
-                                className="btn-sm"
-                                style={{ color: "var(--danger)", background: "transparent", border: "none", cursor: "pointer" }}
-                                onClick={async () => {
-                                  if (window.confirm(`Delete attendance record for ${rec.candidateName}?`)) {
-                                    try {
-                                      await api.deleteLectureAttendance(rec.id);
-                                      fetchLectureAttendance();
-                                    } catch (err: unknown) {
-                                      alert(err instanceof Error ? err.message : "Failed to delete record.");
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span style={{ color: "var(--text-3)", fontSize: "12px" }}>—</span>
+                                )}
+                              </td>
+                              <td style={{ textAlign: "center" }}>
+                                {rec.completionPercent !== undefined ? (
+                                  <span
+                                    style={{
+                                      display: "inline-block",
+                                      padding: "2px 8px",
+                                      borderRadius: "12px",
+                                      fontSize: "12px",
+                                      fontWeight: 700,
+                                      background: rec.completionPercent === 100 ? "var(--success-soft)" : "rgba(37, 99, 235, 0.1)",
+                                      color: rec.completionPercent === 100 ? "var(--success)" : "var(--primary)",
+                                    }}
+                                  >
+                                    {rec.completionPercent}%
+                                  </span>
+                                ) : (
+                                  <span style={{ color: "var(--text-3)", fontSize: "12px" }}>—</span>
+                                )}
+                              </td>
+                              <td style={{ fontSize: "12px", whiteSpace: "nowrap" }}>
+                                {new Date(rec.createdAt).toLocaleString()}
+                              </td>
+                              <td style={{ fontSize: "11px", color: "var(--text-3)", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={`${rec.ipAddress || "127.0.0.1"} • ${rec.userAgent || ""}`}>
+                                {rec.ipAddress || "127.0.0.1"}
+                              </td>
+                              <td>
+                                <button
+                                  className="btn-sm"
+                                  style={{ color: "var(--danger)", background: "transparent", border: "none", cursor: "pointer" }}
+                                  onClick={async () => {
+                                    if (window.confirm(`Delete attendance record for ${rec.candidateName}?`)) {
+                                      try {
+                                        await api.deleteLectureAttendance(rec.id);
+                                        fetchLectureAttendance();
+                                      } catch (err: unknown) {
+                                        alert(err instanceof Error ? err.message : "Failed to delete record.");
+                                      }
                                     }
-                                  }
-                                }}
-                                title="Delete attendance record"
-                              >
-                                <Icon name="x" size={14} />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                                  }}
+                                  title="Delete attendance record"
+                                >
+                                  <Icon name="x" size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -2707,6 +3058,394 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
               </button>
               <button className="primary-button" onClick={handleSaveQuestion}>
                 {questionModalMode === "add" ? "Create Question" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================
+          MODAL: INSPECT LEARNER CHECKLIST BREAKDOWN
+      ========================================= */}
+      {inspectedProgress && (
+        <div className="modal-backdrop" onClick={() => setInspectedProgress(null)}>
+          <div
+            className="modal-content"
+            style={{ maxWidth: "700px" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div
+                  style={{
+                    width: "38px",
+                    height: "38px",
+                    borderRadius: "10px",
+                    background: "rgba(37, 99, 235, 0.12)",
+                    color: "var(--primary)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Icon name="check-square" size={20} />
+                </div>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 750 }}>
+                    Learner Checklist & Content Audit
+                  </h2>
+                  <p style={{ margin: "2px 0 0", fontSize: "13px", color: "var(--text-3)" }}>
+                    {inspectedProgress.candidateName} • {inspectedProgress.department} • {inspectedProgress.companyId}
+                  </p>
+                </div>
+              </div>
+              <button
+                className="modal-close-btn"
+                onClick={() => setInspectedProgress(null)}
+                aria-label="Close"
+              >
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {(() => {
+                let itemsList: string[] = [];
+                try {
+                  if (typeof inspectedProgress.completedItems === "string") {
+                    itemsList = JSON.parse(inspectedProgress.completedItems);
+                  } else if (Array.isArray(inspectedProgress.completedItems)) {
+                    itemsList = inspectedProgress.completedItems;
+                  }
+                } catch {
+                  itemsList = [];
+                }
+
+                const isVideoDone = itemsList.includes("video") || inspectedProgress.videoCompleted;
+                const isSlidesDone = itemsList.includes("slides") || inspectedProgress.slidesViewed;
+                const isDownloadDone = itemsList.includes("download") || inspectedProgress.slidesDownloaded;
+
+                const moduleTitle = LECTURE_TITLES[inspectedProgress.lectureId] || inspectedProgress.lectureId;
+                const cps = LECTURE_CHECKPOINTS_META[inspectedProgress.lectureId] || [];
+                const doneCpCount = cps.filter(
+                  (cp) => itemsList.includes(cp.id) || itemsList.includes(`checkpoint:${cp.id}`)
+                ).length;
+                const pct = inspectedProgress.completionPercent || 0;
+
+                return (
+                  <>
+                    {/* Header Progress Banner */}
+                    <div
+                      style={{
+                        padding: "16px 20px",
+                        background: "var(--surface-2)",
+                        borderRadius: "12px",
+                        border: "1px solid var(--border)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          marginBottom: "12px",
+                          gap: "12px",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--text-3)", textTransform: "uppercase" }}>
+                            Module Content Sitting
+                          </div>
+                          <div style={{ fontSize: "16px", fontWeight: 750, color: "var(--text)", marginTop: "2px" }}>
+                            {moduleTitle}
+                          </div>
+                          <div style={{ fontSize: "12px", color: "var(--text-3)", marginTop: "2px" }}>
+                            {inspectedProgress.candidateEmail}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "right" }}>
+                          <span
+                            className="badge"
+                            style={{
+                              padding: "4px 10px",
+                              fontSize: "12px",
+                              fontWeight: 700,
+                              background: pct === 100 ? "var(--success-soft)" : "rgba(37, 99, 235, 0.12)",
+                              color: pct === 100 ? "var(--success)" : "var(--primary)",
+                            }}
+                          >
+                            {pct === 100 ? "100% Completed" : `${pct}% In Progress`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Visual Progress Bar */}
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "8px",
+                          background: "var(--border)",
+                          borderRadius: "4px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${Math.min(100, Math.max(0, pct))}%`,
+                            height: "100%",
+                            background: pct === 100 ? "var(--success)" : "var(--primary)",
+                            borderRadius: "4px",
+                            transition: "width 0.3s ease",
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontSize: "11px",
+                          color: "var(--text-3)",
+                          marginTop: "6px",
+                        }}
+                      >
+                        <span>Weighted: 35% Video + 35% Slides + 20% Checkpoints + 10% PPTX</span>
+                        <span>Last Active: {inspectedProgress.updatedAt ? new Date(inspectedProgress.updatedAt).toLocaleString() : "—"}</span>
+                      </div>
+                    </div>
+
+                    {/* 4 Core Pillars Checklist */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text)" }}>
+                        Module Content Verification Breakdown
+                      </div>
+
+                      {/* 1. Video */}
+                      <div
+                        style={{
+                          padding: "14px 16px",
+                          borderRadius: "10px",
+                          border: `1px solid ${isVideoDone ? "var(--success-border)" : "var(--border)"}`,
+                          background: isVideoDone ? "var(--success-soft)" : "var(--surface)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                          <div style={{ color: isVideoDone ? "var(--success)" : "var(--text-3)", marginTop: "2px" }}>
+                            <Icon name={isVideoDone ? "check-circle" : "square"} size={20} />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: "14px", color: isVideoDone ? "var(--success)" : "var(--text)" }}>
+                              Video Briefing Recording (35% weight)
+                            </div>
+                            <div style={{ fontSize: "12px", color: "var(--text-3)", marginTop: "2px" }}>
+                              {isVideoDone
+                                ? "Learner watched the full video briefing (at least 80% streamed or verified finish)."
+                                : "Learner has not yet completed the full briefing playback."}
+                            </div>
+                          </div>
+                        </div>
+                        <span
+                          className="badge"
+                          style={{
+                            background: isVideoDone ? "var(--success)" : "var(--surface-2)",
+                            color: isVideoDone ? "#ffffff" : "var(--text-3)",
+                            fontWeight: 700,
+                            fontSize: "11px",
+                          }}
+                        >
+                          {isVideoDone ? "35% Awarded" : "0 / 35%"}
+                        </span>
+                      </div>
+
+                      {/* 2. Slides Review */}
+                      <div
+                        style={{
+                          padding: "14px 16px",
+                          borderRadius: "10px",
+                          border: `1px solid ${isSlidesDone ? "var(--success-border)" : "var(--border)"}`,
+                          background: isSlidesDone ? "var(--success-soft)" : "var(--surface)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                          <div style={{ color: isSlidesDone ? "var(--success)" : "var(--text-3)", marginTop: "2px" }}>
+                            <Icon name={isSlidesDone ? "check-circle" : "square"} size={20} />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: "14px", color: isSlidesDone ? "var(--success)" : "var(--text)" }}>
+                              Slide Deck Portal Review (35% weight)
+                            </div>
+                            <div style={{ fontSize: "12px", color: "var(--text-3)", marginTop: "2px" }}>
+                              {isSlidesDone
+                                ? "Learner opened and reviewed all slides inside the interactive slide reader."
+                                : "Learner has not yet completed browsing the slide deck."}
+                            </div>
+                          </div>
+                        </div>
+                        <span
+                          className="badge"
+                          style={{
+                            background: isSlidesDone ? "var(--success)" : "var(--surface-2)",
+                            color: isSlidesDone ? "#ffffff" : "var(--text-3)",
+                            fontWeight: 700,
+                            fontSize: "11px",
+                          }}
+                        >
+                          {isSlidesDone ? "35% Awarded" : "0 / 35%"}
+                        </span>
+                      </div>
+
+                      {/* 3. Checkpoints */}
+                      <div
+                        style={{
+                          padding: "14px 16px",
+                          borderRadius: "10px",
+                          border: "1px solid var(--border)",
+                          background: "var(--surface)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "10px",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <div style={{ color: doneCpCount === cps.length ? "var(--success)" : "var(--primary)" }}>
+                              <Icon name="check-square" size={20} />
+                            </div>
+                            <div>
+                              <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--text)" }}>
+                                Key Procedure Takeaways & Checkpoints (20% weight)
+                              </span>
+                              <span style={{ fontSize: "12px", color: "var(--text-3)", marginLeft: "8px" }}>
+                                ({doneCpCount} of {cps.length} verified)
+                              </span>
+                            </div>
+                          </div>
+                          <span
+                            className="badge"
+                            style={{
+                              background: doneCpCount === cps.length ? "var(--success-soft)" : "rgba(37, 99, 235, 0.12)",
+                              color: doneCpCount === cps.length ? "var(--success)" : "var(--primary)",
+                              fontWeight: 700,
+                              fontSize: "11px",
+                            }}
+                          >
+                            {Math.round((doneCpCount / (cps.length || 1)) * 20)}% / 20%
+                          </span>
+                        </div>
+
+                        {/* Checklist items list */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+                          {cps.map((cp) => {
+                            const isDone =
+                              itemsList.includes(cp.id) ||
+                              itemsList.includes(`checkpoint:${cp.id}`);
+
+                            return (
+                              <div
+                                key={cp.id}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "flex-start",
+                                  gap: "10px",
+                                  padding: "8px 12px",
+                                  borderRadius: "8px",
+                                  background: isDone ? "var(--success-soft)" : "var(--surface-2)",
+                                  border: `1px solid ${isDone ? "var(--success-border)" : "var(--border)"}`,
+                                }}
+                              >
+                                <div style={{ color: isDone ? "var(--success)" : "var(--text-3)", marginTop: "1px" }}>
+                                  <Icon name={isDone ? "check" : "square"} size={16} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div
+                                    style={{
+                                      fontSize: "13px",
+                                      fontWeight: 650,
+                                      color: isDone ? "var(--success)" : "var(--text)",
+                                    }}
+                                  >
+                                    {cp.label}
+                                  </div>
+                                  <div style={{ fontSize: "11.5px", color: "var(--text-3)", marginTop: "1px" }}>
+                                    {cp.description}
+                                  </div>
+                                </div>
+                                <span
+                                  style={{
+                                    fontSize: "11px",
+                                    fontWeight: 700,
+                                    color: isDone ? "var(--success)" : "var(--text-3)",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {isDone ? "✓ Checked" : "Pending"}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 4. PPTX Download */}
+                      <div
+                        style={{
+                          padding: "14px 16px",
+                          borderRadius: "10px",
+                          border: `1px solid ${isDownloadDone ? "rgba(56, 189, 248, 0.3)" : "var(--border)"}`,
+                          background: isDownloadDone ? "rgba(56, 189, 248, 0.1)" : "var(--surface)",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "12px",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                          <div style={{ color: isDownloadDone ? "#0284c7" : "var(--text-3)", marginTop: "2px" }}>
+                            <Icon name={isDownloadDone ? "check-circle" : "square"} size={20} />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: "14px", color: isDownloadDone ? "#0284c7" : "var(--text)" }}>
+                              Offline Presentation (PPTX) Download (10% weight)
+                            </div>
+                            <div style={{ fontSize: "12px", color: "var(--text-3)", marginTop: "2px" }}>
+                              {isDownloadDone
+                                ? "Learner downloaded the authentic .pptx slide deck for offline review."
+                                : "Learner has not yet downloaded the offline PowerPoint presentation."}
+                            </div>
+                          </div>
+                        </div>
+                        <span
+                          className="badge"
+                          style={{
+                            background: isDownloadDone ? "#0284c7" : "var(--surface-2)",
+                            color: isDownloadDone ? "#ffffff" : "var(--text-3)",
+                            fontWeight: 700,
+                            fontSize: "11px",
+                          }}
+                        >
+                          {isDownloadDone ? "10% Awarded" : "0 / 10%"}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="primary-button"
+                onClick={() => setInspectedProgress(null)}
+              >
+                Close Audit
               </button>
             </div>
           </div>

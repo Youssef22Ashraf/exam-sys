@@ -1,0 +1,1385 @@
+{
+  "interface-management": [
+    {
+      "slideNumber": 1,
+      "title": "INTERFACE MANAGEMENT",
+      "content": [
+        "Procedures, Roles & Coordination  —  Team Briefing",
+        "Policy Ref. MAH-ENC-INT-OP-POL-001  ·  Projects Interface Management Procedure"
+      ]
+    },
+    {
+      "slideNumber": 2,
+      "title": "Agenda",
+      "content": [
+        "Purpose & Governing Principles",
+        "Definitions & Interface Types",
+        "Roles & Responsibilities",
+        "Process Flow, Meetings & Tools",
+        "Escalation, Integration & KPIs",
+        "Third-Party Assets, Awareness & Closeout"
+      ]
+    },
+    {
+      "slideNumber": 3,
+      "title": "Purpose & Governing Principles",
+      "content": [
+        "Why this procedure exists and the rules that are never negotiable"
+      ]
+    },
+    {
+      "slideNumber": 4,
+      "title": "01 · PURPOSE",
+      "content": [
+        "Purpose & Objectives",
+        "This procedure sets the framework for identifying, classifying, managing and closing interface points across all MAH E&C projects — preventing design conflicts, construction delays and cost overruns.",
+        "Identify early",
+        "Identify, classify and document every interface point in the Interface Points Register.",
+        "Assign ownership",
+        "Give every interface a named owner, a target date and a resolution route.",
+        "Coordinate regularly",
+        "Hold coordination meetings, progress updates and resolution workshops.",
+        "Close with evidence",
+        "Track each point in a formal system until it is verified by all parties.",
+        "Learn and improve",
+        "Capture lessons learned and feed them into future phases and projects."
+      ]
+    },
+    {
+      "slideNumber": 5,
+      "title": "01 · NON-NEGOTIABLES",
+      "content": [
+        "Governing Principles",
+        "No interface point exists outside the Interface Points Register — each one has an owner and a target date.",
+        "No verbal-only coordination: every decision is recorded in MoM, RFI, transmittal or Aconex.",
+        "No interface point is closed without evidence and sign-off by all concerned parties.",
+        "No issue stays unresolved beyond its target date without formal escalation.",
+        "Authority coordination goes through the GRO, with a valid Client authorization letter.",
+        "Escalation is fact-based and used when coordination fails — it never replaces coordination.",
+        "Safety-related interface issues may be escalated immediately to any level, regardless of hierarchy."
+      ]
+    },
+    {
+      "slideNumber": 6,
+      "title": "Definitions & Interface Types",
+      "content": [
+        "What an interface point is and where interfaces arise"
+      ]
+    },
+    {
+      "slideNumber": 7,
+      "title": "02 · DEFINITIONS",
+      "content": [
+        "Interface Point (IP) — Definition & Types",
+        "Interface Point (IP)",
+        "A location, activity or information flow where two or more parties, systems or scopes meet and require coordination. The Interface Owner is the person or department assigned to manage and close it.",
+        "Physical · Functional · Organizational",
+        "Physical: scopes meet on site (clashes, crossings, tie-ins). Functional: systems must integrate. Organizational: a responsibility boundary between parties (battery limits).",
+        "Why it matters",
+        "Minimizes risk and design / construction conflicts, avoids delays and cost overruns, optimizes resources and supports timely decisions and stakeholder alignment."
+      ]
+    },
+    {
+      "slideNumber": 8,
+      "title": "02 · INTERFACE TYPES",
+      "content": [
+        "Internal, External & Sister-Company Interfaces",
+        "Internal Interfaces",
+        "•  Engineering ↔ Construction, Planning ↔ Procurement, QA/QC ↔ Site, HSE ↔ concurrent works.",
+        "•  Design data release, shop drawings, inspections, NCRs, schedule, budget and Aconex transmittals.",
+        "External Interfaces",
+        "•  Client, PMC / Consultant, subcontractors, vendors, authorities, utilities and adjacent contractors.",
+        "•  Approvals, IFC / as-built reviews, work-area handover, permits, NOCs and final acceptance.",
+        "Sister-Company Interfaces",
+        "•  Dedicated coordination meeting: Planning, Technical, PM, Procurement, QA/QC, HSE, Interface.",
+        "•  Joint Responsibility Matrix signed by both parties; no deviation without formal re-issue."
+      ]
+    },
+    {
+      "slideNumber": 9,
+      "title": "02 · PROJECT LIFE CYCLE",
+      "content": [
+        "Interfaces Across the Project Life Cycle",
+        "Tender & Design",
+        "Scope boundaries, package overlaps, discipline clashes, IFC revisions and data release.",
+        "→",
+        "Procurement & Vendors",
+        "Long-lead items vs design freeze, vendor approvals and material handover points.",
+        "→",
+        "Construction & Site",
+        "Work-zone handover, sequencing, site clashes and authority dependencies.",
+        "→",
+        "Testing & Handover",
+        "System integration, as-builts, final approvals, NOCs and acceptance.",
+        "Communication Timing Rules (procedure requirement)",
+        "Internal meeting call",
+        "≥ 48 hours notice",
+        "External meeting invitation",
+        "≥ 72 hours notice",
+        "Minutes of Meeting (MoM)",
+        "≤ 48 hours after meeting",
+        "Interface Register update",
+        "After every meeting"
+      ]
+    },
+    {
+      "slideNumber": 10,
+      "title": "Roles & Responsibilities",
+      "content": [
+        "Who owns what — from the E&C Sector down to subcontractors"
+      ]
+    },
+    {
+      "slideNumber": 11,
+      "title": "03 · ROLES",
+      "content": [
+        "Leadership & Interface Management",
+        "Projects Director",
+        "Approves Interface Management Plans, Registers and Issue Logs.",
+        "Receives Level 2 escalations on schedule, cost, quality or safety.",
+        "Escalates critical issues to the VP E&C Sector.",
+        "Project Manager",
+        "Ensures alignment and collaboration across all project teams.",
+        "Approves resolutions with cost or schedule impact; supports escalation.",
+        "Ensures every interface decision is documented and implemented on site.",
+        "Interface Manager",
+        "Develops and maintains the Interface Register, Matrix and Issue Log.",
+        "Chairs coordination meetings; issues MoM within 48 hours; tracks RFIs.",
+        "Coordinates Client, PMC and authorities (via GRO); reports and escalates."
+      ]
+    },
+    {
+      "slideNumber": 12,
+      "title": "03 · ROLES",
+      "content": [
+        "Engineering & Site Execution Team",
+        "Technical / Design Manager",
+        "Reviews IFC drawings to identify interface points between trades.",
+        "Answers interface RFIs; issues integrated drawings and as-built data.",
+        "Keeps a record of all technical coordination outcomes.",
+        "Construction Manager",
+        "Coordinates field activities of disciplines working in adjacent zones.",
+        "Keeps sequences within agreed interface boundaries and dates.",
+        "Reports site clashes at once; implements and documents resolutions.",
+        "Planning Engineer",
+        "Integrates interface milestones into the master schedule and look-ahead.",
+        "Treats permits, NOCs and third-party dependencies as predecessors.",
+        "Alerts the Interface Manager early to schedule risks."
+      ]
+    },
+    {
+      "slideNumber": 13,
+      "title": "03 · ROLES",
+      "content": [
+        "Support & Enabling Functions",
+        "QA/QC",
+        "Verifies interface compliance, inspects zones before handover, issues and closes NCRs.",
+        "HSE",
+        "Controls safety where operations overlap; delivers awareness sessions and records.",
+        "Surveying Team",
+        "Verifies boundaries and control points; joint surveys and as-built data for closure.",
+        "Procurement",
+        "Aligns deliveries with resolution plans; defines handover points in packages.",
+        "Commercial / Contracts",
+        "Supports VOs and claims; issues timely contractual notices.",
+        "Government Relations (GRO)",
+        "Liaises with MOT, Municipality, SEC, NWC, Civil Defense for permits and NOCs.",
+        "Subcontractors / Vendors",
+        "Attend meetings, submit shop drawings of connection points, keep to boundaries.",
+        "Consultant / PMC & Client",
+        "Approve resolutions and major decisions; review monthly interface reports."
+      ]
+    },
+    {
+      "slideNumber": 14,
+      "title": "03 · RELATIONS WITH OTHER PARTIES",
+      "content": [
+        "Interface Manager Relations",
+        "INTERFACE MANAGER",
+        "Client / Employer",
+        "PMC / Consultant",
+        "Authorities (via GRO)",
+        "Subcontractors & Vendors",
+        "Utilities",
+        "Third Parties & Adjacent Contractors",
+        "Project Team"
+      ]
+    },
+    {
+      "slideNumber": 15,
+      "title": "03 · RACI",
+      "content": [
+        "Interface Management RACI Matrix",
+        "R Responsible · A Accountable · C Consulted · I Informed · A/R Accountable & Responsible  —  Source: MAH-ENC-CNS-PM-TMP-001 Interface Management RACI Matrix"
+      ]
+    },
+    {
+      "slideNumber": 16,
+      "title": "Process Flow, Meetings & Tools",
+      "content": [
+        "How every interface point moves from identification to verified closure"
+      ]
+    },
+    {
+      "slideNumber": 17,
+      "title": "04 · PROCESS FLOW",
+      "content": [
+        "Interface Management Process Flow",
+        "Step 1",
+        "Identify & Classify",
+        "All parties / IM",
+        "→",
+        "Step 2",
+        "Register & Assign Owner",
+        "Interface Manager",
+        "→",
+        "Step 3",
+        "Coordinate Meeting / RFI",
+        "IM / Disciplines",
+        "→",
+        "Step 4",
+        "Resolve Agreed Action",
+        "Owner / Construction",
+        "→",
+        "Step 5",
+        "Verify Evidence",
+        "QA/QC / Survey / IM",
+        "→",
+        "Step 6",
+        "Close & Sign-off",
+        "All parties / PM",
+        "An interface point stays open until it is verified and signed off by all concerned stakeholders. Closure evidence is filed in Aconex; points past their target date are formally escalated.",
+        "Required Interface Management Records (MAH-ENC-CNS-PM series)",
+        "Interface Points Register (FRM-001)",
+        "Interface Issue Log (FRM-002)",
+        "Interface Meeting Minutes (FRM-003)",
+        "Interface Management Process Map (FRM-004)",
+        "Interface Matrix Sheet (FRM-005)",
+        "Meeting Log (FRM-006) & RACI (TMP-001)"
+      ]
+    },
+    {
+      "slideNumber": 18,
+      "title": "04 · COMMUNICATION",
+      "content": [
+        "Meetings & Interface Points Register",
+        "Meeting Cadence",
+        "Kick-off",
+        "Once — agree roles, templates, reporting and communication flow",
+        "Weekly",
+        "Coordination: review new, open and closed points; agree actions",
+        "Monthly",
+        "Interface review: closure rate and key risks with management / Client",
+        "As needed",
+        "Special meeting for urgent items affecting progress, approvals or safety",
+        "Interface Register — Status Flow",
+        "Closed",
+        "Verified and signed off by all parties; evidence in Aconex.",
+        "Review",
+        "Under review: resolution agreed — awaiting verification and sign-off.",
+        "Open",
+        "Action pending with owner and target date; escalate if overdue.",
+        "Register fields: Interface ID · description · location / zone · originator & receiver discipline · type · required action / responsibility · target date · status · remarks.",
+        "Solved",
+        "Finish in Interface and still not finish for construction work."
+      ]
+    },
+    {
+      "slideNumber": 19,
+      "title": "04 · TOOLS",
+      "content": [
+        "Interface Management Tools",
+        "Interface Matrix",
+        "•  Maps who interfaces with whom, on what scope and where boundaries lie.",
+        "•  Built early; updated monthly or whenever scopes or packages change.",
+        "Interface Points Register",
+        "•  Tracks every coordination point: owner, target date and status.",
+        "•  Updated weekly, after every coordination meeting.",
+        "Interface Issue Log",
+        "•  Records conflicts affecting progress, cost or safety and how they were resolved.",
+        "•  Basis for contractual notices, claims and risk monitoring."
+      ]
+    },
+    {
+      "slideNumber": 20,
+      "title": "Escalation, Integration & KPIs",
+      "content": [
+        "Time-bound escalation and how we measure interface performance"
+      ]
+    },
+    {
+      "slideNumber": 21,
+      "title": "05 · ESCALATION",
+      "content": [
+        "Internal Escalation Mechanism",
+        "Level 1 — Project Level",
+        "Issue unresolved after the coordination meeting, or affecting short-term activities. Interface Manager escalates to the Project Manager — response within 2–5 working days.",
+        "Level 2 — Program Level",
+        "Issue impacting schedule, cost, quality or safety. Project Manager escalates to the Projects Director / Head of Interface — response within 5–8 working days.",
+        "Level 3 — E&C Sector",
+        "Critical issue affecting milestones, contract obligations or program objectives. Projects Director escalates to the VP E&C Sector — immediate instructions and decision."
+      ]
+    },
+    {
+      "slideNumber": 22,
+      "title": "05 · ESCALATION",
+      "content": [
+        "External Escalation Mechanism",
+        "Level 1 — Coordination Level",
+        "Routine issue: Interface Manager follows up with the Consultant / Subcontractor (3–5 working days); if progress is affected, the PM escalates to the PMC Team Leader.",
+        "Level 2 — Client Level",
+        "Issue impacting milestones, approvals or permits: the Project Manager escalates to the Client / Employer Representative — response within 7–14 working days.",
+        "Level 3 — Authority / Executive Level",
+        "Critical issue on permits, NOCs or statutory compliance: Project Director / GRO escalate to the Authority or Client senior management — immediately / as required."
+      ]
+    },
+    {
+      "slideNumber": 23,
+      "title": "05 · INTEGRATION",
+      "content": [
+        "Links to Schedule, Risk & Contract",
+        "Schedule",
+        "Interface milestones sit in the master schedule and look-ahead. Permits, NOCs and third-party dependencies are predecessors of critical activities.",
+        "Risk",
+        "Every interface point is a potential risk or opportunity (ISO 31000). Critical interfaces are linked to the Risk Register with mitigation actions and owners.",
+        "Contract & Escalation Principles",
+        "Escalation is fact-based and time-bound, supported by drawings, schedules and correspondence. The Contract & Claims Manager issues timely notices to protect our rights."
+      ]
+    },
+    {
+      "slideNumber": 24,
+      "title": "05 · MONITORING",
+      "content": [
+        "Interface Performance Indicators (proposed targets)",
+        "100%",
+        "Interface points with owner & target date",
+        "≥90%",
+        "Interface points closed by target date",
+        "100%",
+        "MoM issued within 48 hours",
+        "100%",
+        "Closures with evidence & sign-off in Aconex",
+        "Zero",
+        "Overdue items without formal escalation",
+        "4 / yr",
+        "Awareness sessions (quarterly minimum)"
+      ]
+    },
+    {
+      "slideNumber": 25,
+      "title": "Assets, Awareness & Closeout",
+      "content": [
+        "Protecting what is not ours and keeping every team aligned"
+      ]
+    },
+    {
+      "slideNumber": 26,
+      "title": "06 · THIRD-PARTY ASSETS",
+      "content": [
+        "Damage to Third-Party Assets — Prevent & Respond",
+        "Third-Party Assets at Risk",
+        "Underground power & HV cables",
+        "Water, sewer & stormwater networks",
+        "Telecom & fiber-optic networks",
+        "Gas / fuel pipelines, chambers & valves",
+        "Roads, pavements & public infrastructure",
+        "Adjacent contractor & private property",
+        "Prevention: utility detection and trial pits, marking, PTW, RA/JSA, toolbox talks, certified equipment, competent operators, supervision and coordination with utility owners.",
+        "Immediate Response",
+        "Stop",
+        "Secure",
+        "Protect",
+        "Notify",
+        "Record",
+        "Resume*",
+        "*Work resumes only after written approval from Project Management. External communication (utility owners, authorities, Civil Defense, Police, media) by authorized management only.",
+        "Damage categories",
+        "•  Minor or major asset damage",
+        "•  Utility strike",
+        "•  Environmental damage",
+        "•  Public, private or critical infrastructure damage"
+      ]
+    },
+    {
+      "slideNumber": 27,
+      "title": "06 · AWARENESS & CLOSURE",
+      "content": [
+        "Awareness, Lessons Learned & Our Commitment",
+        "Quarterly awareness sessions — plus after phase changes, new subcontractors or incidents.",
+        "HSE Manager delivers sessions and records attendance; PM ensures full participation.",
+        "Avoid: verbal-only coordination, no owner or date, no follow-up, closure without evidence.",
+        "Best practice: register at once, assign an owner, update weekly, close with evidence.",
+        "Records retained for the contract period or project duration + 1 year.",
+        "No interface point is closed until it is verified, evidenced in Aconex and signed off by all parties.",
+        "“",
+        "MAH manages interfaces as an integrated project-control function — identified early, owned, tracked and closed with evidence.",
+        "Management provides the leadership, resources and guidance to apply this policy on every E&C project — minimizing risks, avoiding delays and optimizing resources."
+      ]
+    },
+    {
+      "slideNumber": 28,
+      "title": "Thank You",
+      "content": [
+        "Questions & Discussion"
+      ]
+    }
+  ],
+  "stakeholder-management": [
+    {
+      "slideNumber": 1,
+      "title": "STAKEHOLDER MANAGEMENT",
+      "content": [
+        "Procedures, Roles & Engagement  —  Team Briefing",
+        "Policy MAH-ENC-CNS-PM-POL-002  ·  Procedure MAH-ENC-CNS-PM-PRO-002"
+      ]
+    },
+    {
+      "slideNumber": 2,
+      "title": "Agenda",
+      "content": [
+        "Purpose & Policy Principles",
+        "Stakeholders, Categories & Analysis",
+        "Roles & Responsibilities",
+        "Process, Engagement & Meetings",
+        "Escalation Matrix & KPIs",
+        "Governance, Exceptions & Closeout"
+      ]
+    },
+    {
+      "slideNumber": 3,
+      "title": "Purpose & Policy Principles",
+      "content": [
+        "Why this procedure exists and the rules that are never negotiable"
+      ]
+    },
+    {
+      "slideNumber": 4,
+      "title": "01 · PURPOSE",
+      "content": [
+        "Purpose & Objectives",
+        "This procedure sets a structured framework to identify, analyse, engage and communicate with internal and external stakeholders in every project phase — so expectations, concerns and inputs are recorded and addressed systematically.",
+        "Identify early",
+        "Identify all internal and external stakeholders at project start and record them in the Stakeholder Register.",
+        "Analyse & categorize",
+        "Assess power and interest with the Power–Interest Matrix to set each stakeholder's engagement priority.",
+        "Communicate & engage",
+        "Run the Engagement Plan: coordination meetings, authority follow-ups, workshops and progress updates.",
+        "Monitor & report",
+        "Track approvals, influence and engagement status; report monthly through KPIs and dashboards.",
+        "Learn & improve",
+        "Capture lessons learned at close-out and feed them into future MAH projects."
+      ]
+    },
+    {
+      "slideNumber": 5,
+      "title": "01 · NON-NEGOTIABLES",
+      "content": [
+        "Governing Principles",
+        "Every stakeholder is in the Stakeholder Register with an owner, a category and an engagement priority.",
+        "No verbal-only commitments: every agreement is recorded in MoM, letter, transmittal or Aconex.",
+        "No commitment beyond delegated authority — escalate and obtain approval before confirming.",
+        "Governance first: stakeholder satisfaction never overrides policy, contract or statutory compliance.",
+        "Authority engagement goes through the GRO, with valid authorization letters.",
+        "No stakeholder issue is closed without evidence and sign-off by all concerned parties.",
+        "Policy deviations are exceptions only — justified, executive-approved, time-bound and recorded."
+      ]
+    },
+    {
+      "slideNumber": 6,
+      "title": "Stakeholders, Categories & Analysis",
+      "content": [
+        "Who our stakeholders are and how we prioritize them"
+      ]
+    },
+    {
+      "slideNumber": 7,
+      "title": "02 · DEFINITIONS",
+      "content": [
+        "Stakeholder — Key Definitions",
+        "Stakeholder",
+        "Any internal or external party that has an impact on, or may be affected by, project activities — from MAH departments and project teams to the Client, consultants, authorities, subcontractors, community and service providers.",
+        "Stakeholder Register (SR) & Engagement Plan (SEP)",
+        "The SR is the controlled list of all stakeholders with influence / interest levels, communication plan and actions. The SEP sets communication frequency, expectations and engagement strategy; the SEP Owner updates and coordinates actions.",
+        "Power–Interest Matrix",
+        "The categorization model that sets communication priority: Manage Closely, Keep Satisfied, Keep Informed or Monitor. Also used: SMP – Stakeholder Management Plan · SM – Stakeholder Manager · NOC – No Objection Certificate."
+      ]
+    },
+    {
+      "slideNumber": 8,
+      "title": "02 · CATEGORIES",
+      "content": [
+        "Internal, External & Management Levels",
+        "Internal Stakeholders",
+        "•  MAH management, functional departments, project teams and site staff.",
+        "•  Design, planning, QA/QC, HSE, procurement, commercial and contracts.",
+        "External Stakeholders",
+        "•  Client / Employer, PMC / consultants, authorities and utility owners.",
+        "•  Subcontractors, vendors, service providers and community representatives.",
+        "Three Management Levels",
+        "•  Project: Stakeholder Manager, Project Manager, Interface Manager.",
+        "•  Program: Projects Director · Sector: VP E&C, PMO and Risk Manager."
+      ]
+    },
+    {
+      "slideNumber": 9,
+      "title": "02 · ANALYSIS",
+      "content": [
+        "Power–Interest Matrix & Engagement Strategy",
+        "KEEP SATISFIED High power · Low interest Targeted updates on decisions that need them Executive management · approving authorities · utility owners",
+        "MANAGE CLOSELY High power · High interest Regular meetings and direct coordination Client / Employer · PMC / Consultant · permitting authorities",
+        "MONITOR Low power · Low interest Minimal engagement — watch for changes Non-critical suppliers · service providers · general public",
+        "KEEP INFORMED Low power · High interest Routine communication and progress updates Subcontractors · internal departments · adjacent contractors · community"
+      ]
+    },
+    {
+      "slideNumber": 10,
+      "title": "Roles & Responsibilities",
+      "content": [
+        "Who owns what — from the E&C Sector down to subcontractors and the Client"
+      ]
+    },
+    {
+      "slideNumber": 11,
+      "title": "03 · ROLES",
+      "content": [
+        "Stakeholder, Project & Interface Management",
+        "Stakeholder Manager",
+        "Leads the SMP, Stakeholder Register and Engagement Plan.",
+        "Analyses power / interest; chairs meetings; issues MoM in 48 hours.",
+        "Tracks KPIs and satisfaction; escalates critical issues.",
+        "Project Manager",
+        "Integrates stakeholder management into the PEP; allocates resources.",
+        "Approves the SMP and strategies affecting scope, cost or schedule.",
+        "Attends high-level meetings; decides on escalated issues.",
+        "Interface Manager",
+        "Coordinates interface points with departments, subcontractors, authorities.",
+        "Aligns the Interface Register with stakeholder engagement actions.",
+        "Supports communication flow; escalates unresolved conflicts."
+      ]
+    },
+    {
+      "slideNumber": 12,
+      "title": "03 · ROLES",
+      "content": [
+        "Engineering, Planning & Contracts",
+        "Technical / Engineering Mgr",
+        "Reviews IFC drawings for stakeholder requirements and impacts.",
+        "Gives timely technical responses to stakeholder comments.",
+        "Presents design updates; closes technical actions in meetings.",
+        "Planning Engineer",
+        "Puts engagement milestones and commitments into the schedule.",
+        "Monitors stakeholder activities; reports delays and dependencies.",
+        "Updates dashboards of achieved and pending engagement targets.",
+        "Contract & Claim Manager",
+        "Identifies stakeholders linked to obligations, claims and variations.",
+        "Keeps all claim-related communication formal and traceable.",
+        "Assesses the contractual and financial impact of decisions."
+      ]
+    },
+    {
+      "slideNumber": 13,
+      "title": "03 · ROLES",
+      "content": [
+        "Support Functions, Partners & Client",
+        "Department Heads",
+        "Identify discipline stakeholders, raise emerging issues and close assigned actions.",
+        "QA/QC Manager",
+        "Addresses stakeholder quality concerns through NCRs and corrective actions.",
+        "Procurement",
+        "Aligns vendors and subcontractors on delivery, compliance and schedule.",
+        "Commercial Manager",
+        "Keeps commercial communication formal; assesses financial impact.",
+        "Government Relations (GRO)",
+        "Coordinates authority attendance and access; follows up permits and NOCs.",
+        "Subcontractors / Vendors",
+        "Report stakeholders in their scope, attend meetings, meet obligations.",
+        "Consultant / PMC",
+        "Reviews and approves the SMP; responds on time to contractor letters.",
+        "Client / Employer",
+        "Endorses the approach, approves key strategies, gives timely decisions."
+      ]
+    },
+    {
+      "slideNumber": 14,
+      "title": "03 · RELATIONS WITH OTHER PARTIES",
+      "content": [
+        "Stakeholder Relations",
+        "STAKEHOLDER MANAGER",
+        "Client / Employer",
+        "PMC / Consultant",
+        "Authorities (via GRO)",
+        "Subcontractors & Vendors",
+        "Interface Manager",
+        "Community & Third Parties",
+        "Project Team"
+      ]
+    },
+    {
+      "slideNumber": 15,
+      "title": "03 · RACI",
+      "content": [
+        "Stakeholder Management RACI Matrix",
+        "R Responsible · A Accountable · C Consulted · I Informed · A/R Accountable & Responsible  —  Source: MAH-ENC-CNS-PM-TMP-002 Stakeholder Management RACI Matrix"
+      ]
+    },
+    {
+      "slideNumber": 16,
+      "title": "Process, Engagement & Meetings",
+      "content": [
+        "How every stakeholder issue moves from identification to verified closure"
+      ]
+    },
+    {
+      "slideNumber": 17,
+      "title": "04 · PROCESS FLOW",
+      "content": [
+        "Stakeholder Management Process Flow (Project Level)",
+        "Step 1",
+        "Identify & Register",
+        "Stakeholder Manager",
+        "→",
+        "Step 2",
+        "Categorize & Analyse",
+        "SM / Project Manager",
+        "→",
+        "Step 3",
+        "Communicate & Coordinate",
+        "Interface Manager",
+        "→",
+        "Step 4",
+        "Resolve Issues",
+        "Discipline Leads",
+        "→",
+        "Step 5",
+        "Verify & Validate",
+        "Site Team / PM",
+        "→",
+        "Step 6",
+        "Close & Report",
+        "SM / PM",
+        "The Project Manager approves each closure against evidence — approvals, MoMs, drawings, NOCs. If not approved, the issue returns to coordination. All documents are uploaded to Aconex before closure; KPIs and response times are reported to management.",
+        "Required Stakeholder Management Records (MAH-ENC-CNS-PM series)",
+        "Stakeholder Register (FRM-006)",
+        "Communication & Action Tracker (FRM-007)",
+        "Stakeholder MoM (FRM-008)",
+        "Monthly Summary Report (FRM-009)",
+        "Process Map (010) · Feedback Log (011)",
+        "Lessons Learned (012) · RACI · SEP"
+      ]
+    },
+    {
+      "slideNumber": 18,
+      "title": "04 · PROCESS MAP",
+      "content": [
+        "One Process at Three Management Levels",
+        "Project Level",
+        "Identify and register stakeholders, assess them on the Power–Interest Matrix, coordinate through meetings, RFIs and authority follow-ups, resolve through discipline coordination, verify documents in Aconex and close with Project Manager approval.",
+        "Program Level",
+        "The Lead Interface Manager consolidates stakeholders affecting several projects and classifies them by program impact; the Projects Director validates; conflicts on schedule, approvals or shared assets are resolved and KPIs reported monthly.",
+        "Sector Level",
+        "The Lead Stakeholder Manager flags strategic, reputational or corporate risks; the Risk Manager assesses the impact on MAH's image and client relationship; the VP approves mitigation, the PMO monitors it and lessons are captured."
+      ]
+    },
+    {
+      "slideNumber": 19,
+      "title": "04 · ENGAGEMENT PLANNING",
+      "content": [
+        "Communication & Engagement Planning",
+        "Plan per Stakeholder",
+        "Method, frequency, responsible person and information to share — aligned with the SR.",
+        "→",
+        "Choose the Channel",
+        "Emails, meetings, workshops, transmittals, letters and awareness sessions.",
+        "→",
+        "Record & Track",
+        "Every communication and feedback in the Communication & Action Tracker.",
+        "→",
+        "Review & Update",
+        "At each stage change, or when stakeholder roles or needs change.",
+        "Communication Timing Rules (procedure requirement)",
+        "Internal meeting call",
+        "≥ 48 hours notice",
+        "External meeting invitation",
+        "≥ 72 hours notice",
+        "Minutes of Meeting (MoM)",
+        "≤ 48 hours after meeting",
+        "Stakeholder Register update",
+        "After every meeting"
+      ]
+    },
+    {
+      "slideNumber": 20,
+      "title": "04 · MEETINGS",
+      "content": [
+        "Meetings & Stakeholder Register",
+        "Meeting Cadence",
+        "Kick-off",
+        "Once — introduce the framework, key stakeholders, roles and reporting",
+        "Weekly",
+        "Coordination: review issues, actions and new concerns (or bi-weekly)",
+        "Monthly",
+        "Review: engagement performance, open issues and KPI trends with Client / PMC",
+        "As needed",
+        "Special meeting for urgent issues, authority approvals or critical coordination",
+        "Stakeholder Register — Status Flow",
+        "Closed",
+        "Actions completed, evidence filed and all parties signed off.",
+        "Review",
+        "Under review: response agreed — awaiting verification.",
+        "Open",
+        "Action pending with owner and target date; escalate if overdue.",
+        "Meeting deliverables: MoM within 48 hours · updated Stakeholder Register · Action Tracker with target dates · Engagement Dashboard of critical stakeholders and approvals."
+      ]
+    },
+    {
+      "slideNumber": 21,
+      "title": "04 · MEETING AGENDAS",
+      "content": [
+        "What Every Stakeholder Meeting Covers",
+        "Internal Coordination Meeting",
+        "•  Attendance, previous MoM, Register updates, new issues and dependencies.",
+        "•  Design, schedule, permits / NOCs, risks, RFIs, actions and closure targets.",
+        "External Coordination Meeting",
+        "•  Client, PMC, authorities, subcontractors: open issues and action status.",
+        "•  Permits / NOCs via GRO, access, utilities, risks and upcoming submissions.",
+        "Communication & Follow-up",
+        "•  Every issue logged by transmittal, email or MoM; owners acknowledge actions.",
+        "•  Overdue items escalated to PM and PMC; approvals linked to the schedule."
+      ]
+    },
+    {
+      "slideNumber": 22,
+      "title": "Escalation Matrix & KPIs",
+      "content": [
+        "Six escalation levels with response times — and how we measure engagement"
+      ]
+    },
+    {
+      "slideNumber": 23,
+      "title": "05 · ESCALATION MATRIX",
+      "content": [
+        "Escalation Levels 1 – 3",
+        "Level 1 — Project Level",
+        "Response: 1–3 working days. Routine stakeholder issues and minor coordination conflicts, with no policy or contract breach. The Project Manager / Interface Manager engage the stakeholder, clarify scope and constraints, and record the issue in the Stakeholder Register.",
+        "Level 2 — Project Management Review",
+        "Response: 3–5 working days. Issue not resolved at project level, or with potential schedule or cost impact. The Project Manager and discipline leads coordinate internally (Technical, Planning, QA/QC, HSE) and issue a formal response to the stakeholder.",
+        "Level 3 — Contract & Commercial Review",
+        "Response: 5–7 working days. Proposed solution conflicts with MAH policy or the contract, or has financial implications. The Contract / Commercial Manager assesses the risks, advises on variations, claims or mitigation and gives a written recommendation."
+      ]
+    },
+    {
+      "slideNumber": 24,
+      "title": "05 · ESCALATION MATRIX",
+      "content": [
+        "Escalation Levels 4 – 6",
+        "Level 4 — Program Level",
+        "Response: 7–10 working days. Multi-project impact, authority-level conflict, or high reputational or delivery risk. The Projects Director leads strategic engagement, cross-project alignment and direct negotiation with the stakeholder.",
+        "Level 5 — Sector / Executive",
+        "Response: As required / urgent. Non-compliant external request, critical legal, policy or reputational risk, or deadlock with an authority. Sector Head / Executive Management gives the final decision, communicates authority-to-authority and approves the strategic position.",
+        "Level 6 — Legal / Corporate Governance",
+        "Response: As required. Legal exposure, regulatory non-compliance or contractual dispute. Legal Counsel / Corporate Governance provide a legal opinion, formal notices or claims, and risk-containment actions."
+      ]
+    },
+    {
+      "slideNumber": 25,
+      "title": "05 · MONITORING",
+      "content": [
+        "Stakeholder Performance Indicators",
+        "≥85%",
+        "Stakeholder issues resolved on time",
+        "100%",
+        "Stakeholder meetings held as scheduled",
+        "100%",
+        "MoM issued within 48 hours",
+        "≥90%",
+        "Feedback actions closed by target date",
+        "≥4 / 5",
+        "Stakeholder satisfaction score (surveys)",
+        "Monthly",
+        "KPI dashboard & summary report to management"
+      ]
+    },
+    {
+      "slideNumber": 26,
+      "title": "Governance, Exceptions & Closeout",
+      "content": [
+        "Decisions within authority, controlled deviations and lessons learned"
+      ]
+    },
+    {
+      "slideNumber": 27,
+      "title": "06 · GOVERNANCE PRIORITY",
+      "content": [
+        "Governance Priority & Decision Authority",
+        "Decision Authority (Governance Matrix)",
+        "Routine coordination → Stakeholder Mgr",
+        "Technical workaround → Project Manager",
+        "Contract / cost impact → Commercial Mgr",
+        "Authority / regulatory → Program Director",
+        "High risk / reputation → Sector Mgmt",
+        "Policy deviation → Executive approval",
+        "Requests are checked against policy, contract, law and HSE / quality / ethics; commitments beyond authority are escalated first.",
+        "Resolution Flow (SEP)",
+        "Engage",
+        "Assess",
+        "Respond",
+        "Escalate",
+        "Decide",
+        "Record*",
+        "*MAH never proceeds with a solution that breaches policy, contract, statutory requirements or governance — regardless of external pressure. Decisions go to the Register and Issue & Decision Log.",
+        "High-impact triggers",
+        "•  Schedule delay over 30 days",
+        "•  Major budget impact",
+        "•  Specification or critical safety risk",
+        "•  Authority or public reputation"
+      ]
+    },
+    {
+      "slideNumber": 28,
+      "title": "06 · EXCEPTIONS & CLOSURE",
+      "content": [
+        "Exceptions, Lessons Learned & Our Commitment",
+        "Exceptions need a formal request: the issue, policy constraint, risks and mitigation.",
+        "Written Sector / Executive approval (plus Legal review if needed) before any deviation.",
+        "Approved deviations are limited in scope and time and set no precedent.",
+        "Awareness and collaboration sessions at key stages, recorded with the HSE and Interface teams.",
+        "Lessons learned captured for each exception and at close-out; records archived per document control.",
+        "Stakeholder satisfaction never overrides governance compliance.",
+        "“",
+        "MAH engages stakeholders early, communicates transparently and decides within authority — identified, analysed, engaged and closed with evidence.",
+        "Project Management leadership provides the support, resources and direction to apply this policy on every project — ensuring accountability, transparency and consistency."
+      ]
+    },
+    {
+      "slideNumber": 29,
+      "title": "Thank You",
+      "content": [
+        "Questions & Discussion"
+      ]
+    }
+  ],
+  "comparison": [
+    {
+      "slideNumber": 1,
+      "title": "INTERFACE MANAGEMENT",
+      "content": [
+        "vs. STAKEHOLDER MANAGEMENT",
+        "A comparative analysis of two complementary MAH governance systems",
+        "How the Engineering & Construction Sector coordinates technical connection points and stakeholder relationships across project delivery"
+      ]
+    },
+    {
+      "slideNumber": 2,
+      "title": "Agenda",
+      "content": [
+        "The core distinction",
+        "Scope and structure, side by side",
+        "Roles: shared vs. system-specific",
+        "Where the two systems intersect",
+        "Organizational separation",
+        "Key takeaways",
+        "Document basis"
+      ]
+    },
+    {
+      "slideNumber": 3,
+      "title": "01 · THE CORE DISTINCTION",
+      "content": [
+        "Both disciplines coordinate people, but they control different risks",
+        "INTERFACE MANAGEMENT",
+        "Primary question",
+        "What must connect, align, or close?",
+        "Focus",
+        "Boundaries, dependencies, design integration and field coordination at physical, functional and organizational connection points.",
+        "Main risk if ignored",
+        "Clashes, handoff gaps, rework and unresolved technical dependencies between disciplines, packages or contractors.",
+        "STAKEHOLDER MANAGEMENT",
+        "Primary question",
+        "Who can affect the project, and how should we engage them?",
+        "Focus",
+        "Influence, interest and expectations of the people and parties who affect — or are affected by — the project, mapped on a Power–Interest Matrix.",
+        "Main risk if ignored",
+        "Resistance, non-response, conflicting expectations, reputational impact and policy deviation under external pressure."
+      ]
+    },
+    {
+      "slideNumber": 4,
+      "title": "02 · SCOPE AND STRUCTURE",
+      "content": [
+        "The same five dimensions, answered two different ways",
+        "INTERFACE MANAGEMENT",
+        "STAKEHOLDER MANAGEMENT",
+        "Unit of analysis",
+        "An interface point: where scopes, disciplines, organizations or information flows meet.",
+        "A stakeholder: any party that affects, or may be affected by, the project.",
+        "Categorization model",
+        "Flat split: Internal Interface Points vs. External Interface Points.",
+        "Power–Interest Matrix: Manage Closely, Keep Satisfied, Keep Informed, Monitor.",
+        "Core register",
+        "Interface Points Register + Interface Matrix Sheet (who interfaces with whom, on what).",
+        "Stakeholder Register + Stakeholder Engagement Plan (who matters, how much, how engaged).",
+        "Issue tracking tool",
+        "Interface Issue Log — escalated conflicts and physical/technical clashes.",
+        "Case Feedback Log — escalated conflicts, resistance and unmet expectations.",
+        "Owning role",
+        "Interface Manager, supported by discipline engineers and subcontractors.",
+        "Stakeholder Manager, supported by the Interface Manager and Department Heads."
+      ]
+    },
+    {
+      "slideNumber": 5,
+      "title": "03 · ROLES COMPARISON",
+      "content": [
+        "Interface Manager vs Stakeholder Manager",
+        "INTERFACE MANAGER controls connection points",
+        "STAKEHOLDER MANAGER controls relationships",
+        "vs",
+        "What it controls",
+        "Connection points, clashes and holding areas — where scopes, systems and work zones physically or contractually meet.",
+        "Influence, interest and expectations of the people and parties who affect — or are affected by — the project.",
+        "Key question",
+        "“Where do our works meet, and is every point resolved?”",
+        "“Who matters, what do they expect, and are they on board?”",
+        "Main tool",
+        "Interface Matrix  ·  Interface Points Register",
+        "Power–Interest Matrix  ·  Stakeholder Register & SEP",
+        "Typical items",
+        "Utility crossings and tie-ins, battery limits, work-zone handovers, shared laydown / holding areas.",
+        "Client, PMC, authorities, utility owners, subcontractors, community — approvals, NOCs, concerns.",
+        "Records",
+        "Interface Issue Log, MoM, RFIs, closure evidence and sign-off in Aconex.",
+        "Communication & Action Tracker, MoM, engagement dashboard, lessons learned.",
+        "Success measure",
+        "Interface points closed by target date — with evidence and all-party sign-off.",
+        "≥85% of stakeholder issues resolved on time; meetings held as scheduled.",
+        "Governing procedure",
+        "MAH-ENC-CNS-PM-PRO-001  ·  RACI TMP-001",
+        "MAH-ENC-CNS-PM-PRO-002  ·  RACI TMP-002  ·  SEP TMP-003",
+        "Two roles — they cannot be merged into one title:  interfaces need technical and contractual control of points, clashes and holding areas; stakeholders need management of people, influence and expectations. Different skills, tools, registers and procedures (PRO-001 vs PRO-002) — combining them loses one or the other. They work side by side: the Interface Manager closes the technical point, the Stakeholder Manager secures the agreement behind it."
+      ]
+    },
+    {
+      "slideNumber": 6,
+      "title": "04 · WHERE THEY INTERSECT",
+      "content": [
+        "Two separate roles — connected, not merged",
+        "INTERFACE MANAGER Controls connection points  ·  PRO-001 –  Interface Points Register –  Interface Matrix Sheet –  Design & field coordination –  Technical RFIs and clashes",
+        "STAKEHOLDER MANAGER Controls relationships  ·  PRO-002 –  Stakeholder Register –  Power–Interest Matrix –  Engagement & communication plan –  Relationship-level conflicts",
+        "ALIGNED, NOT MERGED Each role keeps its own owner, register, RACI and procedure. The Interface Manager supports the Stakeholder Manager’s communication flow, and both registers are aligned after every coordination meeting.",
+        "Escalation stays separate but aligned:  interface conflicts follow the PRO-001 escalation route; stakeholder disagreements follow the PRO-002 escalation matrix. Each manager owns his own log — both feed the same governance chain."
+      ]
+    },
+    {
+      "slideNumber": 7,
+      "title": "05 · ORGANIZATIONAL SEPARATION",
+      "content": [
+        "Two disciplines, two departments — not one combined role",
+        "INTERFACE MANAGEMENT",
+        "Department mandate",
+        "A technical / engineering function accountable for physical and design coordination across disciplines and contractors.",
+        "Core owner",
+        "Interface Manager — owns the Interface Points Register, Interface Matrix Sheet and Interface Issue Log.",
+        "Risk of merging the two",
+        "Technical coordination gets diluted by negotiation and relationship demands, slowing clash resolution and design sign-off.",
+        "STAKEHOLDER MANAGEMENT",
+        "Department mandate",
+        "A commercial function accountable for client, authority and stakeholder engagement and communication.",
+        "Core owner",
+        "Stakeholder Manager — owns the Stakeholder Register, Power–Interest Matrix and Engagement Plan.",
+        "Risk of merging the two",
+        "Stakeholder engagement gets diluted by day-to-day technical firefighting, weakening client and authority relationships.",
+        "Recommendation:  keep Interface Management and Stakeholder Management as two separate departments, each with its own manager, register and RACI ownership. The Interface Manager should act only as the coordination bridge between them (see previous slide) — not as a merged role carrying both mandates."
+      ]
+    },
+    {
+      "slideNumber": 8,
+      "title": "SUMMARY",
+      "content": [
+        "Two separate roles on the same delivery risk — connected, never merged",
+        "Different roles, different owners The Interface Manager controls connection points; the Stakeholder Manager controls relationships. Each has its own register, matrix, RACI and procedure (PRO-001 / PRO-002) — they cannot be merged into one title.",
+        "Aligned, not combined The Interface Manager supports the Stakeholder Manager’s communication flow, and both registers are aligned after every coordination meeting — two accountable owners, one coordinated picture.",
+        "Escalate to the right depth Route technical clashes through the 3-level interface escalation; route relationship, contractual or reputational issues onto the 6-level stakeholder matrix, up to Legal / Corporate Governance."
+      ]
+    },
+    {
+      "slideNumber": 9,
+      "title": "10 · DOCUMENT BASIS",
+      "content": [
+        "This comparison is drawn from four controlled MAH documents",
+        "MAH-ENC-PMO-PM-POL-001",
+        "Interface Management Policy",
+        "Rev.00 · 1 Oct 2025",
+        "MAH-ENC-CNS-PM-PRO-001",
+        "Projects Interface Management Procedure",
+        "Rev.00 · 1 Oct 2025",
+        "MAH-ENC-PMO-PM-POL-002",
+        "Stakeholder Management Policy",
+        "Rev.00 · 1 Nov 2025",
+        "MAH-ENC-CNS-PM-PRO-002",
+        "Projects Stakeholder Management Procedure",
+        "Rev.00 · 1 Nov 2025",
+        "Reference note:  all four documents were checked and approved by the same governance chain — Projects Director, Head of HSE & TMO, Head of QA/QC and VP Engineering & Construction Sector — confirming this comparison rests on a single, coordinated set of controlled documents."
+      ]
+    }
+  ],
+  "logistics": [
+    {
+      "slideNumber": 1,
+      "title": "LOGISTICS MANAGEMENT",
+      "content": [
+        "Procedures, Roles & Site Interfaces  —  Team Briefing",
+        "Doc. Ref. MAH-ENC-CNS-PM-PRO-001"
+      ]
+    },
+    {
+      "slideNumber": 2,
+      "title": "Agenda",
+      "content": [
+        "Purpose & Governing Principles",
+        "Roles & Responsibilities",
+        "Approval Gates & Delivery Process",
+        "Site Operations Control",
+        "Communication, KPIs & Escalation",
+        "Risk, Nonconformance & Closeout"
+      ]
+    },
+    {
+      "slideNumber": 3,
+      "title": "Purpose & Governing Principles",
+      "content": [
+        "Why this procedure exists and the rules that are never negotiable"
+      ]
+    },
+    {
+      "slideNumber": 4,
+      "title": "01 · PURPOSE",
+      "content": [
+        "Purpose & Objectives",
+        "This procedure establishes the mandatory framework for planning, approving, coordinating, executing, monitoring and closing logistics activities across MG / E&C construction and infrastructure projects.",
+        "Protect performance",
+        "Safeguard project schedule, cost, quality and HSE performance.",
+        "Prevent disruption",
+        "Prevent congestion, double handling, idle resources and workfront disruption.",
+        "Maintain safe access",
+        "Maintain safe public traffic, property, pedestrian and emergency access.",
+        "Control interfaces",
+        "Control logistics interfaces with suppliers, subcontractors, authorities and adjacent stakeholders.",
+        "Every project needs a plan",
+        "Require every project to prepare a project-specific Logistics Management Plan (LMP)."
+      ]
+    },
+    {
+      "slideNumber": 5,
+      "title": "01 · NON-NEGOTIABLES",
+      "content": [
+        "Governing Principles",
+        "No logistics activity proceeds without an approved requirement, owner and confirmed workfront.",
+        "No mobilization before the applicable mobilization gate has been satisfied.",
+        "No live-traffic movement without TMP controls and Traffic / HSE confirmation.",
+        "No abnormal load without route verification, permits and escorts.",
+        "Materials are traceable from purchase and dispatch through receipt, storage and installation.",
+        "Any deviation is risk-assessed, approved and recorded before implementation.",
+        "Every person in logistics operations has authority to stop an unsafe or unauthorized movement."
+      ]
+    },
+    {
+      "slideNumber": 6,
+      "title": "Roles & Responsibilities",
+      "content": [
+        "Who owns what across leadership, site execution and support functions"
+      ]
+    },
+    {
+      "slideNumber": 7,
+      "title": "02 · ROLES",
+      "content": [
+        "Leadership & Management",
+        "Project Director",
+        "Approves logistics strategy and major resources.",
+        "Resolves escalated constraints affecting milestones, cost or stakeholders.",
+        "Ensures coordination across projects sharing resources or routes.",
+        "Project Manager",
+        "Approves the project LMP before operations commence.",
+        "Chairs or delegates the weekly logistics coordination meeting.",
+        "Reviews KPI performance, risks and unresolved corrective actions.",
+        "Logistics Manager",
+        "Develops, implements and maintains the project LMP.",
+        "Manages access routes, gates, delivery schedules and logistics zones.",
+        "Authorized to stop or reschedule any unsafe or unapproved movement."
+      ]
+    },
+    {
+      "slideNumber": 8,
+      "title": "02 · ROLES",
+      "content": [
+        "Site Execution Team",
+        "Construction Manager",
+        "Confirms workfront readiness and material demand.",
+        "Provides construction sequencing and short-term priorities.",
+        "Nominates unloading points and responsible receiving personnel.",
+        "Logistics Supervisor",
+        "Implements the approved LMP and daily logistics programme.",
+        "Verifies bookings, permits, driver and vehicle documents.",
+        "Coordinates with Construction, Stores, HSE, Traffic and Security.",
+        "Logistics Foreman",
+        "Directs daily activities of workers, drivers and banksmen.",
+        "Runs toolbox talks and controls vehicle movement on site.",
+        "Reports damaged materials, unsafe conditions and delays immediately."
+      ]
+    },
+    {
+      "slideNumber": 9,
+      "title": "02 · ROLES",
+      "content": [
+        "Support & Enabling Functions",
+        "Planning",
+        "Integrates logistics into the baseline schedule and rolling look-ahead.",
+        "Procurement & Suppliers",
+        "Aligns PO dates, confirms supplier readiness and transport arrangements.",
+        "Store & Warehouse",
+        "Controls receiving documentation, quarantine and rejected materials.",
+        "QA/QC",
+        "Defines inspection requirements and controls nonconforming materials.",
+        "HSE",
+        "Reviews risk assessments, JHAs, PTWs and verifies compliance.",
+        "Traffic Mgmt. & Engineer",
+        "Stages TMP approvals, route design and traffic-switch controls.",
+        "Security",
+        "Controls gate access, ID checks and vehicle authorization.",
+        "Interface & Stakeholder / PDIM",
+        "Coordinates authorities, utilities and cross-functional integration."
+      ]
+    },
+    {
+      "slideNumber": 10,
+      "title": "02 · RELATIONS WITH OTHER TEAMS",
+      "content": [
+        "Logistics Interfaces at Site",
+        "LOGISTICS TEAM",
+        "Construction",
+        "Procurement & Suppliers",
+        "Stores & QA/QC",
+        "HSE & Traffic Mgmt.",
+        "Security",
+        "Interface, Stakeholders & Authorities",
+        "Planning"
+      ]
+    },
+    {
+      "slideNumber": 11,
+      "title": "Approval Gates & Delivery Process",
+      "content": [
+        "The control points and workflow every delivery must pass through"
+      ]
+    },
+    {
+      "slideNumber": 12,
+      "title": "03 · APPROVAL GATES",
+      "content": [
+        "Mandatory Logistics Approval Gates",
+        "Gate 0",
+        "Contract Activation",
+        "PD / PM",
+        "→",
+        "Gate 1",
+        "Coordination & HSE Readiness",
+        "PM / HSE / Technical",
+        "→",
+        "Gate 2",
+        "Site Establishment Readiness",
+        "PM / Constr. / HSE",
+        "→",
+        "Gate 3",
+        "Workfront Release",
+        "Constr. / Log. / HSE / QA",
+        "→",
+        "Gate 4",
+        "Resources Movement",
+        "Log. / HSE / Traffic",
+        "→",
+        "Gate 5",
+        "Demobilization & Closeout",
+        "PM & functions",
+        "No gate may be bypassed through verbal instruction. Emergency deviations must be documented and approved by authorized management and HSE representatives.",
+        "Required Project Logistics Documents (examples)",
+        "Logistics Management Plan",
+        "Approved site layout & route plan",
+        "TMPs & traffic-switch plans",
+        "Delivery booking procedure",
+        "Logistics risk & interface register",
+        "Logistics look-ahead & KPI system"
+      ]
+    },
+    {
+      "slideNumber": 13,
+      "title": "03 · DELIVERY PROCESS",
+      "content": [
+        "Delivery Lifecycle",
+        "Demand Forecasting",
+        "Construction & Planning issue rolling material and equipment demand.",
+        "→",
+        "Delivery Request",
+        "PO reference, driver/vehicle details, load data and required permits.",
+        "→",
+        "Approval & Scheduling",
+        "Logistics verifies workfront, route, storage and manpower availability.",
+        "→",
+        "Arrival, Receiving & Closeout",
+        "Security, HSE, QA/QC and Stores clear, receive and record the delivery.",
+        "Minimum Notice Periods (proposed corporate default)",
+        "Routine delivery",
+        "≥ 72 hours",
+        "Critical concrete / asphalt",
+        "Coordinated via daily plan",
+        "Oversized / abnormal load",
+        "≥ 14 calendar days",
+        "Major crane / girder movement",
+        "≥ 14 days + lifting package"
+      ]
+    },
+    {
+      "slideNumber": 14,
+      "title": "Site Operations Control",
+      "content": [
+        "Managing materials, storage, traffic and equipment day to day"
+      ]
+    },
+    {
+      "slideNumber": 15,
+      "title": "04 · SITE OPERATIONS",
+      "content": [
+        "Material, Storage & Logistics Stations",
+        "Non-Inventory Materials",
+        "•  Ready-mix concrete, asphalt, aggregates and backfill coordinated for direct use.",
+        "•  Workfront readiness, mix approval, supplier availability confirmed before dispatch.",
+        "Laydown, Warehouse & Zoning",
+        "•  Zoning plan covers inventory, structural steel, hazardous materials and waste.",
+        "•  Rejected and quarantined materials are segregated from active stock.",
+        "Temporary Logistics Stations",
+        "•  Detarping, concrete sampling/washout, wheel-wash and vehicle holding areas.",
+        "•  Each station has approved layout, signage, lighting and inspection schedule."
+      ]
+    },
+    {
+      "slideNumber": 16,
+      "title": "04 · SITE OPERATIONS",
+      "content": [
+        "Traffic, Heavy Transport & Internal Flow",
+        "Traffic, Access & Route Management",
+        "No movement affecting live traffic proceeds until Traffic Management confirms controls: segregated routes, marshals, barriers, signage and continuous emergency access.",
+        "Heavy Transport, Cranes & Equipment",
+        "Mobilized per the approved histogram. Route geometry, ground bearing capacity, permits, lifting plan, JHA and PTW verified before movement.",
+        "Internal Material Flow",
+        "Movement from stores/laydown to workfronts is controlled by an approved issue or transfer request, minimizing double handling and blocked access."
+      ]
+    },
+    {
+      "slideNumber": 17,
+      "title": "Communication, KPIs & Escalation",
+      "content": [
+        "How the team stays aligned and how performance is measured"
+      ]
+    },
+    {
+      "slideNumber": 18,
+      "title": "05 · COMMUNICATION",
+      "content": [
+        "Communication Structure & Interface Register",
+        "Meeting Cadence",
+        "Daily",
+        "Logistics coordination meeting & delivery/equipment schedule",
+        "Weekly",
+        "Logistics look-ahead + interface and permit review",
+        "Monthly",
+        "Management performance review",
+        "As needed",
+        "Advance coordination for critical lifts or abnormal loads",
+        "Logistics Interface Register — Status Rules",
+        "Green",
+        "No effect on the approved sequence.",
+        "Amber",
+        "Potential effect — recovery action required.",
+        "Red",
+        "Milestone, safety, authority or traffic impact — immediate escalation.",
+        "Register fields: issue & location · affected activity/milestone · responsible party · required decision · target closure date · status · escalation level."
+      ]
+    },
+    {
+      "slideNumber": 19,
+      "title": "05 · MONITORING",
+      "content": [
+        "Key Performance Indicators",
+        "≥95%",
+        "Deliveries completed within approved slot",
+        "100%",
+        "Pre-arrival documentation complete",
+        "100%",
+        "TMP & access-route inspections completed",
+        "≥90%",
+        "Corrective actions closed within target",
+        "Zero",
+        "Preventable material damage events",
+        "Zero",
+        "Unauthorized gate entries"
+      ]
+    },
+    {
+      "slideNumber": 20,
+      "title": "Risk, Nonconformance & Closeout",
+      "content": [
+        "Staying ahead of disruption and closing the project out cleanly"
+      ]
+    },
+    {
+      "slideNumber": 21,
+      "title": "06 · CONTROL",
+      "content": [
+        "Risk & Nonconformance Management",
+        "Top Logistics Risks",
+        "Delivery delays & supplier failure",
+        "Access or route restrictions",
+        "Traffic congestion & lane reductions",
+        "Utility conflicts & workfront readiness",
+        "Equipment or crane-access conflicts",
+        "Weather, dust and visibility",
+        "Controls: alternative suppliers, backup routes, buffer stock, off-peak delivery, standby lifting equipment, early authority engagement.",
+        "Nonconformance Handling",
+        "Record",
+        "Assign",
+        "Risk-rate",
+        "Correct",
+        "Verify",
+        "Close",
+        "Repeated or serious nonconformities are escalated to the Project Manager and HSE Manager and may result in suspension of the supplier or transporter.",
+        "Typical nonconformities",
+        "•  Unauthorized or unbooked delivery",
+        "•  Use of an unapproved route",
+        "•  Missing permit, certificate or inspection",
+        "•  Blocked emergency or public access"
+      ]
+    },
+    {
+      "slideNumber": 22,
+      "title": "06 · CLOSEOUT",
+      "content": [
+        "Demobilization, Handover & Our Commitment",
+        "Removal of temporary facilities, stations and utilities.",
+        "Equipment, vehicle and asset demobilization and reconciliation.",
+        "Reinstatement of temporary diversions and laydown areas.",
+        "Permit and authority closeout, record handover and archive.",
+        "Lessons-learned workshop and closeout report.",
+        "No logistics area is handed over until it is inspected, cleared, reinstated and formally accepted.",
+        "“",
+        "MAH manages logistics as an integrated project-control function — not merely a transportation service.",
+        "Successful logistics requires coordinated planning between Procurement, Stores, Construction, Planning, HSE, QA/QC, Traffic Management, Security, Interface Management, suppliers and subcontractors."
+      ]
+    },
+    {
+      "slideNumber": 23,
+      "title": "Thank You",
+      "content": [
+        "Questions & Discussion"
+      ]
+    }
+  ]
+}

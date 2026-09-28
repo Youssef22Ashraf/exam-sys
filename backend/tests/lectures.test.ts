@@ -203,5 +203,56 @@ describe("Lectures & Recordings System", () => {
     expect(res.text).toContain("Tarek Mostafa");
     expect(res.text).toContain("HSE / Safety");
     expect(res.text).toContain("Department (From Where)");
+    expect(res.text).toContain("Checklist Completion (%)");
+    expect(res.text).toContain("Video Watched");
+    expect(res.text).toContain("Slides Reviewed");
+  });
+
+  it("POST /api/lectures/checklist updates checklist items and returns computed percentage", async () => {
+    const res = await request(app)
+      .post("/api/lectures/checklist")
+      .send({
+        name: "Youssef Nabil",
+        email: "youssef.nabil@mofarreh.com",
+        companyId: "EMP-5001",
+        department: "Interface Management",
+        lectureId: "interface-management",
+        completedItems: ["video", "slides", "ip_identification"],
+        action: "CHECKLIST_UPDATED",
+      })
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    // Video (35) + Slides (35) + 1/5 checkpoints (4) = 74%
+    expect(res.body.completionPercent).toBeGreaterThanOrEqual(70);
+    expect(res.body.progress.videoCompleted).toBe(true);
+    expect(res.body.progress.slidesViewed).toBe(true);
+    expect(res.body.progress.completedItems).toContain("ip_identification");
+
+    // Verify user can retrieve their saved progress
+    const getProg = await request(app)
+      .get("/api/lectures/user/progress?email=youssef.nabil@mofarreh.com")
+      .expect(200);
+
+    expect(getProg.body.progress).toHaveLength(1);
+    expect(getProg.body.progress[0].lectureId).toBe("interface-management");
+    expect(getProg.body.progress[0].completionPercent).toBe(res.body.completionPercent);
+  });
+
+  it("GET /api/lectures/:id returns complete slide items and checkpoints", async () => {
+    const res = await request(app)
+      .get("/api/lectures/interface-management")
+      .expect(200);
+
+    expect(res.body.slides).toBeInstanceOf(Array);
+    expect(res.body.slides.length).toBe(28);
+    expect(res.body.slides[0]).toHaveProperty("slideNumber", 1);
+    expect(res.body.slides[0]).toHaveProperty("title");
+    expect(res.body.slides[0]).toHaveProperty("content");
+
+    expect(res.body.checkpoints).toBeInstanceOf(Array);
+    expect(res.body.checkpoints.length).toBeGreaterThan(0);
+    expect(res.body.checkpoints[0]).toHaveProperty("id");
+    expect(res.body.checkpoints[0]).toHaveProperty("label");
   });
 });

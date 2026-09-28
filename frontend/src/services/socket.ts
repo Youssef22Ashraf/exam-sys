@@ -250,4 +250,28 @@ export const socketService = {
       }
     };
   },
+
+  onAdminLectureChecklist(callback: (data: {
+    candidateName: string;
+    candidateEmail: string;
+    companyId: string;
+    department: string;
+    lectureId: string;
+    lectureTitle: string;
+    completionPercent: number;
+    completedItems: string[];
+    timestamp: string;
+  }) => void) {
+    const s = getSocket();
+
+    if (s) {
+      s.on("admin:lecture_checklist", callback);
+    }
+
+    return () => {
+      if (s) {
+        s.off("admin:lecture_checklist", callback);
+      }
+    };
+  },
 };

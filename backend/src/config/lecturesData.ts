@@ -1,10 +1,23 @@
 import path from "path";
 import fs from "fs";
+import rawSlidesData from "./lecturesSlides.json";
 
 export interface LectureSlideTopic {
   slideNumber: number;
   title: string;
   summary?: string;
+}
+
+export interface SlideItem {
+  slideNumber: number;
+  title: string;
+  content: string[];
+}
+
+export interface CheckpointItem {
+  id: string;
+  label: string;
+  description?: string;
 }
 
 export interface LectureItem {
@@ -23,7 +36,18 @@ export interface LectureItem {
   srtFilename?: string;
   keyTopics: string[];
   outline: LectureSlideTopic[];
+  slides: SlideItem[];
+  checkpoints: CheckpointItem[];
 }
+
+const rawSlides = rawSlidesData as Record<string, SlideItem[]>;
+
+const SLIDES_MAP: Record<string, SlideItem[]> = {
+  "interface-management": rawSlides["interface-management"] || [],
+  "stakeholder-management": rawSlides["stakeholder-management"] || [],
+  "interface-vs-stakeholder": rawSlides["comparison"] || rawSlides["interface-vs-stakeholder"] || [],
+  "logistics-management": rawSlides["logistics"] || rawSlides["logistics-management"] || [],
+};
 
 export const LECTURES: LectureItem[] = [
   {
@@ -78,6 +102,34 @@ export const LECTURES: LectureItem[] = [
       { slideNumber: 26, title: "Formal Handover & Interface Closeout Sign-off" },
       { slideNumber: 27, title: "Summary Takeaways & Document Reference Library" },
       { slideNumber: 28, title: "Q&A Session & Next Steps" },
+    ],
+    slides: SLIDES_MAP["interface-management"] || [],
+    checkpoints: [
+      {
+        id: "ip_identification",
+        label: "Interface Point (IP) Definition & Types",
+        description: "Understand Physical, Functional, and Organizational boundary definitions across project disciplines.",
+      },
+      {
+        id: "ipr_principles",
+        label: "Interface Points Register (IPR) Non-Negotiables",
+        description: "Zero unregistered interfaces, named owners, mandatory target dates, and formal change tracking.",
+      },
+      {
+        id: "raci_matrix",
+        label: "Roles, Responsibilities & RACI Governance",
+        description: "Clear mandates for Interface Manager, Engineering Leads, Subcontractors, and Project Management.",
+      },
+      {
+        id: "escalation_matrix",
+        label: "Escalation Matrix & SLA Timelines",
+        description: "3-tier escalation framework for unresolved interfaces without delaying the critical path.",
+      },
+      {
+        id: "closeout_criteria",
+        label: "Formal Interface Closeout Sign-Off",
+        description: "Technical sign-off by all concerned parties with verification evidence and closeout transmittals.",
+      },
     ],
   },
   {
@@ -134,6 +186,34 @@ export const LECTURES: LectureItem[] = [
       { slideNumber: 28, title: "Key Briefing Summary & Action Items" },
       { slideNumber: 29, title: "Open Floor Q&A" },
     ],
+    slides: SLIDES_MAP["stakeholder-management"] || [],
+    checkpoints: [
+      {
+        id: "power_interest_matrix",
+        label: "Power–Interest Matrix Quadrants",
+        description: "Master the 4 engagement quadrants: Manage Closely, Keep Satisfied, Keep Informed, and Monitor.",
+      },
+      {
+        id: "engagement_planning",
+        label: "Stakeholder Engagement Plan (SEP)",
+        description: "Tailored communication strategies, frequency, and verified channels per stakeholder group.",
+      },
+      {
+        id: "gro_authority",
+        label: "Government & Authority Coordination via GRO",
+        description: "Direct all municipal, utility, and regulatory interactions through the Government Relations Officer.",
+      },
+      {
+        id: "grievance_disputes",
+        label: "Grievance Mechanism & Issue Logging",
+        description: "Systematic logging, investigation, escalation, and resolution of external community grievances.",
+      },
+      {
+        id: "sentiment_audit",
+        label: "Stakeholder Audit & Sentiment Tracking",
+        description: "Regular updates to the Stakeholder Register and proactive relationship health checks.",
+      },
+    ],
   },
   {
     id: "interface-vs-stakeholder",
@@ -167,6 +247,29 @@ export const LECTURES: LectureItem[] = [
       { slideNumber: 7, title: "05 Organizational Separation: Why They Sit in Separate Departments" },
       { slideNumber: 8, title: "Summary Matrix: Key Takeaways & Delivery Protections" },
       { slideNumber: 9, title: "Controlled Reference Documents & Discussion" },
+    ],
+    slides: SLIDES_MAP["interface-vs-stakeholder"] || [],
+    checkpoints: [
+      {
+        id: "core_distinction",
+        label: "The Core Distinction: Technical vs. Relational",
+        description: "Interface controls connection points and physical/functional clashes; Stakeholder controls human expectations and influence.",
+      },
+      {
+        id: "mandate_separation",
+        label: "Organizational & Departmental Separation",
+        description: "Why separate reporting lines protect delivery: avoiding dilution of technical rigor and stakeholder diplomacy.",
+      },
+      {
+        id: "tools_comparison",
+        label: "Tools & Registers Contrast",
+        description: "Compare Interface Points Register (IPR) structure vs. Stakeholder Power-Interest Matrix.",
+      },
+      {
+        id: "joint_touchpoints",
+        label: "Joint Alignment & Technical Handoffs",
+        description: "Understand joint protocols when an external technical interface impacts a third-party stakeholder.",
+      },
     ],
   },
   {
@@ -216,8 +319,64 @@ export const LECTURES: LectureItem[] = [
       { slideNumber: 22, title: "Material Surplus Return & Laydown Remediation" },
       { slideNumber: 23, title: "Summary Takeaways & Controlled Reference Library" },
     ],
+    slides: SLIDES_MAP["logistics-management"] || [],
+    checkpoints: [
+      {
+        id: "supply_chain_inbound",
+        label: "Inbound Supply Chain & Delivery Windows",
+        description: "Enforce scheduled delivery windows and verified site gate clearances from supplier factory to laydown.",
+      },
+      {
+        id: "laydown_preservation",
+        label: "Laydown Management & Material Preservation",
+        description: "Strict staging area zones, environmental protection, and preservation maintenance protocols.",
+      },
+      {
+        id: "crane_rigging",
+        label: "Handling Equipment & Rigging Safety",
+        description: "Certified rigging plans, crane permits, and exclusion zones during offloading operations.",
+      },
+      {
+        id: "heavy_transport_permits",
+        label: "Oversized Cargo & Heavy Route Permits",
+        description: "Highway permits, police escorts, and bridge capacity clearances for oversized structural components.",
+      },
+      {
+        id: "traffic_control",
+        label: "Site Traffic Routing & Gate Logistics",
+        description: "One-way traffic circulation, speed limit enforcement, and pedestrian segregation on active project sites.",
+      },
+    ],
   },
 ];
+
+/**
+ * Calculate completion percentage based on finished items:
+ * - video: 35%
+ * - slides: 35%
+ * - checkpoints: 20% (split evenly)
+ * - download: 10%
+ */
+export function calculateLectureCompletion(
+  completedItemIds: string[],
+  lectureId: string
+): number {
+  const lecture = LECTURES.find((l) => l.id === lectureId);
+  if (!lecture) return 0;
+
+  let percent = 0;
+  if (completedItemIds.includes("video")) percent += 35;
+  if (completedItemIds.includes("slides")) percent += 35;
+  if (completedItemIds.includes("download")) percent += 10;
+
+  const cpList = lecture.checkpoints || [];
+  if (cpList.length > 0) {
+    const finishedCps = cpList.filter((cp) => completedItemIds.includes(cp.id));
+    percent += Math.round((finishedCps.length / cpList.length) * 20);
+  }
+
+  return Math.min(100, Math.max(0, percent));
+}
 
 /**
  * Robust resolution of the lectures directory on local dev or production container

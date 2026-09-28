@@ -8,6 +8,7 @@ import {
   LECTURES,
   getLecturesDirectory,
   convertSrtToVtt,
+  calculateLectureCompletion,
   LectureItem,
 } from "../config/lecturesData";
 import { io } from "../index";
@@ -48,6 +49,7 @@ router.get("/", (_req: Request, res: Response) => {
       durationFormatted: lec.durationFormatted,
       slideCount: lec.slideCount,
       keyTopics: lec.keyTopics,
+      checkpoints: lec.checkpoints,
       hasVideo: fs.existsSync(videoPath),
       hasSlides: fs.existsSync(pptxPath),
       hasSubtitles: Boolean(srtPath && fs.existsSync(srtPath)),
@@ -57,7 +59,126 @@ router.get("/", (_req: Request, res: Response) => {
   return res.json(list);
 });
 
-// GET /api/lectures/:id - Get specific lecture details with outline
+// GET /api/lectures/user/progress - Get candidate's checklist & completion progress across all lectures
+router.get("/user/progress", async (req: Request, res: Response) => {
+  try {
+    const email = (req.query.email as string)?.trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ error: "Email is required." });
+    }
+    const progress = await prisma.lectureProgress.findMany({
+      where: { candidateEmail: email },
+    });
+    return res.json({ progress });
+  } catch (error) {
+    console.error("Error fetching user progress:", error);
+    return res.status(500).json({ error: "Failed to fetch user progress." });
+  }
+});
+
+// POST /api/lectures/checklist - Update candidate's checklist items and progress
+router.post("/checklist", async (req: Request, res: Response) => {
+  try {
+    const { name, email, companyId, department, lectureId, completedItems, action } = req.body;
+    if (!email || !lectureId) {
+      return res.status(400).json({ error: "Email and lectureId are required." });
+    }
+    const trimmedEmail = String(email).trim().toLowerCase();
+    const trimmedName = name ? String(name).trim() : "Participant";
+    const trimmedCompanyId = companyId ? String(companyId).trim().toUpperCase() : "N/A";
+    const trimmedDepartment = department ? String(department).trim() : "General";
+    const lecture = LECTURES.find((l) => l.id === lectureId);
+    const lectureTitle = lecture ? lecture.title : String(lectureId);
+    const items: string[] = Array.isArray(completedItems) ? completedItems : [];
+
+    const completionPercent = calculateLectureCompletion(items, String(lectureId));
+    const isVideoDone = items.includes("video");
+    const isSlidesDone = items.includes("slides");
+    const isDownloadDone = items.includes("download");
+    const isCheckpointsDone = (lecture?.checkpoints && lecture.checkpoints.length > 0)
+      ? lecture.checkpoints.every((cp) => items.includes(cp.id))
+      : false;
+
+    const progress = await prisma.lectureProgress.upsert({
+      where: {
+        candidateEmail_lectureId: {
+          candidateEmail: trimmedEmail,
+          lectureId: String(lectureId),
+        },
+      },
+      update: {
+        candidateName: trimmedName,
+        companyId: trimmedCompanyId,
+        department: trimmedDepartment,
+        videoCompleted: isVideoDone,
+        slidesViewed: isSlidesDone,
+        slidesDownloaded: isDownloadDone,
+        checkpointsFinished: isCheckpointsDone,
+        completionPercent,
+        completedItems: JSON.stringify(items),
+        lastAccessedAt: new Date(),
+      },
+      create: {
+        candidateEmail: trimmedEmail,
+        candidateName: trimmedName,
+        companyId: trimmedCompanyId,
+        department: trimmedDepartment,
+        lectureId: String(lectureId),
+        videoCompleted: isVideoDone,
+        slidesViewed: isSlidesDone,
+        slidesDownloaded: isDownloadDone,
+        checkpointsFinished: isCheckpointsDone,
+        completionPercent,
+        completedItems: JSON.stringify(items),
+      },
+    });
+
+    const ipAddress =
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ||
+      req.socket.remoteAddress ||
+      "127.0.0.1";
+    const userAgent = (req.headers["user-agent"] as string) || "Unknown Device";
+
+    await prisma.lectureAttendance.create({
+      data: {
+        candidateName: trimmedName,
+        candidateEmail: trimmedEmail,
+        companyId: trimmedCompanyId,
+        department: trimmedDepartment,
+        lectureId: String(lectureId),
+        lectureTitle,
+        action: action || "CHECKLIST_UPDATED",
+        completionPercent,
+        completedItems: JSON.stringify(items),
+        ipAddress,
+        userAgent,
+      },
+    });
+
+    try {
+      io.to("admins").emit("admin:lecture_checklist", {
+        candidateName: trimmedName,
+        candidateEmail: trimmedEmail,
+        companyId: trimmedCompanyId,
+        department: trimmedDepartment,
+        lectureId: String(lectureId),
+        lectureTitle,
+        completionPercent,
+        completedItems: items,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.warn("Socket broadcast error:", err);
+    }
+
+    return res.json({ success: true, progress, completionPercent });
+  } catch (error) {
+    console.error("Error updating checklist:", error);
+    return res.status(500).json({ error: "Failed to update checklist." });
+  }
+});
+
+// GET /api/lectures/:id - Get specific lecture details with outline and full slides
 router.get("/:id", (req: Request, res: Response) => {
   const lecture = LECTURES.find((l) => l.id === req.params.id);
   if (!lecture) {
@@ -208,7 +329,6 @@ router.post("/track", async (req: Request, res: Response) => {
 
     let record;
     if (attendanceId) {
-      // Update existing sitting if possible
       const existing = await prisma.lectureAttendance.findUnique({
         where: { id: attendanceId },
       });
@@ -246,6 +366,53 @@ router.post("/track", async (req: Request, res: Response) => {
           userAgent,
         },
       });
+    }
+
+    // If watching progress reaches >= 80%, auto-update videoCompleted in LectureProgress
+    if (safeProgress >= 80) {
+      try {
+        const existingProg = await prisma.lectureProgress.findUnique({
+          where: {
+            candidateEmail_lectureId: {
+              candidateEmail: trimmedEmail,
+              lectureId: String(lectureId),
+            },
+          },
+        });
+        const currentItems: string[] = existingProg?.completedItems
+          ? JSON.parse(existingProg.completedItems)
+          : [];
+        if (!currentItems.includes("video")) {
+          currentItems.push("video");
+          const completionPercent = calculateLectureCompletion(currentItems, String(lectureId));
+          await prisma.lectureProgress.upsert({
+            where: {
+              candidateEmail_lectureId: {
+                candidateEmail: trimmedEmail,
+                lectureId: String(lectureId),
+              },
+            },
+            update: {
+              videoCompleted: true,
+              completionPercent,
+              completedItems: JSON.stringify(currentItems),
+              lastAccessedAt: new Date(),
+            },
+            create: {
+              candidateEmail: trimmedEmail,
+              candidateName: trimmedName,
+              companyId: trimmedCompanyId,
+              department: trimmedDepartment,
+              lectureId: String(lectureId),
+              videoCompleted: true,
+              completionPercent,
+              completedItems: JSON.stringify(currentItems),
+            },
+          });
+        }
+      } catch (e) {
+        console.warn("Could not auto-mark video completed:", e);
+      }
     }
 
     return res.json({ success: true, record });
@@ -356,7 +523,7 @@ router.get("/:id/subtitles", (req: Request, res: Response) => {
   }
 });
 
-// GET /api/lectures/:id/slides - Download PPTX Presentation file
+// GET /api/lectures/:id/slides - Download PPTX Presentation file with tracking
 router.get("/:id/slides", async (req: Request, res: Response) => {
   try {
     const lecture = LECTURES.find((l) => l.id === req.params.id);
@@ -371,10 +538,14 @@ router.get("/:id/slides", async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Presentation file not found." });
     }
 
-    // Optional tracking query params
     const { name, email, companyId, department } = req.query;
     if (email && companyId && department) {
       try {
+        const trimmedEmail = String(email).trim().toLowerCase();
+        const trimmedName = String(name || "Participant").trim();
+        const trimmedCompanyId = String(companyId).trim().toUpperCase();
+        const trimmedDepartment = String(department).trim();
+
         const ipAddress =
           (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ||
           req.socket.remoteAddress ||
@@ -383,10 +554,10 @@ router.get("/:id/slides", async (req: Request, res: Response) => {
 
         await prisma.lectureAttendance.create({
           data: {
-            candidateName: String(name || "Participant").trim(),
-            candidateEmail: String(email).trim().toLowerCase(),
-            companyId: String(companyId).trim().toUpperCase(),
-            department: String(department).trim(),
+            candidateName: trimmedName,
+            candidateEmail: trimmedEmail,
+            companyId: trimmedCompanyId,
+            department: trimmedDepartment,
             lectureId: lecture.id,
             lectureTitle: lecture.title,
             action: "SLIDES_DOWNLOADED",
@@ -396,6 +567,47 @@ router.get("/:id/slides", async (req: Request, res: Response) => {
             userAgent,
           },
         });
+
+        // Also mark download in LectureProgress
+        const existingProg = await prisma.lectureProgress.findUnique({
+          where: {
+            candidateEmail_lectureId: {
+              candidateEmail: trimmedEmail,
+              lectureId: lecture.id,
+            },
+          },
+        });
+        const currentItems: string[] = existingProg?.completedItems
+          ? JSON.parse(existingProg.completedItems)
+          : [];
+        if (!currentItems.includes("download")) {
+          currentItems.push("download");
+          const completionPercent = calculateLectureCompletion(currentItems, lecture.id);
+          await prisma.lectureProgress.upsert({
+            where: {
+              candidateEmail_lectureId: {
+                candidateEmail: trimmedEmail,
+                lectureId: lecture.id,
+              },
+            },
+            update: {
+              slidesDownloaded: true,
+              completionPercent,
+              completedItems: JSON.stringify(currentItems),
+              lastAccessedAt: new Date(),
+            },
+            create: {
+              candidateEmail: trimmedEmail,
+              candidateName: trimmedName,
+              companyId: trimmedCompanyId,
+              department: trimmedDepartment,
+              lectureId: lecture.id,
+              slidesDownloaded: true,
+              completionPercent,
+              completedItems: JSON.stringify(currentItems),
+            },
+          });
+        }
       } catch (logErr) {
         console.warn("Could not log slide download event:", logErr);
       }
@@ -418,15 +630,18 @@ router.get("/:id/slides", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/lectures/admin/attendance - Admin-only list of attendance & statistics
+// GET /api/lectures/admin/attendance - Admin: Get attendance logs, statistics & user progress
 router.get("/admin/attendance", authenticateAdmin, async (req: Request, res: Response) => {
   try {
-    const search = typeof req.query.search === "string" ? req.query.search.trim().toLowerCase() : "";
-    const department = typeof req.query.department === "string" ? req.query.department.trim() : "";
-    const lectureId = typeof req.query.lectureId === "string" ? req.query.lectureId.trim() : "";
-    const action = typeof req.query.action === "string" ? req.query.action.trim() : "";
+    const { search, department, lectureId, action } = req.query as {
+      search?: string;
+      department?: string;
+      lectureId?: string;
+      action?: string;
+    };
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
+
     if (department && department !== "All") {
       where.department = department;
     }
@@ -445,7 +660,7 @@ router.get("/admin/attendance", authenticateAdmin, async (req: Request, res: Res
       ];
     }
 
-    const [attendanceList, totalCount, allRecords] = await Promise.all([
+    const [attendanceList, totalCount, allRecords, allProgress] = await Promise.all([
       prisma.lectureAttendance.findMany({
         where,
         orderBy: { createdAt: "desc" },
@@ -460,6 +675,9 @@ router.get("/admin/attendance", authenticateAdmin, async (req: Request, res: Res
           action: true,
           watchDurationSeconds: true,
         },
+      }),
+      prisma.lectureProgress.findMany({
+        orderBy: { updatedAt: "desc" },
       }),
     ]);
 
@@ -516,6 +734,7 @@ router.get("/admin/attendance", authenticateAdmin, async (req: Request, res: Res
         departments: departmentsSummary,
         lectureBreakdown: lectureCounts,
       },
+      userProgress: allProgress,
     });
   } catch (error) {
     console.error("Error fetching lecture attendance:", error);
@@ -523,12 +742,21 @@ router.get("/admin/attendance", authenticateAdmin, async (req: Request, res: Res
   }
 });
 
-// GET /api/lectures/admin/export - Export attendance data as Excel-ready CSV
+// GET /api/lectures/admin/export - Export attendance data as Excel-ready CSV with checklist breakdown
 router.get("/admin/export", authenticateAdmin, async (_req: Request, res: Response) => {
   try {
-    const records = await prisma.lectureAttendance.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const [records, progressList] = await Promise.all([
+      prisma.lectureAttendance.findMany({
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.lectureProgress.findMany(),
+    ]);
+
+    // Create lookup map for progress
+    const progressMap = new Map<string, (typeof progressList)[0]>();
+    for (const p of progressList) {
+      progressMap.set(`${p.candidateEmail}_${p.lectureId}`, p);
+    }
 
     const headers = [
       "Attendance ID",
@@ -538,9 +766,15 @@ router.get("/admin/export", authenticateAdmin, async (_req: Request, res: Respon
       "Department (From Where)",
       "Lecture / Module",
       "Activity / Action",
+      "Checklist Completion (%)",
+      "Video Watched",
+      "Slides Reviewed",
+      "Checkpoints Finished",
+      "PPTX Downloaded",
+      "Completed Checklist Items",
       "Watch Duration (Seconds)",
       "Watch Duration (Formatted)",
-      "Max Progress (%)",
+      "Max Video Progress (%)",
       "Date & Time",
       "IP Address",
       "Device / User Agent",
@@ -552,21 +786,53 @@ router.get("/admin/export", authenticateAdmin, async (_req: Request, res: Respon
       return `${m}m ${s}s`;
     };
 
-    const rows = records.map((r) => [
-      `"${r.id}"`,
-      `"${r.candidateName.replace(/"/g, '""')}"`,
-      `"${r.candidateEmail.replace(/"/g, '""')}"`,
-      `"${r.companyId}"`,
-      `"${r.department.replace(/"/g, '""')}"`,
-      `"${r.lectureTitle.replace(/"/g, '""')}"`,
-      `"${r.action}"`,
-      r.watchDurationSeconds,
-      `"${formatDuration(r.watchDurationSeconds)}"`,
-      `"${Math.round(r.maxProgressPercent)}%"`,
-      `"${new Date(r.createdAt).toLocaleString()}"`,
-      `"${r.ipAddress || ""}"`,
-      `"${(r.userAgent || "").replace(/"/g, '""')}"`,
-    ]);
+    const rows = records.map((r) => {
+      const userProg = progressMap.get(`${r.candidateEmail}_${r.lectureId}`);
+      const completionPercent = userProg
+        ? Math.round(userProg.completionPercent)
+        : Math.round(r.completionPercent || 0);
+
+      const videoDone = userProg?.videoCompleted
+        ? "YES"
+        : r.maxProgressPercent >= 80
+        ? "YES"
+        : "NO";
+      const slidesDone = userProg?.slidesViewed
+        ? "YES"
+        : r.action === "SLIDES_VIEWED"
+        ? "YES"
+        : "NO";
+      const checkpointsDone = userProg?.checkpointsFinished ? "YES" : "NO";
+      const downloadDone = userProg?.slidesDownloaded
+        ? "YES"
+        : r.action === "SLIDES_DOWNLOADED"
+        ? "YES"
+        : "NO";
+
+      const itemsStr = userProg?.completedItems || r.completedItems || "[]";
+
+      return [
+        `"${r.id}"`,
+        `"${r.candidateName.replace(/"/g, '""')}"`,
+        `"${r.candidateEmail.replace(/"/g, '""')}"`,
+        `"${r.companyId}"`,
+        `"${r.department.replace(/"/g, '""')}"`,
+        `"${r.lectureTitle.replace(/"/g, '""')}"`,
+        `"${r.action}"`,
+        `"${completionPercent}%"`,
+        `"${videoDone}"`,
+        `"${slidesDone}"`,
+        `"${checkpointsDone}"`,
+        `"${downloadDone}"`,
+        `"${itemsStr.replace(/"/g, '""')}"`,
+        r.watchDurationSeconds,
+        `"${formatDuration(r.watchDurationSeconds)}"`,
+        `"${Math.round(r.maxProgressPercent)}%"`,
+        `"${new Date(r.createdAt).toLocaleString()}"`,
+        `"${r.ipAddress || ""}"`,
+        `"${(r.userAgent || "").replace(/"/g, '""')}"`,
+      ];
+    });
 
     // Prepend UTF-8 BOM (\uFEFF) so Excel natively recognizes Arabic/Unicode and columns
     const csvContent =

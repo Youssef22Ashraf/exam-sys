@@ -137,6 +137,8 @@ model LectureAttendance {
   action               String    // "PORTAL_ACCESS" | "VIDEO_WATCHED" | "SLIDES_DOWNLOADED" | "SLIDES_VIEWED"
   watchDurationSeconds Int       @default(0)
   maxProgressPercent   Float     @default(0)
+  completionPercent    Float     @default(0)
+  completedItems       String?   // JSON array string of completed checklist keys
   ipAddress            String?
   userAgent            String?
   createdAt            DateTime  @default(now())
@@ -147,4 +149,28 @@ model LectureAttendance {
   @@index([department])
   @@index([lectureId])
   @@index([createdAt])
+}
+
+/// Tracks persistent checklist completion status per user per lecture.
+model LectureProgress {
+  id                  String   @id @default(uuid())
+  candidateEmail      String
+  companyId           String
+  department          String
+  candidateName       String
+  lectureId           String
+  videoCompleted      Boolean  @default(false)
+  slidesViewed        Boolean  @default(false)
+  checkpointsFinished Boolean  @default(false)
+  slidesDownloaded    Boolean  @default(false)
+  completionPercent   Float    @default(0)
+  completedItems      String   @default("[]") // JSON array string
+  lastAccessedAt      DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@unique([candidateEmail, lectureId])
+  @@index([candidateEmail])
+  @@index([companyId])
+  @@index([department])
+  @@index([lectureId])
 }

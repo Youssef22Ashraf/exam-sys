@@ -5,6 +5,7 @@ import {
   type ExamSettings,
   type LectureItem,
   type LectureAttendanceRecord,
+  type LectureProgressRecord,
   type AdminLectureStats,
   storage,
   notifyStorageChange,
@@ -716,7 +717,44 @@ export const api = {
   },
 
   /**
-   * Admin: Get all attendance logs & statistics
+   * Fetch current user's checklist progress across all lectures
+   */
+  async getUserLectureProgress(email: string): Promise<{ progress: LectureProgressRecord[] }> {
+    try {
+      const res = await fetch(`${API_BASE}/lectures/user/progress?email=${encodeURIComponent(email)}`);
+      if (!res.ok) return { progress: [] };
+      return await res.json();
+    } catch {
+      return { progress: [] };
+    }
+  },
+
+  /**
+   * Save checklist item changes and compute completion percentage
+   */
+  async updateLectureChecklist(data: {
+    name: string;
+    email: string;
+    companyId: string;
+    department: string;
+    lectureId: string;
+    completedItems: string[];
+    action?: string;
+  }): Promise<{ success: boolean; progress?: LectureProgressRecord; completionPercent?: number }> {
+    try {
+      const res = await fetch(`${API_BASE}/lectures/checklist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      return await res.json();
+    } catch {
+      return { success: false };
+    }
+  },
+
+  /**
+   * Admin: Get all attendance logs, statistics & user progress
    */
   async getAdminLectureAttendance(params?: {
     search?: string;
@@ -727,6 +765,7 @@ export const api = {
     attendance: LectureAttendanceRecord[];
     totalCount: number;
     stats: AdminLectureStats;
+    userProgress: LectureProgressRecord[];
   }> {
     const url = new URL(`${API_BASE}/lectures/admin/attendance`);
     if (params?.search) url.searchParams.set("search", params.search);

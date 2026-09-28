@@ -83,9 +83,40 @@ export interface LectureItem {
   slideCount: number;
   keyTopics: string[];
   outline?: LectureOutlineItem[];
+  slides?: SlideItem[];
+  checkpoints?: CheckpointItem[];
   hasVideo?: boolean;
   hasSlides?: boolean;
   hasSubtitles?: boolean;
+}
+
+export interface SlideItem {
+  slideNumber: number;
+  title: string;
+  content: string[];
+}
+
+export interface CheckpointItem {
+  id: string;
+  label: string;
+  description?: string;
+}
+
+export interface LectureProgressRecord {
+  id?: string;
+  candidateEmail: string;
+  companyId: string;
+  department: string;
+  candidateName: string;
+  lectureId: string;
+  videoCompleted: boolean;
+  slidesViewed: boolean;
+  checkpointsFinished: boolean;
+  slidesDownloaded: boolean;
+  completionPercent: number;
+  completedItems: string;
+  lastAccessedAt?: string;
+  updatedAt?: string;
 }
 
 export interface LectureAttendanceRecord {
@@ -99,6 +130,8 @@ export interface LectureAttendanceRecord {
   action: string;
   watchDurationSeconds: number;
   maxProgressPercent: number;
+  completionPercent?: number;
+  completedItems?: string;
   ipAddress?: string;
   userAgent?: string;
   createdAt: string;
