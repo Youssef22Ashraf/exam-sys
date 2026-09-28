@@ -1339,45 +1339,30 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
                 <div className="filter-group">
                   <button
+                    type="button"
                     className={`btn-sm ${
                       questionSectionFilter === "All" ? "primary" : ""
                     }`}
-                    style={{
-                      background:
-                        questionSectionFilter === "All" ? "var(--primary)" : "white",
-                      color:
-                        questionSectionFilter === "All" ? "white" : "var(--text-2)",
-                    }}
                     onClick={() => setQuestionSectionFilter("All")}
                   >
                     All ({questions.length})
                   </button>
 
                   <button
+                    type="button"
                     className={`btn-sm ${
                       questionSectionFilter === "A" ? "primary" : ""
                     }`}
-                    style={{
-                      background:
-                        questionSectionFilter === "A" ? "var(--primary)" : "white",
-                      color:
-                        questionSectionFilter === "A" ? "white" : "var(--text-2)",
-                    }}
                     onClick={() => setQuestionSectionFilter("A")}
                   >
                     Part A ({questions.filter((q) => q.section === "A").length})
                   </button>
 
                   <button
+                    type="button"
                     className={`btn-sm ${
                       questionSectionFilter === "B" ? "primary" : ""
                     }`}
-                    style={{
-                      background:
-                        questionSectionFilter === "B" ? "var(--primary)" : "white",
-                      color:
-                        questionSectionFilter === "B" ? "white" : "var(--text-2)",
-                    }}
                     onClick={() => setQuestionSectionFilter("B")}
                   >
                     Part B ({questions.filter((q) => q.section === "B").length})
@@ -3455,25 +3440,18 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
       {/* Admin Dashboard Attribution Footer */}
       <footer
+        className="app-footer admin-dashboard-footer"
         style={{
           marginTop: "60px",
-          padding: "20px 36px",
-          borderTop: "1px solid #e2e8f0",
-          background: "#ffffff",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "14px",
-          fontSize: "13px",
-          color: "#64748b",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div className="footer-left">
           <CompanyLogo height={30} badgeStyle={{ height: "40px", padding: "3px 8px" }} />
           <span>Mofarreh Group • Assessment Management Command Center</span>
         </div>
-        <PoweredBy prefix="Architected & Powered by" />
+        <div className="footer-right">
+          <PoweredBy prefix="Architected & Powered by" />
+        </div>
       </footer>
     </div>
   );

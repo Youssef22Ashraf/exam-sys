@@ -467,6 +467,18 @@
   background: var(--primary-soft);
 }
 
+.btn-sm.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.btn-sm.primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: #ffffff;
+}
+
 .btn-sm.danger {
   color: var(--danger);
 }

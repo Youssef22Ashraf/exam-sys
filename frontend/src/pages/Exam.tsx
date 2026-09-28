@@ -888,24 +888,18 @@ function Exam({ userData, onFinishExam }: ExamProps) {
 
       {/* Platform Attribution Bar */}
       <footer
+        className="app-footer"
         style={{
           marginTop: "40px",
-          padding: "16px 24px",
-          borderTop: "1px solid #e2e8f0",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "12px",
-          fontSize: "12px",
-          color: "#64748b",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div className="footer-left">
           <CompanyLogo height={24} badgeStyle={{ height: "34px", padding: "2px 8px" }} />
           <span>Mofarreh Group • Engineering & Construction Proctored Assessment</span>
         </div>
-        <PoweredBy />
+        <div className="footer-right">
+          <PoweredBy />
+        </div>
       </footer>
     </div>
   );
