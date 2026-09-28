@@ -79,6 +79,8 @@ button:disabled {
 
 .app {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: var(--bg);
 }
 
@@ -248,6 +250,10 @@ button:disabled {
 ========================= */
 
 .page-container {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   width: min(100% - 48px, 1180px);
   margin: 0 auto;
   padding: 48px 0;
@@ -359,7 +365,10 @@ button:disabled {
 ========================= */
 
 .app-footer {
-  padding: 20px 36px;
+  margin-top: auto;
+  width: 100%;
+  flex-shrink: 0;
+  padding: 18px 36px;
   color: #64748b;
   font-size: 13px;
   border-top: 1px solid #e7eaf0;

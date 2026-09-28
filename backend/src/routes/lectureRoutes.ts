@@ -28,6 +28,16 @@ function pipeWithErrorHandling(
   stream.pipe(res);
 }
 
+function getSlideImagesCount(lectureId: string, lecturesDir: string): number {
+  try {
+    const dir = path.join(lecturesDir, "slides_images", lectureId);
+    if (!fs.existsSync(dir)) return 0;
+    return fs.readdirSync(dir).filter((f) => f.toLowerCase().endsWith(".png")).length;
+  } catch {
+    return 0;
+  }
+}
+
 // GET /api/lectures - Public list of available lectures
 router.get("/", (_req: Request, res: Response) => {
   const lecturesDir = getLecturesDirectory();
@@ -36,6 +46,7 @@ router.get("/", (_req: Request, res: Response) => {
     const videoPath = path.join(lecturesDir, lec.videoFilename);
     const pptxPath = path.join(lecturesDir, lec.pptxFilename);
     const srtPath = lec.srtFilename ? path.join(lecturesDir, lec.srtFilename) : null;
+    const slideImagesCount = getSlideImagesCount(lec.id, lecturesDir);
 
     return {
       id: lec.id,
@@ -47,8 +58,12 @@ router.get("/", (_req: Request, res: Response) => {
       description: lec.description,
       durationSeconds: lec.durationSeconds,
       durationFormatted: lec.durationFormatted,
-      slideCount: lec.slideCount,
+      slideCount: slideImagesCount > 0 ? slideImagesCount : lec.slideCount,
+      slideImagesCount,
+      hasSlideImages: slideImagesCount > 0,
       keyTopics: lec.keyTopics,
+      outline: lec.outline,
+      slides: lec.slides,
       checkpoints: lec.checkpoints,
       hasVideo: fs.existsSync(videoPath),
       hasSlides: fs.existsSync(pptxPath),
@@ -189,9 +204,13 @@ router.get("/:id", (req: Request, res: Response) => {
   const videoPath = path.join(lecturesDir, lecture.videoFilename);
   const pptxPath = path.join(lecturesDir, lecture.pptxFilename);
   const srtPath = lecture.srtFilename ? path.join(lecturesDir, lecture.srtFilename) : null;
+  const slideImagesCount = getSlideImagesCount(lecture.id, lecturesDir);
 
   return res.json({
     ...lecture,
+    slideCount: slideImagesCount > 0 ? slideImagesCount : lecture.slideCount,
+    slideImagesCount,
+    hasSlideImages: slideImagesCount > 0,
     hasVideo: fs.existsSync(videoPath),
     hasSlides: fs.existsSync(pptxPath),
     hasSubtitles: Boolean(srtPath && fs.existsSync(srtPath)),
@@ -627,6 +646,41 @@ router.get("/:id/slides", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error downloading slides:", error);
     return res.status(500).json({ error: "Could not download slides." });
+  }
+});
+
+// GET /api/lectures/:id/slides-images/:slideNum - Serve authentic slide HD PNG image
+router.get("/:id/slides-images/:slideNum", (req: Request, res: Response) => {
+  try {
+    const lecture = LECTURES.find((l) => l.id === req.params.id);
+    if (!lecture) {
+      return res.status(404).json({ error: "Lecture not found." });
+    }
+
+    const slideNum = parseInt(req.params.slideNum, 10);
+    if (isNaN(slideNum) || slideNum < 1) {
+      return res.status(400).json({ error: "Invalid slide number." });
+    }
+
+    const lecturesDir = getLecturesDirectory();
+    const slidePath = path.join(
+      lecturesDir,
+      "slides_images",
+      lecture.id,
+      `slide_${slideNum}.png`
+    );
+
+    if (!fs.existsSync(slidePath)) {
+      return res.status(404).json({ error: "Slide image not found." });
+    }
+
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    const stream = fs.createReadStream(slidePath);
+    return pipeWithErrorHandling(stream, res, slidePath);
+  } catch (error) {
+    console.error("Error serving slide image:", error);
+    return res.status(500).json({ error: "Could not serve slide image." });
   }
 });
 

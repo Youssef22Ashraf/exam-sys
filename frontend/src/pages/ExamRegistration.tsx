@@ -258,14 +258,52 @@ function ExamRegistration({ onContinue, initialData }: ExamRegistrationProps) {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Department / Unit (Optional)</label>
+          <label className="form-label">Department / Unit</label>
           <input
             className="form-input"
             type="text"
-            placeholder="e.g. Interface Management, Logistics, Operations, Site Team"
+            list="exam-dept-datalist"
+            placeholder="Type or select your department (e.g. Interface Management, Engineering...)"
             value={department}
             onChange={(event) => handleFieldChange(setDepartment, event.target.value)}
           />
+          <datalist id="exam-dept-datalist">
+            {[
+              "Interface Management",
+              "Engineering & Design",
+              "Construction & Site Operations",
+              "Project Controls & Planning",
+              "Quality Assurance & QC",
+              "Health, Safety & Environment (HSE)",
+              "Procurement & Supply Chain",
+              "Commercial & Contracts",
+              "Operations & Maintenance",
+              "Project Management Office (PMO)",
+            ].map((d) => (
+              <option key={d} value={d} />
+            ))}
+          </datalist>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px", marginTop: "8px" }}>
+            <span style={{ fontSize: "11px", color: "#64748b" }}>Quick select:</span>
+            {["Interface Management", "Engineering", "Construction", "Project Controls", "Quality Assurance", "HSE"].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                style={{
+                  background: department === chip ? "#eff6ff" : "#f1f5f9",
+                  border: department === chip ? "1px solid #3b82f6" : "1px solid #cbd5e1",
+                  color: department === chip ? "#1d4ed8" : "#475569",
+                  fontSize: "11px",
+                  padding: "3px 8px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+                onClick={() => handleFieldChange(setDepartment, chip)}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
         </div>
 
         <button

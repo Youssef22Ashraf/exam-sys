@@ -191,6 +191,7 @@ export const api = {
     name: string;
     email: string;
     companyId: string;
+    department?: string;
   }): Promise<Candidate> {
     try {
       const res = await fetch(`${API_BASE}/candidates/register`, {
@@ -223,6 +224,7 @@ export const api = {
       name: candidateData.name,
       email: candidateData.email,
       companyId: candidateData.companyId,
+      department: candidateData.department,
       status: "In Progress",
       totalAttempts: 0,
     });
@@ -821,6 +823,10 @@ export const api = {
       url.searchParams.set("department", userInfo.department);
     }
     return url.toString();
+  },
+
+  getLectureSlideImageUrl(id: string, slideNumber: number): string {
+    return `${API_BASE}/lectures/${id}/slides-images/${slideNumber}`;
   },
 
   getLectureExportUrl(): string {

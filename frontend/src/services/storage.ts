@@ -88,6 +88,8 @@ export interface LectureItem {
   hasVideo?: boolean;
   hasSlides?: boolean;
   hasSubtitles?: boolean;
+  slideImagesCount?: number;
+  hasSlideImages?: boolean;
 }
 
 export interface SlideItem {
@@ -725,7 +727,12 @@ export const ExamStorage = {
     notifyStorageChange("CANDIDATES");
   },
 
-  registerOrUpdateCandidate(userData: { name: string; email: string; companyId: string }): Candidate {
+  registerOrUpdateCandidate(userData: {
+    name: string;
+    email: string;
+    companyId: string;
+    department?: string;
+  }): Candidate {
     const candidates = this.getCandidates();
     const existingIndex = candidates.findIndex(
       (c) =>
@@ -738,6 +745,7 @@ export const ExamStorage = {
       existing.name = userData.name;
       existing.email = userData.email;
       existing.companyId = userData.companyId;
+      if (userData.department) existing.department = userData.department;
       existing.status = existing.status === "Completed" ? "Completed" : "In Progress";
       this.saveCandidates(candidates);
       return existing;
@@ -748,6 +756,7 @@ export const ExamStorage = {
       name: userData.name,
       email: userData.email,
       companyId: userData.companyId,
+      department: userData.department,
       registeredAt: new Date().toISOString(),
       status: "In Progress",
       totalAttempts: 0,

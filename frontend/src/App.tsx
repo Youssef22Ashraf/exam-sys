@@ -199,6 +199,9 @@ function App() {
   function handleRegistration(data: UserData) {
     ExamStorage.registerOrUpdateCandidate(data);
     setUserData(data);
+    api.registerCandidate(data).catch((err) => {
+      console.warn("Could not sync candidate registration to server:", err);
+    });
     setPage("instructions");
   }
 

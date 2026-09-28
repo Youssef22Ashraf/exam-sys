@@ -69,7 +69,7 @@ router.get("/check-cooldown", publicLimit, async (req: Request, res: Response) =
 // POST /api/candidates/register - Public (examinee registration)
 router.post("/register", publicLimit, async (req: Request, res: Response) => {
   try {
-    const { name, email, companyId } = req.body;
+    const { name, email, companyId, department } = req.body;
 
     if (!name || !email || !companyId) {
       return res
@@ -80,6 +80,10 @@ router.post("/register", publicLimit, async (req: Request, res: Response) => {
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedName = name.trim();
     const trimmedCompanyId = companyId.trim();
+    const trimmedDepartment =
+      department && typeof department === "string" && department.trim()
+        ? department.trim()
+        : null;
 
     // 1. Strict Email Format Validation
     const emailCheck = validateExamineeEmail(trimmedEmail);
@@ -120,6 +124,7 @@ router.post("/register", publicLimit, async (req: Request, res: Response) => {
         data: {
           name: trimmedName,
           companyId: trimmedCompanyId,
+          ...(trimmedDepartment ? { department: trimmedDepartment } : {}),
           status: "In Progress",
         },
       });
@@ -129,6 +134,7 @@ router.post("/register", publicLimit, async (req: Request, res: Response) => {
           name: trimmedName,
           email: trimmedEmail,
           companyId: trimmedCompanyId,
+          department: trimmedDepartment,
           status: "In Progress",
         },
       });

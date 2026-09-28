@@ -37,8 +37,7 @@ export default function LecturesLogin({ onLoginSuccess, onBack }: LecturesLoginP
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [companyId, setCompanyId] = useState("");
-  const [department, setDepartment] = useState(DEPARTMENTS[0]);
-  const [customDept, setCustomDept] = useState("");
+  const [department, setDepartment] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,9 +56,7 @@ export default function LecturesLogin({ onLoginSuccess, onBack }: LecturesLoginP
     const trimmedName = name.trim();
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedCompanyId = companyId.trim().toUpperCase();
-    const finalDepartment = department === "Other / Contractor" && customDept.trim()
-      ? customDept.trim()
-      : department.trim();
+    const finalDepartment = department.trim();
 
     if (!trimmedName || !trimmedEmail || !trimmedCompanyId || !finalDepartment) {
       setError("Please fill in all required fields (Name, Corporate Email, Company ID, and Department).");
@@ -197,37 +194,39 @@ export default function LecturesLogin({ onLoginSuccess, onBack }: LecturesLoginP
               </label>
               <div className="input-with-icon">
                 <span className="input-icon"><Icon name="users" /></span>
-                <select
+                <input
                   id="lec-department"
+                  type="text"
+                  list="lec-dept-datalist"
                   value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
+                  onChange={(e) => {
+                    setDepartment(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  placeholder="Type or choose your department"
                   required
-                >
-                  {DEPARTMENTS.map((dept) => (
-                    <option key={dept} value={dept}>
-                      {dept}
-                    </option>
+                />
+                <datalist id="lec-dept-datalist">
+                  {DEPARTMENTS.filter((d) => d !== "Other / Contractor").map((dept) => (
+                    <option key={dept} value={dept} />
                   ))}
-                </select>
+                </datalist>
+              </div>
+              <div className="dept-quick-chips">
+                <span className="chips-label">Quick select:</span>
+                {["Interface Management", "Engineering", "Construction", "Project Controls", "Quality Assurance", "HSE", "Procurement"].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    className={`dept-chip-btn ${department === chip ? "active" : ""}`}
+                    onClick={() => setDepartment(chip)}
+                  >
+                    {chip}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
-
-          {department === "Other / Contractor" && (
-            <div className="form-group animate-fade-in">
-              <label htmlFor="lec-custom-dept">
-                Specify Department or Contractor Name <span className="req">*</span>
-              </label>
-              <input
-                id="lec-custom-dept"
-                type="text"
-                value={customDept}
-                onChange={(e) => setCustomDept(e.target.value)}
-                placeholder="Enter department or company name"
-                required
-              />
-            </div>
-          )}
 
           <div className="form-actions">
             <button

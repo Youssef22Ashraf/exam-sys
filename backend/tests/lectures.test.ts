@@ -255,4 +255,33 @@ describe("Lectures & Recordings System", () => {
     expect(res.body.checkpoints[0]).toHaveProperty("id");
     expect(res.body.checkpoints[0]).toHaveProperty("label");
   });
+
+  it("GET /api/lectures/:id/slides-images/:slideNum streams authentic slide PNG image", async () => {
+    const res = await request(app)
+      .get("/api/lectures/interface-management/slides-images/1")
+      .expect(200);
+
+    expect(res.headers["content-type"]).toBe("image/png");
+    expect(res.body.length).toBeGreaterThan(1000);
+  });
+
+  it("POST /api/candidates/register accepts and persists custom department", async () => {
+    const res = await request(app)
+      .post("/api/candidates/register")
+      .send({
+        name: "Omar Khaled",
+        email: "omar.khaled@mofarreh.com",
+        companyId: "EMP-9088",
+        department: "Interface Management & Coordination",
+      })
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.candidate.department).toBe("Interface Management & Coordination");
+
+    const found = await prisma.candidate.findUnique({
+      where: { email: "omar.khaled@mofarreh.com" },
+    });
+    expect(found?.department).toBe("Interface Management & Coordination");
+  });
 });

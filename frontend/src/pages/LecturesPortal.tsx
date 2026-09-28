@@ -220,8 +220,11 @@ export default function LecturesPortal({ user, onStartExam, onExit }: LecturesPo
   }
 
   // Slide navigation handlers
-  const totalSlides = selectedLecture?.slides?.length || 0;
-  const currentSlide = selectedLecture?.slides?.[currentSlideIndex];
+  const totalSlides =
+    selectedLecture?.slideImagesCount ||
+    selectedLecture?.slides?.length ||
+    selectedLecture?.slideCount ||
+    0;
 
   const handleNextSlide = useCallback(() => {
     if (currentSlideIndex < totalSlides - 1) {
@@ -245,10 +248,11 @@ export default function LecturesPortal({ user, onStartExam, onExit }: LecturesPo
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "ArrowRight") handleNextSlide();
       if (e.key === "ArrowLeft") handlePrevSlide();
+      if (e.key === "Escape" && isSlideFullscreen) setIsSlideFullscreen(false);
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [viewMode, handleNextSlide, handlePrevSlide]);
+  }, [viewMode, handleNextSlide, handlePrevSlide, isSlideFullscreen]);
 
   return (
     <div className={`lectures-portal-wrapper ${isSlideFullscreen ? "fullscreen-mode" : ""}`}>
@@ -557,11 +561,14 @@ export default function LecturesPortal({ user, onStartExam, onExit }: LecturesPo
                         onChange={(e) => setCurrentSlideIndex(Number(e.target.value))}
                         className="slide-select-dropdown"
                       >
-                        {selectedLecture.slides?.map((s, idx) => (
-                          <option key={idx} value={idx}>
-                            Slide {s.slideNumber}: {s.title.length > 45 ? `${s.title.slice(0, 45)}...` : s.title}
-                          </option>
-                        ))}
+                        {Array.from({ length: totalSlides }).map((_, idx) => {
+                          const topic = selectedLecture.slides?.[idx]?.title;
+                          return (
+                            <option key={idx} value={idx}>
+                              Slide {idx + 1}{topic ? `: ${topic.length > 40 ? `${topic.slice(0, 40)}...` : topic}` : ""}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
 
@@ -577,59 +584,30 @@ export default function LecturesPortal({ user, onStartExam, onExit }: LecturesPo
                       <button
                         className="slide-tool-btn"
                         onClick={() => setIsSlideFullscreen(!isSlideFullscreen)}
-                        title={isSlideFullscreen ? "Exit Fullscreen" : "Fullscreen Slides"}
+                        title={isSlideFullscreen ? "Exit Fullscreen (Esc)" : "Fullscreen Presentation"}
                       >
                         <Icon name={isSlideFullscreen ? "eye-off" : "eye"} size={15} />
                         <span>{isSlideFullscreen ? "Exit Fullscreen" : "Fullscreen"}</span>
                       </button>
 
-                      <button className="download-slides-btn" onClick={handleDownloadSlides}>
+                      <button className="download-slides-btn" onClick={handleDownloadSlides} title="Download official presentation (.pptx) file">
                         <Icon name="download" size={14} />
                         <span>Download (.pptx)</span>
                       </button>
                     </div>
                   </div>
 
-                  {/* Slide Canvas */}
-                  <div className="slide-canvas-display">
-                    {currentSlide ? (
-                      <div className="slide-presentation-card">
-                        <div className="slide-card-header">
-                          <div className="slide-meta-badge">
-                            {selectedLecture.title} • SLIDE {currentSlide.slideNumber}
-                          </div>
-                          <h3 className="slide-main-title">{currentSlide.title}</h3>
-                        </div>
-
-                        <div className="slide-card-content">
-                          {currentSlide.content && currentSlide.content.length > 0 ? (
-                            <ul className="slide-bullet-list">
-                              {currentSlide.content.map((point, pIdx) => (
-                                <li key={pIdx} className="slide-bullet-item">
-                                  <span className="bullet-marker" />
-                                  <span className="bullet-text">{point}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <div className="slide-intro-callout">
-                              <p>Review this key section in the recorded briefing.</p>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="slide-card-footer">
-                          <span className="footer-company-tag">MAH Engineering & Construction Sector</span>
-                          <span className="footer-page-num">
-                            Page {currentSlideIndex + 1} / {totalSlides}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="no-slides-fallback">
-                        <p>No slide content available.</p>
-                      </div>
-                    )}
+                  {/* Authentic PowerPoint Slide Canvas */}
+                  <div className={`slide-canvas-display ${isSlideFullscreen ? "slide-fullscreen-active" : ""}`}>
+                    <div className="actual-slide-stage">
+                      <img
+                        key={`${selectedLecture.id}-slide-${currentSlideIndex + 1}`}
+                        src={api.getLectureSlideImageUrl(selectedLecture.id, currentSlideIndex + 1)}
+                        alt={`${selectedLecture.title} - Slide ${currentSlideIndex + 1}`}
+                        className="actual-slide-image"
+                        loading="eager"
+                      />
+                    </div>
                   </div>
 
                   {/* Bottom Navigation Toolbar */}
@@ -643,15 +621,17 @@ export default function LecturesPortal({ user, onStartExam, onExit }: LecturesPo
                       <span>Previous Slide</span>
                     </button>
 
-                    <div className="slide-progress-dots-wrapper">
+                    <div className="slide-thumbnails-strip">
                       {Array.from({ length: totalSlides }).map((_, idx) => (
                         <button
                           key={idx}
                           type="button"
-                          className={`slide-dot ${idx === currentSlideIndex ? "active" : ""}`}
+                          className={`slide-thumb-btn ${idx === currentSlideIndex ? "active" : ""}`}
                           onClick={() => setCurrentSlideIndex(idx)}
                           title={`Slide ${idx + 1}`}
-                        />
+                        >
+                          <span className="thumb-num">{idx + 1}</span>
+                        </button>
                       ))}
                     </div>
 
