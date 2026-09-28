@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { ExamStorage } from "../services/storage";
 import { Icon } from "../components/Icon";
+import { CompanyLogo } from "../components/CompanyLogo";
 import { registerActiveCameraStream, releaseCamera } from "../services/camera";
 import "./ExamInstructions.css";
 
@@ -165,22 +166,15 @@ function ExamInstructions({ onStart, candidateName }: ExamInstructionsProps) {
   return (
     <main className="page-container">
       <div style={{ textAlign: "center" }}>
-        <div
-          className="company-logo-badge"
-          style={{
+        <CompanyLogo
+          height={42}
+          badgeStyle={{
             height: "56px",
             padding: "6px 16px",
             margin: "0 auto 14px auto",
             borderRadius: "10px",
           }}
-          title="Mofarreh Group — Engineering & Construction"
-        >
-          <img
-            src="/mofarreh-logo.png"
-            alt="Mofarreh Group Logo"
-            style={{ height: "42px", width: "auto" }}
-          />
-        </div>
+        />
         <h1 className="page-title">Examination Instructions & Proctor Verification</h1>
 
         <p className="page-description">

@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Icon } from "../components/Icon";
+import { CompanyLogo } from "../components/CompanyLogo";
+import { ThemeToggle } from "../components/ThemeToggle";
 import { api } from "../services/api";
 import { type LectureItem } from "../services/storage";
 import { type LectureUserData } from "./LecturesLogin";
@@ -259,9 +261,7 @@ export default function LecturesPortal({ user, onStartExam, onExit }: LecturesPo
       {/* Top Banner Navigation */}
       <header className="lectures-portal-nav">
         <div className="portal-brand">
-          <div className="portal-logo-badge">
-            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" />
-          </div>
+          <CompanyLogo height={32} />
           <div className="portal-title-block">
             <span className="portal-heading">E&C TRAINING & PROCEDURE PORTAL</span>
             <span className="portal-subheading">Engineering & Construction Sector Governance</span>
@@ -295,6 +295,8 @@ export default function LecturesPortal({ user, onStartExam, onExit }: LecturesPo
               </span>
             </div>
           </div>
+
+          <ThemeToggle />
 
           <button className="exam-cta-nav-button" onClick={onStartExam}>
             <Icon name="check" size={16} />

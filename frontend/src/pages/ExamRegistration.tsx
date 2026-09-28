@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Icon } from "../components/Icon";
+import { CompanyLogo } from "../components/CompanyLogo";
 import { api } from "../services/api";
 
 interface ExamRegistrationProps {
@@ -105,22 +106,15 @@ function ExamRegistration({ onContinue, initialData }: ExamRegistrationProps) {
   return (
     <main className="page-container">
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
-        <div
-          className="company-logo-badge"
-          style={{
+        <CompanyLogo
+          height={42}
+          badgeStyle={{
             height: "56px",
             padding: "6px 16px",
             margin: "0 auto 14px auto",
             borderRadius: "10px",
           }}
-          title="Mofarreh Group — Engineering & Construction"
-        >
-          <img
-            src="/mofarreh-logo.png"
-            alt="Mofarreh Group Logo"
-            style={{ height: "42px", width: "auto" }}
-          />
-        </div>
+        />
         <h1 className="page-title">Candidate Registration</h1>
         <p className="page-description">
           Mofarreh Group Assessment • Enter your employee details before starting.

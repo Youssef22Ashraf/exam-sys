@@ -18,8 +18,9 @@
 
   border-radius: 20px;
 
-  background: #e8efff;
-  color: #2563eb;
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
 
   font-size: 11px;
   font-weight: 750;
@@ -34,6 +35,7 @@
   line-height: 1.12;
 
   letter-spacing: -1px;
+  color: var(--text);
 }
 
 .hero-content p {
@@ -45,7 +47,7 @@
 
   line-height: 1.7;
 
-  color: #667085;
+  color: var(--text-3);
 }
 
 .hero-actions {
@@ -56,16 +58,15 @@
 }
 
 .hero-panel {
-  background: white;
+  background: var(--surface);
 
   padding: 32px;
 
   border-radius: 16px;
 
-  border: 1px solid #e5e9f0;
+  border: 1px solid var(--border);
 
-  box-shadow:
-    0 12px 35px rgba(15, 23, 42, 0.07);
+  box-shadow: var(--shadow-md);
 }
 
 .hero-panel-icon {
@@ -78,8 +79,9 @@
 
   border-radius: 10px;
 
-  background: #dcfce7;
-  color: #16a34a;
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1px solid var(--success-border);
 
   font-weight: 800;
   font-size: 20px;
@@ -89,10 +91,11 @@
   margin: 18px 0 8px;
 
   font-size: 19px;
+  color: var(--text);
 }
 
 .hero-panel p {
-  color: #6b7280;
+  color: var(--text-3);
 
   line-height: 1.6;
 
@@ -110,11 +113,11 @@
 
   font-size: 14px;
 
-  color: #374151;
+  color: var(--text-2);
 }
 
 .hero-feature span {
-  color: #16a34a;
+  color: var(--success);
 
   font-weight: 800;
 }
@@ -128,29 +131,31 @@
 }
 
 .info-card {
-  background: white;
+  background: var(--surface);
 
   padding: 25px;
 
   border-radius: 12px;
 
-  border: 1px solid #e6e9ef;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
 .info-card strong {
-  color: #2563eb;
+  color: var(--primary);
 
   font-size: 12px;
 }
 
 .info-card h3 {
   margin: 10px 0 6px;
+  color: var(--text);
 }
 
 .info-card p {
   margin: 0;
 
-  color: #6b7280;
+  color: var(--text-3);
 
   font-size: 13px;
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Icon } from "../components/Icon";
+import { CompanyLogo } from "../components/CompanyLogo";
 import { api } from "../services/api";
 import "./LecturesLogin.css";
 
@@ -108,9 +109,12 @@ export default function LecturesLogin({ onLoginSuccess, onBack }: LecturesLoginP
   return (
     <main className="page-container lectures-login-container">
       <div className="lectures-login-card">
-        <div className="login-header-badge">
-          <Icon name="book" size={16} />
-          <span>E&C TRAINING & LEARNING HUB</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
+          <CompanyLogo height={36} badgeStyle={{ height: "46px", padding: "4px 10px", borderRadius: "8px" }} />
+          <div className="login-header-badge" style={{ marginBottom: 0 }}>
+            <Icon name="book" size={16} />
+            <span>E&C TRAINING & LEARNING HUB</span>
+          </div>
         </div>
 
         <h2>Access Procedure Briefings & Lectures</h2>

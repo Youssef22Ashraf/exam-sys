@@ -1056,3 +1056,67 @@
 @media (prefers-reduced-motion: reduce) {
   .exam-spinner { animation-duration: 3s; }
 }
+
+/* =========================================
+   DARK MODE PALETTE OVERRIDES FOR EXAM
+========================================= */
+[data-theme="dark"] .exam-page {
+  background: var(--bg);
+  color: var(--text);
+}
+
+[data-theme="dark"] .exam-header,
+[data-theme="dark"] .question-sidebar,
+[data-theme="dark"] .question-card {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+}
+
+[data-theme="dark"] .exam-header h1,
+[data-theme="dark"] .question-sidebar h3,
+[data-theme="dark"] .question-title,
+[data-theme="dark"] .exam-part-title {
+  color: var(--text);
+}
+
+[data-theme="dark"] .exam-header p,
+[data-theme="dark"] .progress-info,
+[data-theme="dark"] .question-meta {
+  color: var(--text-3);
+}
+
+[data-theme="dark"] .progress-bar {
+  background: var(--surface-2);
+}
+
+[data-theme="dark"] .option-item,
+[data-theme="dark"] .nav-grid button {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+[data-theme="dark"] .option-item:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .option-item.selected {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: var(--primary);
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .nav-grid button.answered {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .nav-grid button.current {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4);
+}
+

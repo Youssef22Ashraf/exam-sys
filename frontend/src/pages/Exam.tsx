@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { Icon } from "../components/Icon";
 import { PoweredBy } from "../components/PoweredBy";
+import { CompanyLogo } from "../components/CompanyLogo";
+import { ThemeToggle } from "../components/ThemeToggle";
 import {
   ExamStorage,
   type ExamResult,
@@ -596,9 +598,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
       {/* Header */}
       <header className="exam-header">
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <div className="company-logo-badge" style={{ height: "48px", padding: "4px 10px" }} title="Mofarreh Group — Engineering & Construction">
-            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" style={{ height: "38px", width: "auto" }} />
-          </div>
+          <CompanyLogo height={38} badgeStyle={{ height: "48px", padding: "4px 10px" }} />
           <div>
             <h1>{settings.examTitle || "Examination"}</h1>
             <p>
@@ -610,6 +610,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+          <ThemeToggle />
           <PoweredBy />
 
           <div className={`timer ${isLowTime ? "timer-warning" : ""}`}>
@@ -901,9 +902,7 @@ function Exam({ userData, onFinishExam }: ExamProps) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div className="company-logo-badge" style={{ height: "34px", padding: "2px 8px" }}>
-            <img src="/mofarreh-logo.png" alt="Mofarreh Group Logo" style={{ height: "24px" }} />
-          </div>
+          <CompanyLogo height={24} badgeStyle={{ height: "34px", padding: "2px 8px" }} />
           <span>Mofarreh Group • Engineering & Construction Proctored Assessment</span>
         </div>
         <PoweredBy />

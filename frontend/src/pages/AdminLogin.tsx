@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Icon } from "../components/Icon";
+import { CompanyLogo } from "../components/CompanyLogo";
 import { api } from "../services/api";
 import { reconnectSocket } from "../services/socket";
 
@@ -48,22 +49,15 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
   return (
     <main className="page-container">
       <div style={{ textAlign: "center", marginBottom: "24px" }}>
-        <div
-          className="company-logo-badge"
-          style={{
+        <CompanyLogo
+          height={46}
+          badgeStyle={{
             height: "60px",
             padding: "8px 18px",
             margin: "0 auto 16px auto",
             borderRadius: "12px",
           }}
-          title="Mofarreh Group — Engineering & Construction"
-        >
-          <img
-            src="/mofarreh-logo.png"
-            alt="Mofarreh Group Logo"
-            style={{ height: "46px", width: "auto" }}
-          />
-        </div>
+        />
         <h1 className="page-title" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
           <Icon name="shield" /> Administrator Portal
         </h1>
