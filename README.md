@@ -6,7 +6,7 @@
 [![Express](https://img.shields.io/badge/Express-4.19-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-5.x-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)](https://mofarreh-exam-system.up.railway.app)
+[![Railway](https://img.shields.io/badge/Deploy-Railway-0B0D0E?logo=railway&logoColor=white)](https://mofarreh-portal.up.railway.app)
 [![CI](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml/badge.svg)](https://github.com/Youssef22Ashraf/exam-sys/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/Youssef22Ashraf/exam-sys/releases/tag/v2.0.0)
 [![Security: Trivy](https://img.shields.io/badge/security-Trivy%20Scanned-green.svg)](https://aquasecurity.github.io/trivy/)
@@ -20,11 +20,11 @@ An enterprise-grade, web-based examination, learning, and proctoring platform en
 
 | Service | Public URL | Description |
 |---|---|---|
-| **Examinee Portal** | [`https://mofarreh-exam-system.up.railway.app/`](https://mofarreh-exam-system.up.railway.app/) | Candidate registration, hardware check, timed exam & certificate |
-| **Lectures & Briefings Portal** | [`https://mofarreh-exam-system.up.railway.app/#lectures`](https://mofarreh-exam-system.up.railway.app/#lectures) | Interactive video briefings, authentic slide deck viewer, procedure checklist |
-| **Admin Command Center** | [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin) | Supervisor live oversight, lecture attendance audit, question editor, video stream review |
-| **Health Probe** | [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health) | Liveness & readiness probe with DB connectivity status |
-| **Prometheus Metrics** | [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics) | Standard Prometheus scrape target for telemetry |
+| **Examinee Portal** | [`https://mofarreh-portal.up.railway.app/`](https://mofarreh-portal.up.railway.app/) | Candidate registration, hardware check, timed exam & certificate |
+| **Lectures & Briefings Portal** | [`https://mofarreh-portal.up.railway.app/#lectures`](https://mofarreh-portal.up.railway.app/#lectures) | Interactive video briefings, authentic slide deck viewer, procedure checklist |
+| **Admin Command Center** | [`https://mofarreh-portal.up.railway.app/admin`](https://mofarreh-portal.up.railway.app/admin) | Supervisor live oversight, lecture attendance audit, question editor, video stream review |
+| **Health Probe** | [`https://mofarreh-portal.up.railway.app/health`](https://mofarreh-portal.up.railway.app/health) | Liveness & readiness probe with DB connectivity status |
+| **Prometheus Metrics** | [`https://mofarreh-portal.up.railway.app/metrics`](https://mofarreh-portal.up.railway.app/metrics) | Standard Prometheus scrape target for telemetry |
 
 ---
 
@@ -475,7 +475,7 @@ The repository implements automated GitOps pipelines and container hardening:
 The platform provides native observability endpoints for cloud orchestrators (Kubernetes, Docker Swarm, Railway) and monitoring stacks (Prometheus, Grafana):
 
 ### 1. Health Probe (`GET /health`)
-- **Endpoint**: [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health)
+- **Endpoint**: [`https://mofarreh-portal.up.railway.app/health`](https://mofarreh-portal.up.railway.app/health)
 - **Purpose**: Liveness and readiness probe.
 - **Behavior**: Probes live database connectivity (`SELECT 1`), reports Node process uptime and memory usage (Heap & RSS). Returns HTTP `200 OK` when healthy, or HTTP `503 Service Unavailable` if database connectivity is lost.
 - **Sample Output**:
@@ -494,7 +494,7 @@ The platform provides native observability endpoints for cloud orchestrators (Ku
 ```
 
 ### 2. Prometheus Metrics (`GET /metrics`)
-- **Endpoint**: [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics)
+- **Endpoint**: [`https://mofarreh-portal.up.railway.app/metrics`](https://mofarreh-portal.up.railway.app/metrics)
 - **Format**: Standard Prometheus Exposition Text Format (`0.0.4`).
 - **Exported Metrics**:
   - `nodejs_uptime_seconds`: Process uptime.
@@ -644,17 +644,17 @@ The Prisma schema (`backend/prisma/schema.prisma`) defines 8 core models:
 
 ## Accessing the Platform
 
-- **Examinee Portal**: [`https://mofarreh-exam-system.up.railway.app/`](https://mofarreh-exam-system.up.railway.app/)
+- **Examinee Portal**: [`https://mofarreh-portal.up.railway.app/`](https://mofarreh-portal.up.railway.app/)
   - Candidate registration, camera verification, timed sitting, and pass/fail certification.
-- **Lectures & Briefings Portal**: [`https://mofarreh-exam-system.up.railway.app/#lectures`](https://mofarreh-exam-system.up.railway.app/#lectures)
+- **Lectures & Briefings Portal**: [`https://mofarreh-portal.up.railway.app/#lectures`](https://mofarreh-portal.up.railway.app/#lectures)
   - Candidate identification (Name, Company ID, Email, Department), HD briefing video with subtitles, authentic 89-slide PPTX deck viewer, offline download, and interactive completion checklist.
-- **Admin Command Center**: [`https://mofarreh-exam-system.up.railway.app/admin`](https://mofarreh-exam-system.up.railway.app/admin)
+- **Admin Command Center**: [`https://mofarreh-portal.up.railway.app/admin`](https://mofarreh-portal.up.railway.app/admin)
   - Default accounts: `mofarreh.admin` (SUPERADMIN) and `admin` (ADMIN), initialized with `ADMIN_INITIAL_PASSWORD`.
   - **Change password after first login** via Settings -> Change password.
   - Dedicated **Lectures & Attendance** tab for tracking attendee records, viewing milestone checklists, and exporting audit logs to CSV.
   - SUPERADMIN privileges required to reset the question bank or delete records.
-- **Liveness & Health Probe**: [`https://mofarreh-exam-system.up.railway.app/health`](https://mofarreh-exam-system.up.railway.app/health)
-- **Prometheus Metrics Endpoint**: [`https://mofarreh-exam-system.up.railway.app/metrics`](https://mofarreh-exam-system.up.railway.app/metrics)
+- **Liveness & Health Probe**: [`https://mofarreh-portal.up.railway.app/health`](https://mofarreh-portal.up.railway.app/health)
+- **Prometheus Metrics Endpoint**: [`https://mofarreh-portal.up.railway.app/metrics`](https://mofarreh-portal.up.railway.app/metrics)
 
 ---
 

@@ -8,7 +8,7 @@ scrape_configs:
     scheme: https
     metrics_path: "/metrics"
     static_configs:
-      - targets: ["mofarreh-exam-system.up.railway.app"]
+      - targets: ["mofarreh-portal.up.railway.app"]
 
   # 🟢 Local Development Environment
   - job_name: "exam-system-local"

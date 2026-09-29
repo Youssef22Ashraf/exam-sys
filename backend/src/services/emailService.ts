@@ -244,7 +244,7 @@ Started At:      ${(data.startedAt || new Date()).toISOString()}
     ? `${process.env.APP_URL.replace(/\/$/, "")}/admin`
     : process.env.RAILWAY_PUBLIC_DOMAIN
     ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/admin`
-    : "https://mofarreh-exam-system.up.railway.app/admin";
+    : "https://mofarreh-portal.up.railway.app/admin";
 
   const htmlBody = `
   <!DOCTYPE html>
@@ -389,7 +389,7 @@ Submitted:       ${new Date().toISOString()}
           <tr><td>Submission Time</td><td>${new Date().toLocaleString()}</td></tr>
         </table>
         <div class="cta">
-          <a href="${process.env.APP_URL ? `${process.env.APP_URL.replace(/\/$/, '')}/admin` : (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/admin` : 'https://mofarreh-exam-system.up.railway.app/admin')}" class="button">Open Admin Dashboard</a>
+          <a href="${process.env.APP_URL ? `${process.env.APP_URL.replace(/\/$/, '')}/admin` : (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}/admin` : 'https://mofarreh-portal.up.railway.app/admin')}" class="button">Open Admin Dashboard</a>
         </div>
       </div>
       <div class="footer">

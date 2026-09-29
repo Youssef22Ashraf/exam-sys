@@ -449,7 +449,7 @@ const htmlContent = `
     <div class="browser-frame">
       <div class="browser-header">
         <div class="dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
-        <div class="browser-url">https://mofarreh-exam-system.up.railway.app/#/instructions</div>
+        <div class="browser-url">https://mofarreh-portal.up.railway.app/#/instructions</div>
       </div>
       <div class="browser-content">
         <img src="${images.camera}" alt="Pre-exam Camera Verification">
@@ -491,7 +491,7 @@ const htmlContent = `
     <div class="browser-frame">
       <div class="browser-header">
         <div class="dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
-        <div class="browser-url">https://mofarreh-exam-system.up.railway.app/#/admin (Supervisor Room)</div>
+        <div class="browser-url">https://mofarreh-portal.up.railway.app/#/admin (Supervisor Room)</div>
       </div>
       <div class="browser-content">
         <img src="${images.admin}" alt="Admin Oversight Dashboard">
@@ -670,7 +670,7 @@ const htmlContent = `
     <div class="author-card" style="margin-top: 0; padding: 18px 24px;">
       <div>
         <div class="author-name" style="font-size: 19px;">Ready to collaborate? Let's connect!</div>
-        <div class="author-role" style="font-size: 13px;">Live Demo: https://mofarreh-exam-system.up.railway.app • GitHub: Youssef22Ashraf/exam-sys</div>
+        <div class="author-role" style="font-size: 13px;">Live Demo: https://mofarreh-portal.up.railway.app • GitHub: Youssef22Ashraf/exam-sys</div>
       </div>
       <div class="author-status">
         <div class="status-badge" style="font-size: 12px; padding: 5px 12px;">Open for Roles in 2 Months</div>

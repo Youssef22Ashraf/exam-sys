@@ -10,7 +10,7 @@ The Prometheus scraper (`prometheus.yml`) is configured to monitor both live pro
 
 | Environment | Target URL | Scrape Scheme | Metrics Endpoint |
 |---|---|---|---|
-| **🔴 Railway Production** | `mofarreh-exam-system.up.railway.app` | HTTPS | `https://mofarreh-exam-system.up.railway.app/metrics` |
+| **🔴 Railway Production** | `mofarreh-portal.up.railway.app` | HTTPS | `https://mofarreh-portal.up.railway.app/metrics` |
 | **🟢 Local Development** | `host.docker.internal:5000` | HTTP | `http://localhost:5000/metrics` |
 
 ---

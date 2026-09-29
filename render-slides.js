@@ -433,7 +433,7 @@ const htmlContent = `
     <div class="browser-frame">
       <div class="browser-header">
         <div class="dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
-        <div class="browser-url">https://mofarreh-exam-system.up.railway.app/#/instructions</div>
+        <div class="browser-url">https://mofarreh-portal.up.railway.app/#/instructions</div>
       </div>
       <div class="browser-content">
         <img src="${images.camera}" alt="Pre-exam Camera Verification">
@@ -481,7 +481,7 @@ const htmlContent = `
     <div class="browser-frame">
       <div class="browser-header">
         <div class="dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
-        <div class="browser-url">https://mofarreh-exam-system.up.railway.app/#/exam (Active Session)</div>
+        <div class="browser-url">https://mofarreh-portal.up.railway.app/#/exam (Active Session)</div>
       </div>
       <div class="browser-content">
         <img src="${images.exam}" alt="Active Exam Interface">
@@ -529,7 +529,7 @@ const htmlContent = `
     <div class="browser-frame">
       <div class="browser-header">
         <div class="dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
-        <div class="browser-url">https://mofarreh-exam-system.up.railway.app/#/admin (Supervisor Room)</div>
+        <div class="browser-url">https://mofarreh-portal.up.railway.app/#/admin (Supervisor Room)</div>
       </div>
       <div class="browser-content">
         <img src="${images.admin}" alt="Admin Oversight Dashboard">
