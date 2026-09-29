@@ -1,4 +1,4 @@
-# Workplace Assessment & Examination Platform
+# Workplace Training, Examination & Proctoring Platform
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19.0-61dafb?logo=react&logoColor=black)](https://react.dev/)
@@ -58,6 +58,49 @@ An enterprise-grade, web-based examination, learning, and proctoring platform en
 ---
 
 ## System Design & Architecture
+
+### Interactive Architectural Overview
+
+```mermaid
+flowchart TD
+    subgraph CLIENT_LAYER["Client Layer (React 19 + TypeScript + Vite)"]
+        direction LR
+        EP["Examinee Portal<br/>• Hardware Camera Check<br/>• Proctored Sitting (40 Qs)<br/>• Absolute Deadline Clock<br/>• Tab Switch / Blur Audit"]
+        LP["Lectures & Briefings Portal<br/>• HD Procedure Videos<br/>• Authentic 89-Slide PPTX Deck<br/>• Readiness Checklist (0-100%)<br/>• Fullscreen Presentation"]
+        AC["Supervisor Command Center<br/>• Live WebSocket Candidate Feed<br/>• Proctoring Video Playback<br/>• Learner Checklist Audit<br/>• 1-Click Excel / CSV Export"]
+    end
+
+    subgraph SERVER_LAYER["Unified Production Container (Express 4 + Node.js :5000)"]
+        direction TB
+        SPA["Static SPA Distribution (/dist)<br/>Single-Page Fallback Routing"]
+        API["REST API Router (/api/*)<br/>• /candidates • /exam • /questions<br/>• /lectures • /settings • /proctor"]
+        WS["Socket.io Real-Time Hub<br/>• 'admins' Room Segregation<br/>• candidate:warning / submitted"]
+        SCORE["Pure Scoring & Sitting Engine<br/>• Server-evaluated DB answers<br/>• Cooldown lockout (48h)"]
+        SLIDES["Authentic PPTX Slide Engine<br/>• 89 HD Slide Image Streamer<br/>• Offline .pptx Download"]
+        NOTIF["Dual-Engine Notifier<br/>• Resend HTTPS API (Port 443)<br/>• Nodemailer SMTP Fallback"]
+        PROM["Prometheus Telemetry (/metrics)<br/>• Health & Readiness (/health)"]
+    end
+
+    subgraph STORAGE_LAYER["Single Persistent Cloud Volume (/app/backend/prisma)"]
+        DB[("SQLite Database (dev.db)<br/>Candidates • Attempts • Questions<br/>LectureAttendance • LectureProgress")]
+        UPLOADS["Webcam Recordings & Snapshots (/uploads)<br/>Symlinked .webm media archives"]
+    end
+
+    subgraph EXTERNAL_SERVICES["External Integrations & Observability"]
+        RESEND["Resend Email API (Port 443 HTTPS)"]
+        SMTP["Enterprise SMTP Server"]
+        GRAF["Prometheus & Grafana Monitoring Stack"]
+    end
+
+    CLIENT_LAYER -->|"HTTPS (REST) & WSS (Socket.io)"| SERVER_LAYER
+    SERVER_LAYER -->|"Prisma ORM"| DB
+    SERVER_LAYER -->|"Disk I/O"| UPLOADS
+    NOTIF -->|"HTTPS POST"| RESEND
+    NOTIF -.->|"SMTP:587/465"| SMTP
+    GRAF -->|"Scrapes /metrics every 5s"| PROM
+```
+
+### Infrastructure & Runtime Topology
 
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
