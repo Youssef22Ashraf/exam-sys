@@ -408,7 +408,7 @@
   "time": { "from": "now-15m", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Workplace Exam System - Production Monitoring",
+  "title": "Workplace Portal System - Production Monitoring",
   "uid": "exam-system-overview",
   "version": 1
 }

@@ -31,7 +31,10 @@ An enterprise-grade, web-based examination, learning, and proctoring platform en
 ## Table of Contents
 
 - [System Design & Architecture](#system-design--architecture)
-- [Workflow & Candidate Lifecycle](#workflow--candidate-lifecycle)
+- [Unified Platform Workflows & User Lifecycles](#unified-platform-workflows--user-lifecycles)
+  - [Dual-Track Architecture & Flowchart](#dual-track-architecture--flowchart)
+  - [Track A: Workplace Training & Briefings Portal Workflow (`/#lectures`)](#track-a-workplace-training--briefings-portal-workflow-lectures)
+  - [Track B: Proctored Examination & Assessment Lifecycle (`/`)](#track-b-proctored-examination--assessment-lifecycle-)
 - [Key Features](#key-features)
   - [Interactive Workplace Lectures & Briefings Portal (`/#lectures`)](#interactive-workplace-lectures--briefings-portal-lectures)
   - [Examinee Experience & Assessment Flow](#examinee-experience--assessment-flow)
@@ -177,50 +180,99 @@ flowchart TD
 
 ---
 
-## Workflow & Candidate Lifecycle
+## Unified Platform Workflows & User Lifecycles
 
-The platform enforces a strict, guided 6-step lifecycle for every examinee:
+The platform operates as an integrated dual-track ecosystem designed for enterprise workforce qualification:
+- **Track A — Workplace Training & Briefings Portal (`/#lectures`)**: For procedural onboarding, multimedia video briefings, authentic PowerPoint slide deck study, and milestone readiness verification.
+- **Track B — Proctored Examination & Assessment Track (`/`)**: For rigorous, timed, webcam-monitored competency certification with automated supervisor auditing.
+
+### Dual-Track Architecture & Flowchart
 
 ```text
-[ 1. Registration ]
-        │
-        ▼
-[ 2. Cooldown Gate ] ──(Under 48 Hours)──▶ [ Lockout Screen with Countdown ]
-        │
-    (Eligible)
-        ▼
-[ 3. Hardware & Rules Check ] ──(Camera Inactive or Checkboxes Unchecked)──▶ [ Gated / Blocked ]
-        │
- (All Verified)
-        ▼
-[ 4. Proctored Exam Sitting ]
-  ├── Real-time webcam video recording (IndexedDB chunking)
-  ├── Tab-switch & focus loss auditing
-  └── Server-anchored countdown timer
-        │
-        ▼
-[ 5. Server Submission & Scoring ]
-  ├── Automatic snapshot & WebM video upload
-  ├── Server evaluates score against DB question keys
-  └── Instant breakdown certificate & armed 48-hour retest lock
-        │
-        ▼
-[ 6. Automated Supervisor Notification ]
-  ├── Resend HTTPS (Port 443) / SMTP Alert dispatched
-  ├── Re-attempt detection with banner & score summary
-  └── Admin link with 1-click candidate audit access
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                DUAL-TRACK WORKPLACE PORTAL & ASSESSMENT WORKFLOWS                                │
+│                                                                                                                  │
+│   TRACK A: Workplace Briefings & Training Portal (/#lectures)       TRACK B: Proctored Examination Track (/)     │
+│                                                                                                                  │
+│      [ A1. Learner Identification & Department ]                        [ B1. Candidate Registration ]           │
+│        - Full Name, Corporate Email, Badge ID                             - Name, Corporate Email, Badge ID      │
+│        - Department selection & custom input                              - Department identity capture          │
+│                          │                                                              │                        │
+│                          ▼                                                              ▼                        │
+│      [ A2. Multimedia Procedure Briefing ]                             [ B2. 48-Hour Cooldown Gate ]             │
+│        - HD video stream + synchronized captions                         - Locked out if sat within 48h          │
+│        - Automatic watch-time heartbeat logging                          - Dynamic countdown display             │
+│                          │                                                              │                        │
+│                          ▼                                                              ▼                        │
+│      [ A3. Authentic Presentation Deck Viewer ]                        [ B3. Camera Check & Rules Gate ]         │
+│        - 89 HD slide renders in browser                                  - Live face-alignment camera check      │
+│        - Fullscreen mode + offline PPTX download                         - Mandatory 3-point integrity agreement │
+│                          │                                                              │                        │
+│                          ▼                                                              ▼                        │
+│      [ A4. Procedure Readiness Checklist ]                             [ B4. Proctored Exam Sitting ]            │
+│        - Multi-factor score dial (0% to 100%)                            - Continuous webcam recording           │
+│        - Video + Slides + Takeaways + PPTX                               - Real-time tab-switch auditing         │
+│                          │                                               - Absolute deadline clock               │
+│                          ▼                                                              │                        │
+│      [ A5. Bridge to Certification Exam ]                                               ▼                        │
+│        - "Ready to certify? Start Exam Now →"                          [ B5. Server Scoring & Result ]           │
+│        - Seamless handoff into Assessment Track ────────────────────────▶- Pure server-evaluated score          │
+│                          │                                               - Pass/Fail breakdown certificate       │
+│                          ▼                                                              │                        │
+│      [ A6. Real-Time Telemetry & Progress ]                                             ▼                        │
+│        - SQLite LectureAttendance & LectureProgress                    [ B6. Automated Supervisor Alert ]        │
+│        - WebSocket admin broadcast                                       - Instant Resend HTTPS / SMTP alert     │
+│        - Instant 1-click Excel/CSV export                                - Admin direct link & re-attempt flag   │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Step 1: Candidate Registration (`/`)
-- Candidates input **Full Name**, **Company Employee ID**, and **Work Email**.
-- Basic client-side and server-side validation guarantees well-formed email addresses and trimmed identities.
+### Track A: Workplace Training & Briefings Portal Workflow (`/#lectures`)
 
-### Step 2: 48-Hour Retest Cooldown Check
+#### Step A1: Learner Identification & Department Access
+- Learners supply **Full Name**, **Company / Badge ID**, **Corporate Email**, and their **Department / Sector**.
+- A quick-select chip bar (Interface Management, Engineering, Construction, Project Controls, Quality Assurance, HSE, Procurement) or free-text input captures organizational identity and synchronizes it with their profile.
+- Access events are immediately logged (`POST /api/lectures/access`) with device user-agent and IP telemetry.
+
+#### Step A2: Interactive Multimedia Briefing Session
+- Learners access official briefings across four core curricula:
+  1. *Interface Management Procedure Briefing* (11:14 min, 28 slides)
+  2. *Stakeholder Management Procedure Briefing* (14:36 min, 29 slides)
+  3. *Comparative Governance Analysis: Interface vs. Stakeholder* (05:55 min, 9 slides)
+  4. *Logistics Management Procedure Briefing* (13:41 min, 23 slides)
+- Streams high-definition MP4 video with HTTP 206 range-request chunking and synchronized WebVTT subtitles (`.srt` / `.vtt`).
+- Heartbeat tracking logs watch duration seconds (`POST /api/lectures/track`). Reaching 80%+ playback automatically marks the video module completed.
+
+#### Step A3: Authentic Presentation Deck Mastery
+- Examinees review all 89 authentic PowerPoint slides rendered in crisp high-definition PNG format (`/api/lectures/:id/slides-images/:slideNum`).
+- Features thumbnail carousel navigation, slide-to-slide stepper, quick-jump dropdown, and keyboard navigation (`ArrowLeft` / `ArrowRight`).
+- **Fullscreen Presentation Mode**: Distraction-free, classroom-style experience with auto-fading controls.
+- **Offline PPTX Download**: 1-click download of the authentic `.pptx` presentation deck with automatic download event auditing (`/api/lectures/:id/slides`).
+
+#### Step A4: Multi-Factor Procedure Readiness Checklist
+- Dynamic SVG gauge dial visualizes module completion from **0% to 100%**:
+  - **Video Briefing (35% weight)**: Auto-checked upon comprehensive viewing.
+  - **Slide Deck Review (35% weight)**: Checked upon reviewing slides in the interactive viewer.
+  - **Offline Deck Download (10% weight)**: Confirms possession of reference slides for field use.
+  - **Key Procedure Takeaways (20% weight)**: Step-by-step verification of core governance principles and boundary definitions.
+- Changes auto-sync via `POST /api/lectures/checklist` to SQLite (`LectureProgress`), broadcasting live updates to supervisors.
+
+#### Step A5: Bridge to Assessment Certification
+- Once learners complete procedure briefings and feel confident in their compliance knowledge, an in-portal callout banner (*"Ready to certify? Start Exam Now →"*) smoothly bridges them to the proctored examination.
+
+---
+
+### Track B: Proctored Examination & Assessment Lifecycle (`/`)
+
+#### Step B1: Candidate Registration (`/`)
+- Candidates input **Full Name**, **Company Employee ID**, **Work Email**, and optionally select or type their **Department**.
+- Client-side and server-side validation guarantees well-formed email addresses and trimmed identities.
+
+#### Step B2: 48-Hour Retest Cooldown Check
 - Upon submitting credentials, `GET /api/candidates/check-cooldown?email=...&companyId=...` evaluates the candidate's history.
 - If an attempt was submitted within the previous 48 hours, the candidate is immediately locked out.
 - The lockout screen displays a live dynamic countdown showing the exact hours and minutes until eligibility opens, along with supervisor contact instructions.
 
-### Step 3: Hardware Verification & Compliance Agreement (`/instructions`)
+#### Step B3: Hardware Verification & Compliance Agreement (`/instructions`)
 - **Live Webcam Preview**: Activates the candidate's camera with an ergonomic face-alignment guide overlay.
 - **Continuous Video Verification**: Verifies media hardware stream binding so the examinee confirms their feed is clear (eliminating black-screen or permission issues before entry).
 - **Mandatory 3-Point Rules Checklist**: The "Start Examination" button remains strictly disabled until the candidate manually verifies all conditions:
@@ -229,7 +281,7 @@ The platform enforces a strict, guided 6-step lifecycle for every examinee:
   3. *Video Footage Integrity*: Acknowledges that blank, obstructed, or bypassed video feeds disqualify the assessment.
 - **Exam Commencement Alert**: When the candidate starts, the backend immediately records sitting metadata and fires an assessment-start email notification to management.
 
-### Step 4: Proctored Assessment Sitting (`/exam`)
+#### Step B4: Proctored Assessment Sitting (`/exam`)
 - **Server-Owned Session**: Initialized via `POST /api/exam/start`, returning an active session ID held in `sessionStorage` (allowing seamless reconnection on accidental reload).
 - **Categorized Question Modules (40 Questions)**:
   - **Part A — Interface Management**: Evaluates cross-functional communication, operational protocols, and interface matrices.
@@ -240,7 +292,7 @@ The platform enforces a strict, guided 6-step lifecycle for every examinee:
   - Window blur and tab-switching events trigger immediate warnings and increment the server-tracked warning tally via `candidate:warning` WebSocket events.
 - **Hardware Release Guarantee**: All media tracks are unconditionally stopped and released upon submit, timer expiration, or navigation away (`releaseCamera()`).
 
-### Step 5: Submission & Instant Results Breakdown (`/results`)
+#### Step B5: Submission & Instant Results Breakdown (`/results`)
 - `POST /api/exam/submit` transmits candidate answers and final integrity counters.
 - Snapshots and video recordings are transferred to backend storage (`POST /api/proctor/upload-video`, `/upload-snapshot`).
 - Results screen displays an official certificate breakdown:
@@ -249,7 +301,7 @@ The platform enforces a strict, guided 6-step lifecycle for every examinee:
   - Attempt sequence badge (`Attempt #1`, `Attempt #2`).
   - Pass/Fail verification badge.
 
-### Step 6: Automated Supervisor Email Alert
+#### Step B6: Automated Supervisor Email Alert
 - Delivered within seconds of assessment finalization.
 - Features complete candidate credentials, score breakdown, duration, proctoring integrity status, and a direct button to open the supervisor dashboard.
 - Highlights re-attempts with an amber alert notice and `[RE-ATTEMPT #X]` subject line.
@@ -516,7 +568,7 @@ docker compose -f monitoring/docker-compose.monitoring.yml up -d
    - Inspect active targets at [`http://localhost:9090/targets`](http://localhost:9090/targets) to see the live Railway production scraper.
 2. **Grafana Visual Dashboards**: Open [`http://localhost:3000`](http://localhost:3000)
    - Login: `admin` / `admin`
-   - Open the auto-provisioned **[Workplace Exam System - Production Monitoring](http://localhost:3000/d/exam-system-overview/workplace-exam-system-production-monitoring)** dashboard to view live production metrics in real time.
+   - Open the auto-provisioned **[Workplace Portal System - Production Monitoring](http://localhost:3000/d/exam-system-overview/workplace-portal-system-production-monitoring)** dashboard to view live production metrics in real time.
 
 ---
 

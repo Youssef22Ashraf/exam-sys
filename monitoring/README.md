@@ -37,7 +37,7 @@ This starts two services in Docker:
    - **Username:** `admin`
    - **Password:** `admin`
 3. Navigate directly to the pre-provisioned dashboard:
-   👉 **Dashboards** → **[Workplace Exam System - Production Monitoring](http://localhost:3000/d/exam-system-overview/workplace-exam-system-production-monitoring)**
+   👉 **Dashboards** → **[Workplace Portal System - Production Monitoring](http://localhost:3000/d/exam-system-overview/workplace-portal-system-production-monitoring)**
 
 ### Pre-Configured Dashboard Panels:
 - 🟢 **Service Scrape Status (`up`)**: Real-time probe status of the monitoring target.
