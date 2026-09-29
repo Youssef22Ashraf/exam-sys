@@ -62,45 +62,6 @@ An enterprise-grade, web-based examination, learning, and proctoring platform en
 
 ## System Design & Architecture
 
-### Interactive Architectural Overview
-
-```mermaid
-flowchart TD
-    subgraph CLIENT["Client Layer (React 19 + TypeScript + Vite)"]
-        EP["Examinee Portal (Proctored Sitting & Camera Check)"]
-        LP["Lectures & Briefings Portal (HD Videos & PPTX Viewer)"]
-        AC["Supervisor Command Center (Live Oversight & Audits)"]
-    end
-
-    subgraph SERVER["Unified Production Container (Express 4 & Node.js :5000)"]
-        SPA["Static SPA Distribution & Fallback Routing"]
-        API["REST API Router (/api/candidates, /api/exam, /api/lectures)"]
-        WS["Socket.io Real-Time Hub (Admin Room Segregation)"]
-        SCORE["Server-Side Scoring Engine & 48h Cooldown Lock"]
-        SLIDES["PowerPoint Slide Streamer & Offline PPTX Delivery"]
-        NOTIF["Dual Notifier (Resend HTTPS Port 443 + SMTP Fallback)"]
-        PROM["Prometheus Telemetry (/metrics) & Health Probe (/health)"]
-    end
-
-    subgraph STORAGE["Single Persistent Volume (/app/backend/prisma)"]
-        DB[("SQLite Database (dev.db)")]
-        UPLOADS["Webcam Video Recordings & Snapshots (/uploads)"]
-    end
-
-    subgraph MONITORING["External Services & Observability"]
-        RESEND["Resend Email API (HTTPS:443)"]
-        SMTP["Enterprise SMTP Server"]
-        GRAF["Prometheus & Grafana Monitoring Stack"]
-    end
-
-    CLIENT -->|"HTTPS REST & WebSockets"| SERVER
-    SERVER -->|"Prisma ORM"| DB
-    SERVER -->|"Disk I/O"| UPLOADS
-    NOTIF -->|"HTTPS POST"| RESEND
-    NOTIF -.->|"SMTP:587/465"| SMTP
-    GRAF -->|"Scrapes /metrics"| PROM
-```
-
 ### Infrastructure & Runtime Topology
 
 ```text
