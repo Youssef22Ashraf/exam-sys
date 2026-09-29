@@ -4,12 +4,99 @@ import { QUESTIONS } from "./defaultQuestions";
 import { resolveAdminInitialPassword } from "./env";
 
 /**
+ * Ensures LectureAttendance and LectureProgress tables exist in SQLite dev.db
+ * even if the mounted volume shadowed schema.prisma on container boot.
+ */
+export async function ensureLectureTablesExist(): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "LectureAttendance" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "candidateName" TEXT NOT NULL,
+        "candidateEmail" TEXT NOT NULL,
+        "companyId" TEXT NOT NULL,
+        "department" TEXT NOT NULL,
+        "lectureId" TEXT NOT NULL,
+        "lectureTitle" TEXT NOT NULL,
+        "action" TEXT NOT NULL,
+        "watchDurationSeconds" INTEGER NOT NULL DEFAULT 0,
+        "maxProgressPercent" INTEGER NOT NULL DEFAULT 0,
+        "completedItems" TEXT,
+        "ipAddress" TEXT,
+        "userAgent" TEXT,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "LectureAttendance_candidateEmail_idx" ON "LectureAttendance"("candidateEmail");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "LectureAttendance_companyId_idx" ON "LectureAttendance"("companyId");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "LectureAttendance_department_idx" ON "LectureAttendance"("department");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "LectureAttendance_lectureId_idx" ON "LectureAttendance"("lectureId");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "LectureAttendance_createdAt_idx" ON "LectureAttendance"("createdAt");
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "LectureProgress" (
+        "id" TEXT NOT NULL PRIMARY KEY,
+        "candidateEmail" TEXT NOT NULL,
+        "companyId" TEXT NOT NULL,
+        "department" TEXT NOT NULL,
+        "lectureId" TEXT NOT NULL,
+        "videoCompleted" BOOLEAN NOT NULL DEFAULT 0,
+        "slidesViewed" BOOLEAN NOT NULL DEFAULT 0,
+        "checkpointsFinished" BOOLEAN NOT NULL DEFAULT 0,
+        "slidesDownloaded" BOOLEAN NOT NULL DEFAULT 0,
+        "completionPercent" INTEGER NOT NULL DEFAULT 0,
+        "completedItems" TEXT NOT NULL DEFAULT '[]',
+        "lastAccessedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "LectureProgress_candidateEmail_lectureId_key" ON "LectureProgress"("candidateEmail", "lectureId");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "LectureProgress_candidateEmail_idx" ON "LectureProgress"("candidateEmail");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "LectureProgress_companyId_idx" ON "LectureProgress"("companyId");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "LectureProgress_department_idx" ON "LectureProgress"("department");
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "LectureProgress_lectureId_idx" ON "LectureProgress"("lectureId");
+    `);
+
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "Candidate" ADD COLUMN "department" TEXT;`);
+    } catch {
+      // Column already exists
+    }
+  } catch (err) {
+    console.error("[Bootstrap] Error ensuring lecture tables exist:", err);
+  }
+}
+
+/**
  * Fills an empty database on boot: admin accounts, exam settings, question
  * bank. Every step is guarded on a count, so a populated database is left
  * alone and a restart is a no-op.
  */
 export async function bootstrapDatabase(): Promise<void> {
   try {
+    // First, self-heal lecture tables in case a mounted volume shadowed the schema
+    await ensureLectureTablesExist();
+
     const adminCount = await prisma.adminUser.count();
     if (adminCount === 0) {
       console.log("[Bootstrap] Creating initial administrator accounts...");

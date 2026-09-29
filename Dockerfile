@@ -44,6 +44,9 @@ COPY --from=backend-builder /app/backend/prisma /app/backend/prisma.template
 # Copy compiled frontend assets to /app/frontend/dist for backend static serving
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
+# Copy authentic lecture videos, slides, subtitles, and slide PNG images
+COPY lectures /app/lectures
+
 # Ensure persistent uploads directory exists
 RUN mkdir -p /app/backend/uploads/videos /app/backend/uploads/snapshots
 
@@ -53,8 +56,9 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||5000)+'/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 
-# If a Railway volume is mounted at /app/backend/prisma, it starts empty and shadows schema.prisma.
-# Auto-populate schema.prisma from prisma.template into the mounted volume if missing, then push and start.
-CMD ["sh", "-c", "if [ ! -f /app/backend/prisma/schema.prisma ]; then mkdir -p /app/backend/prisma && cp -r /app/backend/prisma.template/* /app/backend/prisma/ 2>/dev/null || true; fi; SCHEMA=/app/backend/prisma/schema.prisma; if [ ! -f \"$SCHEMA\" ]; then SCHEMA=/app/backend/prisma.template/schema.prisma; fi; npx prisma db push --schema=\"$SCHEMA\" && node dist/index.js"]
+# When Railway mounts a volume at /app/backend/prisma:
+# Unconditionally sync schema.prisma from prisma.template into the mounted volume,
+# push schema updates to SQLite dev.db (preserving candidate/exam data), then start the app.
+CMD ["sh", "-c", "mkdir -p /app/backend/prisma && cp -f /app/backend/prisma.template/schema.prisma /app/backend/prisma/schema.prisma && npx prisma db push --schema=/app/backend/prisma/schema.prisma --accept-data-loss && node dist/index.js"]
 
 

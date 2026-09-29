@@ -383,6 +383,8 @@ export function calculateLectureCompletion(
  */
 export function getLecturesDirectory(): string {
   const candidates = [
+    "/app/lectures",
+    path.resolve("/app/lectures"),
     path.resolve(__dirname, "../../../lectures"),
     path.resolve(__dirname, "../../lectures"),
     path.resolve(__dirname, "../lectures"),
