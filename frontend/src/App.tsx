@@ -500,67 +500,98 @@ function AppHeader({
   onGoLectures?: () => void;
   onGoExam?: () => void;
 } = {}) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const hasNavActions = Boolean(onGoLectures || onGoExam);
+
   return (
     <header className="app-header">
-      <div className="brand" onClick={onGoHome} style={{ cursor: onGoHome ? "pointer" : "default" }}>
-        <CompanyLogo height={38} />
+      <div className="app-header-main">
+        <div className="brand" onClick={onGoHome} style={{ cursor: onGoHome ? "pointer" : "default" }}>
+          <CompanyLogo height={38} />
 
-        <div className="brand-text">
-          <span className="brand-title">EXAM & LEARNING SYSTEM</span>
-          <span className="brand-subtitle">Workplace Assessment & Training Portal</span>
+          <div className="brand-text">
+            <span className="brand-title">EXAM & LEARNING SYSTEM</span>
+            <span className="brand-subtitle">Workplace Assessment & Training Portal</span>
+          </div>
+        </div>
+
+        {/* Desktop actions: clean horizontal row */}
+        <div className="desktop-nav-actions">
+          {onGoLectures && (
+            <button
+              type="button"
+              className="header-nav-btn nav-btn-lectures"
+              onClick={onGoLectures}
+            >
+              <Icon name="video" size={14} />
+              <span>Lectures & Briefings</span>
+            </button>
+          )}
+          {onGoExam && (
+            <button
+              type="button"
+              className="header-nav-btn nav-btn-exam"
+              onClick={onGoExam}
+            >
+              <Icon name="check" size={14} />
+              <span>Take Assessment</span>
+            </button>
+          )}
+          <ThemeToggle />
+          <PoweredBy />
+        </div>
+
+        {/* Mobile top-bar actions: theme toggle + hamburger menu (when nav actions exist) */}
+        <div className="mobile-header-actions">
+          <ThemeToggle />
+          {hasNavActions && (
+            <button
+              type="button"
+              className="mobile-menu-btn"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileMenuOpen}
+            >
+              <Icon name={mobileMenuOpen ? "x" : "menu"} size={18} />
+            </button>
+          )}
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-        {onGoLectures && (
-          <button
-            type="button"
-            className="header-nav-btn"
-            onClick={onGoLectures}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "rgba(56, 189, 248, 0.1)",
-              border: "1px solid rgba(56, 189, 248, 0.3)",
-              color: "#38bdf8",
-              padding: "6px 14px",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            <Icon name="video" size={14} />
-            <span>Lectures & Briefings</span>
-          </button>
-        )}
-        {onGoExam && (
-          <button
-            type="button"
-            className="header-nav-btn"
-            onClick={onGoExam}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "rgba(16, 185, 129, 0.12)",
-              border: "1px solid rgba(16, 185, 129, 0.35)",
-              color: "#10b981",
-              padding: "6px 14px",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            <Icon name="check" size={14} />
-            <span>Take Assessment</span>
-          </button>
-        )}
-        <ThemeToggle />
-        <PoweredBy />
-      </div>
+      {/* Mobile navigation tray */}
+      {hasNavActions && mobileMenuOpen && (
+        <div className="mobile-nav-drawer" role="navigation" aria-label="Mobile navigation">
+          {onGoLectures && (
+            <button
+              type="button"
+              className="mobile-drawer-btn nav-btn-lectures"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onGoLectures();
+              }}
+            >
+              <Icon name="video" size={16} />
+              <span>Training Lectures & Briefings</span>
+            </button>
+          )}
+          {onGoExam && (
+            <button
+              type="button"
+              className="mobile-drawer-btn nav-btn-exam"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onGoExam();
+              }}
+            >
+              <Icon name="check" size={16} />
+              <span>Take Assessment</span>
+            </button>
+          )}
+          <div className="mobile-drawer-footer">
+            <PoweredBy prefix="System Engineered by" />
+          </div>
+        </div>
+      )}
     </header>
   );
 }

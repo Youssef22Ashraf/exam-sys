@@ -465,5 +465,18 @@
   .score-stats-grid {
     grid-template-columns: 1fr;
   }
+
+  .results-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .results-actions button,
+  .results-actions a {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
 }
 

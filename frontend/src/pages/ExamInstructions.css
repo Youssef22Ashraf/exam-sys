@@ -278,3 +278,34 @@
   cursor: not-allowed;
   filter: grayscale(0.5);
 }
+
+@media (max-width: 600px) {
+  .instructions-card {
+    padding: 18px 14px;
+    margin: 12px auto 28px auto;
+    border-radius: 14px;
+  }
+
+  .rules-alert-banner {
+    padding: 12px 14px;
+  }
+
+  .instruction-item {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .checklist-item {
+    padding: 10px 12px;
+  }
+
+  .instructions-action-bar {
+    margin-top: 20px;
+    padding-top: 16px;
+  }
+
+  .start-exam-button {
+    width: 100%;
+    padding: 12px 20px;
+  }
+}

@@ -12,16 +12,17 @@
 ========================================= */
 
 .admin-header {
-  height: 68px;
+  min-height: 64px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 32px;
+  padding: 8px 32px;
   position: sticky;
   top: 0;
   z-index: 100;
+  gap: 12px;
 }
 
 .admin-header-actions {
@@ -716,15 +717,85 @@
   .exam-mgmt-layout { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 600px) {
-  .admin-header { padding: 0 16px; }
-  .admin-container { width: calc(100% - 24px); }
-  .stats-grid { grid-template-columns: 1fr; }
-  .admin-title { align-items: flex-start; flex-direction: column; }
-  .admin-nav-tabs { top: 72px; }
-  .admin-tab-btn { padding: 9px 12px; font-size: 13px; }
-  .table-controls { flex-direction: column; align-items: stretch; }
-  .search-input { width: 100%; }
+@media (max-width: 768px) {
+  .admin-header {
+    padding: 8px 14px;
+    min-height: 56px;
+  }
+  .admin-header .powered-by-tag {
+    display: none !important;
+  }
+  .admin-header .brand {
+    gap: 8px;
+  }
+  .admin-header .brand-subtitle {
+    display: none;
+  }
+  .admin-header .brand-title {
+    font-size: 13.5px;
+  }
+  .admin-header .company-logo-badge {
+    height: 36px;
+    padding: 2px 6px;
+  }
+  .admin-header .company-logo-img {
+    height: 26px;
+  }
+  .admin-container {
+    width: calc(100% - 20px);
+    padding: 18px 0 40px;
+  }
+  .admin-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .admin-nav-tabs {
+    top: 58px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .admin-tab-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .table-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .search-input {
+    width: 100%;
+  }
+  .admin-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    border-radius: 10px;
+  }
+  .admin-table {
+    min-width: 620px;
+  }
+  .modal-content {
+    width: calc(100% - 24px);
+    max-height: 90vh;
+    padding: 20px 16px;
+    margin: 12px auto;
+  }
+}
+
+@media (max-width: 500px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .stat-card {
+    padding: 16px 18px;
+  }
+  .stat-card strong {
+    font-size: 26px;
+  }
 }
 
 /* An admin action the server refused. These used to fail silently while the

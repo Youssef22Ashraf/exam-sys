@@ -43,6 +43,7 @@ const PATHS: Record<string, string> = {
   layers: "M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
   sliders: "M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6m2-6h6m2 8h6",
   award: "m12 15 3.4 3.4a1 1 0 0 0 1.6-.8l-.6-4.8 3.5-3.4a1 1 0 0 0-.6-1.7l-4.8-.7L12.4 2.6a1 1 0 0 0-1.8 0L8.5 7l-4.8.7a1 1 0 0 0-.6 1.7l3.5 3.4-.6 4.8a1 1 0 0 0 1.6.8z",
+  menu: "M4 6h16M4 12h16M4 18h16",
 };
 
 export type IconName = keyof typeof PATHS;

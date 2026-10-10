@@ -197,3 +197,36 @@
   font-weight: 600;
 }
 
+@media (max-width: 640px) {
+  .lectures-login-container {
+    padding: 20px 14px;
+    min-height: auto;
+  }
+
+  .lectures-login-card {
+    padding: 22px 16px;
+    border-radius: 14px;
+  }
+
+  .lectures-login-card h2 {
+    font-size: 20px;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .form-actions button {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .input-with-icon input,
+  .form-group input,
+  .input-with-icon select {
+    font-size: 16px;
+  }
+}
+

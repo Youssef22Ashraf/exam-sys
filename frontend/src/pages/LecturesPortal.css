@@ -1934,4 +1934,81 @@
   color: #0f172a;
 }
 
+/* =========================================
+   RESPONSIVE MOBILE RULES FOR LECTURES PORTAL
+========================================= */
+
+@media (max-width: 768px) {
+  .lectures-portal-nav {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
+  .portal-heading {
+    font-size: 12px;
+  }
+
+  .portal-subheading {
+    display: none;
+  }
+
+  .portal-logo-badge {
+    padding: 2px 6px;
+  }
+
+  .portal-logo-badge img {
+    height: 26px;
+  }
+
+  .portal-overall-meter {
+    min-width: 0;
+    width: 100%;
+    order: 3;
+    padding: 6px 10px;
+  }
+
+  .portal-user-meta {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .user-profile-chip {
+    padding: 4px 8px;
+  }
+
+  .user-meta-sub {
+    display: none;
+  }
+
+  .exam-cta-nav-button,
+  .exit-portal-button {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .lectures-sidebar {
+    padding: 14px 12px;
+  }
+
+  .lecture-nav-card {
+    padding: 10px 12px;
+  }
+
+  .checklist-hero-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+    padding: 18px 14px;
+  }
+
+  .hero-percentage-dial {
+    margin: 0 auto;
+  }
+
+  .checklist-item-card {
+    padding: 12px 10px;
+    gap: 8px;
+  }
+}
+
 
